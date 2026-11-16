@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capi Guardián de la Matriz Verde</title>
+<link rel="icon" href="__LOGO_ISO__">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Diorama de consola de 64 bits: paneles azul noche de borde grueso sobre el mundo 3D; el amarillo del casco de Capi marca lo accionable */
+  --navy:#0f2140; --navy-2:#182f58; --ink:#fff7e6; --dim:#a9bbd6;
+  --sun:#ffc93c; --sky:#5ad1ff; --leaf:#57e389; --ember:#ff6b4a; --amber:#ffb020;
+  --display:"Lilita One","Arial Black",Impact,sans-serif; --body:"Nunito","Trebuchet MS",Verdana,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#0b1830;color:var(--ink);font-family:var(--body);font-weight:800;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:none}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+button{font:inherit;color:inherit;cursor:pointer}
+.hidden{display:none!important}
+.pane{background:rgba(15,33,64,.9);border:3px solid var(--ink);border-radius:16px;box-shadow:0 5px 0 #071226,0 10px 24px rgba(0,0,0,.35)}
+.btn{background:var(--sun);color:#3a2500;border:3px solid #3a2500;border-radius:12px;padding:6px 12px;font-family:var(--display);font-weight:400;letter-spacing:.3px;box-shadow:0 4px 0 #3a2500;font-size:15px}
+.btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3a2500}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.btn.ghost{background:var(--navy-2);color:var(--ink);border-color:var(--ink);box-shadow:0 4px 0 #071226}
+kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border-radius:6px;background:var(--ink);color:#1b2b4a;font-family:var(--body);font-weight:900;font-size:.85em;box-shadow:0 2px 0 #9aa7bd}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;font-variant-numeric:tabular-nums}
+#hud>*{pointer-events:auto}
+#tele{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:8px 16px 8px 8px}
+#gauge{width:92px;height:92px;flex:none}
+.bars{display:grid;gap:5px;min-width:280px}
+.row{display:grid;grid-template-columns:78px 1fr 88px;align-items:center;gap:8px;font-size:13px}
+.row span{color:var(--dim)} .row b{text-align:right;font-weight:900}
+.bar{height:13px;background:#07142b;border-radius:7px;overflow:hidden;display:flex;border:2px solid #2a4374}
+.bar i{display:block;height:100%;transition:width .25s linear}
+#bGen{background:linear-gradient(90deg,#3fd0a0,var(--leaf))} #bFos{background:repeating-linear-gradient(45deg,#8d6a5a,#8d6a5a 4px,#6d4f44 4px,#6d4f44 8px)}
+#bDem{background:var(--sun)} #bBat{background:var(--sky)}
+.clock{display:grid;justify-items:center;gap:1px;padding-left:12px;border-left:2px solid #2a4374}
+.clock b{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:1px}
+#vHz{font-size:13px;color:var(--leaf)} #vHz.low{color:var(--ember)}
+#phase{width:34px;height:34px}
+#card{position:absolute;top:10px;left:10px;display:flex;gap:10px;padding:8px 12px 10px 8px;max-width:330px}
+#capiFace,#dFace{image-rendering:pixelated;border-radius:12px;border:3px solid var(--ink);background:#274a7a;flex:none}
+#capiFace{width:64px;height:64px}
+#mTitle{font-family:var(--display);font-weight:400;font-size:18px;color:var(--sun);line-height:1.1;text-wrap:balance}
+#mSub{font-size:12px;color:var(--dim);margin:2px 0 4px}
+#mList{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13.5px;line-height:1.25}
+#mList li{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start}
+#mList li::before{content:"";width:13px;height:13px;margin-top:2px;border:2px solid var(--ink);border-radius:4px}
+#mList li.done{color:var(--dim)} #mList li.done::before{background:var(--leaf);border-color:var(--leaf);box-shadow:inset 0 0 0 2px var(--navy)}
+#mList li.now{color:var(--ink)} #mList li.now::before{border-color:var(--sun);animation:pulse 1s infinite}
+#mList li.next{color:#6f84a8} #mList li.next::before{border-color:#6f84a8}
+@keyframes pulse{50%{background:var(--sun)}}
+#tr{position:absolute;top:10px;right:10px;display:flex;gap:8px}
+#timer{position:absolute;top:122px;left:50%;transform:translateX(-50%);padding:5px 16px;font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.5px;white-space:nowrap}
+#timer.warn{border-color:var(--ember);color:var(--ember)}
+#prompt{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);padding:8px 16px;font-size:16px;white-space:nowrap}
+#toast{position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none!important;opacity:0;transition:opacity .3s}
+#toast.on{opacity:1}
+#toast h2{font-family:var(--display);font-weight:400;font-size:clamp(30px,5vw,54px);margin:0;color:var(--sun);-webkit-text-stroke:2px #3a2500;text-shadow:0 5px 0 #3a2500,0 9px 18px rgba(0,0,0,.45);letter-spacing:1px}
+#toast p{margin:6px 0 0;font-size:18px;text-shadow:0 2px 0 #071226,0 0 12px #071226}
+#note{position:absolute;bottom:150px;left:50%;transform:translateX(-50%);padding:7px 14px;font-size:14.5px;max-width:min(560px,92vw);text-align:center;opacity:0;transition:opacity .25s;pointer-events:none!important}
+#note.on{opacity:1}
+#mini{position:absolute;right:12px;bottom:12px;width:176px;height:176px;border-radius:50%;border:4px solid var(--ink);box-shadow:0 5px 0 #071226,0 10px 24px rgba(0,0,0,.35);background:#12305c}
+#zone{position:absolute;right:16px;bottom:198px;font-family:var(--display);font-weight:400;font-size:17px;text-shadow:0 2px 0 #071226,0 0 10px #071226;text-align:right;max-width:240px;pointer-events:none!important}
+#cam{position:absolute;left:12px;bottom:12px;display:flex;gap:6px}
+#cJump{display:none} @media (pointer:coarse){#cJump{display:block}}
+#prompt{cursor:pointer}
+#cam .btn{min-width:40px;padding:5px 8px}
+#keys{position:absolute;left:12px;bottom:60px;font-size:12px;color:var(--ink);text-shadow:0 1px 0 #071226,0 0 8px #071226;line-height:1.9;pointer-events:none!important}
+
+/* ---------- Diálogos ---------- */
+#dialog{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:min(760px,94vw);display:grid;grid-template-columns:auto 1fr;gap:14px;padding:12px 16px 14px 12px;cursor:pointer}
+#dFace{width:96px;height:96px}
+#dName{font-family:var(--display);font-weight:400;font-size:19px;color:var(--sun)}
+#dText{margin:3px 0 0;font-size:17px;line-height:1.38;min-height:4.2em;max-width:62ch}
+#dNext{position:absolute;right:14px;bottom:8px;font-size:12px;color:var(--dim);animation:bob 1s infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+
+/* ---------- Minijuegos ---------- */
+#mg,#panel,#help{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,12,28,.45);padding:12px}
+.mgBox{padding:12px 16px 12px;width:min(600px,96vw);background:rgba(12,26,52,.96)}
+.mgBox h3{margin:0 0 8px;font-family:var(--display);font-weight:400;font-size:21px;color:var(--sun);display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.mgBox h3 small{font-family:var(--body);font-size:12px;color:var(--dim);font-weight:800}
+#mgCv{width:100%;height:auto;display:block;border-radius:10px;border:3px solid #2a4374;background:#061226;touch-action:none;cursor:pointer}
+#mgHint{margin:8px 0 0;font-size:14px;color:var(--ink);line-height:1.4}
+
+/* ---------- Panel de red ---------- */
+.pBox{width:min(1040px,97vw);max-height:94%;overflow:auto;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,1fr);gap:14px;background:rgba(12,26,52,.97)}
+.pBox header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pBox h2{margin:0;font-family:var(--display);font-weight:400;font-size:24px;color:var(--sun)}
+#pCv{width:100%;height:auto;border-radius:12px;border:3px solid #2a4374;background:#061226;cursor:pointer}
+.pSide{display:grid;gap:10px;align-content:start}
+.pGroup{background:#0a1a36;border:2px solid #2a4374;border-radius:12px;padding:9px 11px}
+.pGroup h4{margin:0 0 6px;font-family:var(--display);font-weight:400;font-size:16px;color:var(--sky)}
+.pGroup p{margin:6px 0 0;font-size:12.5px;color:var(--dim);line-height:1.35}
+.seg{display:flex;gap:4px}
+.seg button{flex:1;padding:6px 4px;border-radius:9px;border:2px solid #2a4374;background:#0f2140;font-size:12.5px;font-weight:900}
+.seg button.on{background:var(--sky);color:#06233a;border-color:var(--ink)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.plant{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:13px;padding:3px 0;border-bottom:1px solid #1c3157}
+.plant:last-child{border:0}
+.plant em{font-style:normal;color:var(--dim);font-size:11.5px;display:block}
+.plant b{font-weight:900}
+.plant button{padding:2px 9px;border-radius:8px;border:2px solid #2a4374;background:#0f2140;font-size:12px}
+.pill{display:inline-block;padding:0 7px;border-radius:9px;font-size:11px;margin-left:4px;background:#1c3157}
+.pill.ok{background:#12482f;color:var(--leaf)} .pill.bad{background:#5a1f17;color:#ffb3a3} .pill.off{color:var(--dim)}
+.sl{display:grid;grid-template-columns:86px 1fr 46px;gap:8px;align-items:center;font-size:12.5px;margin:4px 0}
+.sl input{width:100%;accent-color:var(--sun)}
+
+/* ---------- Título y ayuda ---------- */
+#title{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at center,rgba(8,20,44,.62) 0%,rgba(8,20,44,.35) 45%,rgba(8,20,44,.1) 100%)}
+.tBox{text-align:center;max-width:720px}
+.tBox .eyebrow{font-size:14px;letter-spacing:3px;color:var(--ink);text-shadow:0 2px 0 #071226}
+.tBox h1{margin:4px 0 0;font-family:var(--display);font-weight:400;font-size:clamp(54px,11vw,120px);line-height:.9;color:var(--sun);-webkit-text-stroke:3px #3a2500;text-shadow:0 7px 0 #3a2500,0 14px 28px rgba(0,0,0,.5);letter-spacing:2px}
+.tBox h2{margin:10px 0 0;font-family:var(--display);font-weight:400;font-size:clamp(20px,3.6vw,34px);color:var(--ink);-webkit-text-stroke:1px #0b2a4a;text-shadow:0 4px 0 #0b2a4a;text-wrap:balance}
+.tBox p{margin:14px auto 0;max-width:54ch;font-size:16px;line-height:1.45;text-shadow:0 2px 0 #071226,0 0 14px #071226}
+.tBrand{display:inline-flex;align-items:center;gap:12px;padding:8px 18px 8px 12px;margin-bottom:12px;background:rgba(15,33,64,.92);border:3px solid var(--ink);border-radius:999px;box-shadow:0 5px 0 #071226}
+.tBrand img{height:46px;width:auto;display:block}
+.tBrand span{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+#logoIso{width:44px;height:auto;align-self:center;padding:3px;background:rgba(15,33,64,.9);border:3px solid var(--ink);border-radius:50%;box-shadow:0 4px 0 #071226;box-sizing:content-box}
+.hFoot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:6px}
+.hBrand{display:inline-flex;align-items:center;gap:10px}
+.hBrand img{height:34px;width:auto}
+.hBrand em{font-style:normal;font-size:12.5px;color:var(--dim)}
+.tBtns{display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.tBtns .btn{font-size:22px;padding:9px 22px;display:grid;justify-items:center;line-height:1.15}
+.tBtns .btn small{font-family:var(--body);font-weight:800;font-size:12px;letter-spacing:0;opacity:.8}
+.tBtns .btn:disabled{opacity:.6}
+.tBtns2{margin-top:12px;display:flex;justify-content:center}
+#mExtra{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
+#bWard{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900}
+#bWard:hover{border-color:var(--sun)}
+#fact{position:absolute;top:172px;left:50%;transform:translateX(-50%);width:min(560px,92vw);padding:10px 16px;display:grid;gap:3px;opacity:0;transition:opacity .25s;pointer-events:none!important;border-color:var(--sun)}
+#fact.on{opacity:1;pointer-events:auto!important;cursor:pointer}
+#fact b{font-family:var(--display);font-weight:400;font-size:17px;color:var(--sun)} #fact span{font-size:14.5px;line-height:1.4}
+.ov{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,12,28,.5);padding:12px;z-index:7}
+.oBox{width:min(520px,96vw);max-height:94%;overflow:auto;padding:16px 20px;background:rgba(12,26,52,.97);display:grid;gap:10px;justify-items:center;text-align:center}
+.oBox h2{margin:0;font-family:var(--display);font-weight:400;font-size:24px;color:var(--sun)}
+.oBox p,.oBox label{margin:0;font-size:14px;color:var(--dim);line-height:1.4}
+#wList{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.wItem{display:grid;justify-items:center;gap:4px;padding:9px 6px;border-radius:12px;border:3px solid #2a4374;background:#0f2140}
+.wItem.on{border-color:var(--sun)} .wItem:disabled{opacity:.5;cursor:not-allowed}
+.wItem b{font-family:var(--display);font-weight:400;font-size:16px} .wItem em{font-style:normal;font-size:11.5px;color:var(--dim)}
+.sw{display:flex;gap:3px} .sw i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink)}
+#tvList{display:grid;gap:7px;width:100%} #tvList .btn{text-align:left;font-size:16px} #tvList .btn:disabled{opacity:.5;cursor:default}
+#dpName{width:100%;max-width:340px;padding:9px 12px;border-radius:10px;border:3px solid var(--ink);background:#07142b;color:var(--ink);font:inherit;font-size:18px;text-align:center}
+.dCard{width:min(640px,96vw);max-height:96%;overflow:auto;background:#fff8e8;color:#1b2b4a;border:6px double #1b2b4a;outline:4px solid var(--sun);border-radius:10px;padding:16px 26px 14px;text-align:center;display:grid;gap:5px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.dTop{background:#0f2140;border-radius:10px;padding:8px;display:grid;place-items:center} .dTop img{height:44px;width:auto}
+.dKicker{font-family:var(--display);font-weight:400;font-size:30px;letter-spacing:6px;color:#1b2b4a;margin-top:4px}
+.dLine{font-size:14.5px;line-height:1.4;max-width:52ch;justify-self:center}
+#dWho{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,42px);color:#c2185b;border-bottom:3px solid #1b2b4a;padding:0 12px 2px;justify-self:center;overflow-wrap:break-word;text-wrap:balance;line-height:1.1} #dWho.long{font-size:clamp(22px,3.7vw,32px)}
+.dTitle{font-family:var(--display);font-weight:400;font-size:26px;color:#0b6b4a;text-wrap:balance}
+.dMeta{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:13px;margin-top:4px}
+.dMeta span{background:#e9dcc0;border-radius:9px;padding:2px 10px}
+.dSign{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;text-align:left}
+.dSign canvas{width:52px;height:52px;image-rendering:pixelated;border-radius:10px;border:3px solid #1b2b4a}
+.dSign b{display:block;font-family:var(--display);font-weight:400;font-size:18px} .dSign em{font-style:normal;font-size:12px}
+.dSign img{height:48px;width:auto}
+.dFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:#5a6a86}
+#fade{position:fixed;inset:0;background:#050b18;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;z-index:9}
+#fade.on{opacity:1;pointer-events:auto}
+#fade span{font-family:var(--display);font-size:24px;color:var(--sun);text-align:center;padding:16px}
+#credits{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,12,28,.6);padding:12px;z-index:8}
+.cBox{width:min(620px,96vw);max-height:94%;overflow:auto;padding:20px 26px;text-align:center;background:rgba(12,26,52,.97)}
+.cBox img{height:54px;width:auto}
+.cBox h2{margin:10px 0 2px;font-family:var(--display);font-weight:400;font-size:26px;color:var(--sun);text-wrap:balance}
+.cAuthor{margin:6px 0 12px;font-size:21px} .cAuthor b{font-family:var(--display);font-weight:400;font-size:26px;color:var(--ink);letter-spacing:.5px}
+.cBox dl{margin:0 auto 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;text-align:left;font-size:13.5px;line-height:1.35;max-width:540px}
+.cBox dt{text-align:right;color:var(--sky)} .cBox dd{margin:0}
+.cEnd{margin:8px 0 14px;color:var(--dim);font-size:13.5px}
+body.cine::before,body.cine::after{content:"";position:fixed;left:0;right:0;height:8vh;background:#050b18;z-index:3;pointer-events:none}
+body.cine::before{top:0} body.cine::after{bottom:0}
+body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
+#load{margin-top:14px;font-size:13px;color:var(--ink);text-shadow:0 2px 0 #071226}
+.hBox{width:min(720px,96vw);max-height:92%;overflow:auto;padding:16px 20px;background:rgba(12,26,52,.97)}
+.hBox h2{margin:0 0 8px;font-family:var(--display);font-weight:400;color:var(--sun);font-size:26px}
+.hBox dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0 0 12px;font-size:14.5px;align-items:center}
+.hBox dt{white-space:nowrap} .hBox dd{margin:0;color:var(--ink)}
+.hBox p{font-size:14px;line-height:1.45;color:var(--dim);margin:8px 0}
+
+@media (max-width:1250px){
+  #fact{left:auto;right:12px;transform:none;width:min(560px,calc(100vw - 350px))}
+  #tele{left:calc(50% - 26px);transform:translateX(-50%) scale(.9);transform-origin:top center}
+  #card{top:122px} #tr .btn{font-size:13px;padding:5px 9px} #logoIso{width:36px}
+  #timer{left:auto;right:10px;transform:none;top:70px;font-size:17px}
+}
+@media (max-width:900px){
+  #fact{top:auto;bottom:204px;right:auto;left:50%;transform:translateX(-50%);width:min(560px,92vw)}
+  #tele{transform:translateX(-50%) scale(.82);transform-origin:top center;top:4px}
+  #card{top:112px;max-width:260px;transform:scale(.9);transform-origin:top left}
+  #timer{top:104px;left:auto;right:8px;transform:none;font-size:16px}
+  #keys{display:none} .pBox{grid-template-columns:1fr} #mini{width:132px;height:132px} #zone{bottom:150px}
+  #tr .btn{font-size:12px;padding:5px 8px} #logoIso{width:32px} .tBrand img{height:34px}
+}
+@media (max-width:560px){ #fact{left:8px;transform:none;bottom:150px;width:calc(100vw - 104px);padding:8px 12px} #fact span{font-size:13px;line-height:1.35} #tele{transform:translateX(-50%) scale(.62)} #card{top:84px;transform:scale(.78)} #tr{top:auto;bottom:160px;right:8px;flex-direction:column} #dFace{width:64px;height:64px} #dText{font-size:15px} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="card" class="pane">
+    <canvas id="capiFace" width="24" height="24" aria-hidden="true"></canvas>
+    <div>
+      <div id="mTitle"></div><div id="mSub"></div>
+      <ul id="mList"></ul>
+      <div id="mExtra"><span id="sparkCount">Chispas de saber: 0/10</span><button id="bWard" type="button">Vestuario <kbd>V</kbd></button></div>
+    </div>
+  </div>
+  <div id="tele" class="pane" aria-label="Telemetría de red">
+    <canvas id="gauge" width="184" height="184"></canvas>
+    <div class="bars">
+      <div class="row"><span>Generación</span><div class="bar"><i id="bGen"></i><i id="bFos"></i></div><b id="vGen">0 MW</b></div>
+      <div class="row"><span>Demanda</span><div class="bar"><i id="bDem"></i></div><b id="vDem">0 MW</b></div>
+      <div class="row"><span>Baterías</span><div class="bar"><i id="bBat"></i></div><b id="vBat">—</b></div>
+    </div>
+    <div class="clock"><canvas id="phase" width="68" height="68"></canvas><b id="vClock">09:00</b><span id="vHz">50.0 Hz</span></div>
+  </div>
+  <div id="tr">
+    <img id="logoIso" src="__LOGO_ISO__" alt="Energimundo" width="170" height="163">
+    <button class="btn" id="bPanel" type="button">Red <kbd>Tab</kbd></button>
+    <button class="btn ghost" id="bMute" type="button">Sonido: sí</button>
+    <button class="btn ghost" id="bHelp" type="button">Ayuda</button>
+  </div>
+  <div id="timer" class="pane hidden"></div>
+  <div id="note" class="pane"></div>
+  <div id="fact" class="pane"><b id="factT"></b><span id="factX"></span></div>
+  <div id="prompt" class="pane hidden"></div>
+  <div id="toast"><h2></h2><p></p></div>
+  <div id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> mover · <kbd>Espacio</kbd> saltar · <kbd>E</kbd> interactuar · <kbd>Q</kbd>/<kbd>E</kbd> girar cámara · rueda: zoom</div>
+  <div id="cam">
+    <button class="btn ghost" id="cL" type="button" aria-label="Girar cámara a la izquierda">⟲</button>
+    <button class="btn ghost" id="cR" type="button" aria-label="Girar cámara a la derecha">⟳</button>
+    <button class="btn ghost" id="cIn" type="button" aria-label="Acercar">＋</button>
+    <button class="btn ghost" id="cOut" type="button" aria-label="Alejar">－</button>
+    <button class="btn" id="cJump" type="button">Saltar</button>
+  </div>
+  <div id="zone"></div>
+  <canvas id="mini" width="352" height="352" aria-label="Minimapa"></canvas>
+</div>
+
+<div id="dialog" class="pane hidden">
+  <canvas id="dFace" width="24" height="24" aria-hidden="true"></canvas>
+  <div><b id="dName"></b><p id="dText"></p></div>
+  <span id="dNext">Seguir: E / clic</span>
+</div>
+
+<div id="mg" class="hidden"><div class="mgBox pane">
+  <h3><span id="mgTitle"></span><small>Esc: salir</small></h3>
+  <canvas id="mgCv" width="560" height="300"></canvas>
+  <p id="mgHint"></p>
+</div></div>
+
+<div id="panel" class="hidden"><div class="pBox pane">
+  <header><h2>Red eléctrica nacional</h2><button class="btn" id="pClose" type="button">Cerrar <kbd>Tab</kbd></button></header>
+  <canvas id="pCv" width="760" height="440"></canvas>
+  <div class="pSide">
+    <div class="pGroup"><h4>Banco de baterías LFP</h4>
+      <div class="seg" id="batMode"><button type="button" data-m="auto">Automático</button><button type="button" data-m="hold">Reserva</button><button type="button" data-m="charge">Solo carga</button></div>
+      <p id="batInfo"></p></div>
+    <div class="pGroup"><h4>Centrales</h4><div id="plantList"></div></div>
+    <div class="pGroup hidden" id="sandbox"><h4>Sandbox climático</h4>
+      <div class="sl"><label for="sWind">Viento</label><input id="sWind" type="range" min="0" max="100" value="60"><b id="oWind"></b></div>
+      <div class="sl"><label for="sCloud">Nubosidad</label><input id="sCloud" type="range" min="0" max="100" value="0"><b id="oCloud"></b></div>
+      <div class="sl"><label for="sHour">Hora</label><input id="sHour" type="range" min="0" max="95" value="48"><b id="oHour"></b></div>
+      <div class="sl"><label for="sDem">Demanda</label><input id="sDem" type="range" min="60" max="130" value="100"><b id="oDem"></b></div>
+      <div class="sl"><label for="sRate">Reloj</label><input id="sRate" type="range" min="0" max="4" value="1"><b id="oRate"></b></div>
+      <button class="btn ghost" id="sFault" type="button" style="margin-top:6px;font-size:13px">Provocar una falla</button>
+    </div>
+  </div>
+</div></div>
+
+<div id="help" class="hidden"><div class="hBox pane">
+  <h2>Cómo se juega</h2>
+  <dl>
+    <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / flechas</dt><dd>Mover a Capi. También podés hacer clic en el terreno y va solo.</dd>
+    <dt><kbd>Espacio</kbd></dt><dd>Saltar. En el agua, impulso de nado rápido.</dd>
+    <dt><kbd>E</kbd> / <kbd>F</kbd> / clic</dt><dd>Hablar, reparar o usar la consola resaltada.</dd>
+    <dt><kbd>Q</kbd> <kbd>E</kbd> / clic derecho</dt><dd>Girar la cámara. Con <kbd>Mayús</kbd> gira de a 45°.</dd>
+    <dt>Rueda del ratón</dt><dd>Zoom, del plano detalle a la vista panorámica.</dd>
+    <dt><kbd>Tab</kbd></dt><dd>Panel de la red: despacho de baterías e inspección de centrales.</dd>
+    <dt><kbd>V</kbd></dt><dd>Vestuario de Capi: atuendos que se ganan juntando chispas de saber.</dd>
+    <dt><kbd>M</kbd></dt><dd>Silenciar el sonido.</dd>
+  </dl>
+  <p>Cada central que reparás inyecta megavatios a la red. Si la generación renovable no alcanza la demanda, entra el respaldo térmico fósil y baja el porcentaje renovable. Los rombos rojos y los teros marcan los nodos averiados; la flecha amarilla, tu objetivo. Hay 10 chispas de saber escondidas por el mapa, y cuando la flota eléctrica tenga carga vas a poder viajar entre paradas de ómnibus.</p>
+  <div class="hFoot"><span class="hBtns"><button class="btn" id="hClose" type="button">Volver al juego</button> <button class="btn ghost" id="hTitle" type="button">Salir al título</button></span><span class="hBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><em>Un juego del museo Energimundo</em></span></div>
+</div></div>
+
+<div id="wardrobe" class="ov hidden"><div class="oBox pane">
+  <h2>Vestuario de Capi</h2>
+  <div id="wList"></div>
+  <p id="wHint"></p>
+  <button class="btn" id="wClose" type="button">Cerrar <kbd>V</kbd></button>
+</div></div>
+
+<div id="travel" class="ov hidden"><div class="oBox pane">
+  <h2>Ómnibus eléctrico</h2>
+  <p>¿A qué parada vas?</p>
+  <div id="tvList"></div>
+  <button class="btn" id="tvClose" type="button">Me quedo acá <kbd>Esc</kbd></button>
+</div></div>
+
+<div id="diploma" class="ov hidden">
+  <div class="oBox pane" id="dAsk">
+    <h2>¡Te ganaste un diploma!</h2>
+    <label for="dpName">Escribí tu nombre para ponerlo en el diploma</label>
+    <input id="dpName" type="text" maxlength="40" autocomplete="off" placeholder="Tu nombre">
+    <button class="btn" id="dGo" type="button">Ver mi diploma</button>
+  </div>
+  <div class="dCard hidden" id="dCard">
+    <div class="dTop"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"></div>
+    <div class="dKicker">DIPLOMA</div>
+    <div class="dLine">El museo Energimundo reconoce a</div>
+    <div id="dWho"></div>
+    <div class="dLine">como</div>
+    <div class="dTitle">Guardián de la Matriz Verde</div>
+    <div class="dLine">por llevar la red eléctrica al 100&nbsp;% renovable junto a Capi, con agua, viento, sol y biomasa del Uruguay.</div>
+    <div class="dMeta"><span id="dStory"></span><span id="dSparks"></span><span id="dDate"></span></div>
+    <div class="dSign"><canvas id="dCapi" width="24" height="24" aria-hidden="true"></canvas><div><b>Capi</b><em>Ingeniero Jefe de Energía Limpia</em></div><img src="__LOGO_ISO__" alt="" width="170" height="163"></div>
+    <div class="dFoot"><span>Sacale una foto a la pantalla para llevártelo.</span><button class="btn" id="dDone" type="button">Seguir</button></div>
+  </div>
+</div>
+
+<div id="fade"><span id="fadeTxt"></span></div>
+
+<div id="credits" class="hidden"><div class="cBox pane">
+  <img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163">
+  <h2>Capi, Guardián de la Matriz Verde</h2>
+  <p class="cAuthor">Autor: <b>Homero Texeira</b></p>
+  <dl>
+    <dt>Idea y diseño de juego</dt><dd>Homero Texeira</dd>
+    <dt>Un juego del museo</dt><dd>Energimundo</dd>
+    <dt>Programación, arte 3D y música</dt><dd>Generados por código con la asistencia de Claude (Anthropic)</dd>
+    <dt>Motor gráfico</dt><dd>Three.js</dd>
+    <dt>Tipografías</dt><dd>Lilita One y Nunito</dd>
+    <dt>Datos de la matriz eléctrica</dt><dd>Ministerio de Industria, Energía y Minería · Balance Energético 2025</dd>
+    <dt>Elenco</dt><dd>Capi, la Ing. Valeria, Don Mateo, Lucía, los teros y los vecinos de la rambla</dd>
+  </dl>
+  <p class="cEnd">Uruguay · 2026 · ¡Gracias por jugar!</p>
+  <button class="btn" id="crClose" type="button">Volver</button>
+</div></div>
+
+<div id="title"><div class="tBox">
+  <div class="tBrand"><img id="logoLargo" src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div>
+  <div class="eyebrow">URUGUAY · 64 BITS · DIORAMA 3D</div>
+  <h1>CAPI</h1>
+  <h2>Guardián de la Matriz Verde</h2>
+  <p>Sos Capi, carpincho e ingeniero jefe de energía limpia. Recorré el diorama, repará las centrales y llevá la red al 100&nbsp;% renovable antes de la hora pico.</p>
+  <div class="tBtns">
+    <button class="btn hidden" id="bCont" type="button">Continuar</button>
+    <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
+    <button class="btn" id="bLong" type="button" disabled>Historia larga<small>6 misiones · 15 a 20 minutos</small></button>
+  </div>
+  <div class="tBtns2"><button class="btn ghost" id="bCred" type="button">Créditos</button></div>
+  <div id="load">Construyendo el diorama…</div>
+</div></div>
+
+<script src="game.js"></script>
+</body>
+</html>

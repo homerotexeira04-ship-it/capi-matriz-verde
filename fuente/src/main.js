@@ -1,0 +1,268 @@
+// Arranque del juego: render, cámara isométrica orbital, entrada (teclado, ratón y táctil) y bucle principal.
+import * as THREE from 'three';
+import { clamp, lerp, damp, angDiff } from './util.js';
+import { B, POS, ZONES, CITY_Y } from './terrain.js';
+import { EnergyGrid } from './grid.js';
+import { World, canvasTex } from './world.js';
+import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops } from './sectors.js';
+import { FX } from './fx.js';
+import { Capi } from './capi.js';
+import { Actors } from './actors.js';
+import { AudioSynth } from './audio.js';
+import { UI } from './ui.js';
+import { Minigames } from './minigames.js';
+import { Missions } from './missions.js';
+import { NavGrid } from './nav.js';
+import { Extras } from './extras.js';
+
+const $ = id => document.getElementById(id);
+const FOV = 40;
+
+class Game {
+  constructor() {
+    const canvas = $('gl');
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75)); r.shadowMap.enabled = true; r.localClippingEnabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2200);
+    this.grid = new EnergyGrid(); this.audio = new AudioSynth(); this.fx = new FX(this.scene);
+    // WorldBuilder
+    const w = this.world = new World(this.scene, r);
+    const li = $('logoLargo');
+    if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
+    const ii = $('logoIso');
+    if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
+    buildRoads(w); buildCity(w); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); buildStops(w); buildFlora(w);
+    w.finalize();
+    this.capi = new Capi(this.scene, w, this.fx, this.audio);
+    this.actors = new Actors(w, this.scene);
+    this.capi.nav = new NavGrid(w);
+    this.capiLight = new THREE.PointLight(0xfff0c8, 0, 22, 1.6); this.scene.add(this.capiLight);
+    const ring = this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
+    ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
+    this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+    this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
+    this.extras = new Extras(this);
+    this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
+    this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
+    this.ptr = new Map(); this.drag = null; this.autoQuality = true; this.quality = 0; this.ema = 0.016; this.qT = 0;
+    this.bind(); this.resize();
+    this.missions.preset(0); this.grid.step(0); this.grid.fossil = this.grid.out.demand - this.grid.out.ren; this.grid.step(0);
+    $('bShort').onclick = () => this.play('corta', 0); $('bLong').onclick = () => this.play('larga', 0);
+    $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
+    $('bCred').onclick = () => this.showCredits(null);
+    this.refreshTitle();
+    this.last = performance.now();
+    requestAnimationFrame(t => this.frame(t));
+  }
+
+  refreshTitle() {
+    const sv = this.saved = this.missions.load(), c = $('bCont');
+    $('bShort').disabled = false; $('bLong').disabled = false;
+    c.classList.toggle('hidden', !sv || (sv.phase === 0));
+    if (sv) { const n = sv.mode === 'corta' ? 5 : 6; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
+    $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
+  }
+  play(mode, phase, saved) {
+    if (saved) this.extras.restore(saved); else this.extras.reset();
+    this.audio.start(); this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
+    this.cam.distT = 56; this.cam.yawT = 0.35;
+    this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
+    this.missions.start(mode, phase, true);
+  }
+  // Presentación final: Capi en primer plano sobre el escenario de la plaza
+  startCine() {
+    const c = this.capi; this.cine = true; this.ui.hide(); document.body.classList.add('cine');
+    if (this.panel) this.togglePanel(false);
+    c.teleport(POS.stage[0], POS.stage[1]); c.heading = 0; this.cam.inspect = null;
+    // corte directo a un plano cercano y frontal, con un leve acercamiento
+    this.cineYaw = Math.round(this.cam.yaw / (Math.PI * 2)) * Math.PI * 2; this.cam.yawT = this.cam.yaw = this.cineYaw + 0.2; this.cam.dist = 9.5; this.cam.cineK = 1; this.cam.cut = 0;
+    this.cam.target.set(c.pos.x, c.pos.y + 1.95, c.pos.z);
+  }
+  endCine() { this.cine = false; document.body.classList.remove('cine'); if (this.mode === 'play') this.ui.show(); this.cam.distT = 46; }
+  showCredits(done) {
+    $('credits').classList.remove('hidden'); $('crClose').textContent = done ? 'Seguir en modo libre' : 'Volver';
+    $('crClose').onclick = () => { $('credits').classList.add('hidden'); this.audio.click(); if (done) done(); };
+  }
+  // Vuelve a la pantalla de título (útil entre visitantes del museo); el progreso guardado se conserva
+  kiosk(now) {
+    const K = this.kioskCfg; if (!K || this.mode === 'title') { this.lastInput = now; return; }
+    const idle = (now - this.lastInput) / 1000, left = Math.ceil(K.idle - idle);
+    if (left <= 0) { this.missions.forget(); this.toTitle(); this.lastInput = now; }
+    else if (left <= K.warn) this.ui.note(`¿Seguís ahí? El juego vuelve al inicio en ${left} s. Mové el ratón o tocá una tecla para seguir.`, 1.2);
+  }
+  toTitle() {
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma'].forEach(id => $(id).classList.add('hidden'));
+    this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
+    this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
+    this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};
+  }
+  get locked() { return this.mode !== 'play' || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading; }
+  togglePanel(on) { if (this.mode !== 'play' || this.mg.active || this.ui.dlg) return; this.panel = on == null ? !this.panel : on; if (this.panel) this.ui.openPanel(this.missions.free); else this.ui.closePanel(); this.audio.click(); }
+  toggleHelp(on) { this.help = on; $('help').classList.toggle('hidden', !on); }
+  toggleMute() { this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
+  minigame(type, opts, onWin) { this.capi.goto = null; this.mg.start(type, opts, ok => { if (ok) onWin(); }); }
+  inspect(id) {
+    const z = id === 'terminal' ? { x: POS.terminal[0], z: POS.terminal[1] + 6 } : ZONES.find(q => q.id === id); if (!z) return;
+    if (this.panel) this.togglePanel(false);
+    this.cam.inspect = new THREE.Vector3(z.x, this.world.groundAt(z.x, z.z) + 2, z.z); this.cam.inspectT = 6.5;
+  }
+  interact(id) { const it = this.world.inter[id]; if (!it || it.state === 'locked') return; this.capi.goto = null; this.face = Math.atan2(it.x - this.capi.pos.x, it.z - this.capi.pos.z); this.missions.interact(id); }
+
+  bind() {
+    const cv = $('gl');
+    const K = window.CAPI_KIOSCO; this.kioskCfg = K ? { idle: Math.max(30, +K.idle || 180), warn: Math.max(5, +K.warn || 30) } : null; this.lastInput = performance.now();
+    if (this.kioskCfg) { this.missions.forget(); for (const ev of ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart']) window.addEventListener(ev, () => { this.lastInput = performance.now(); }, { passive: true, capture: true }); window.addEventListener('contextmenu', e => e.preventDefault()); }
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('keydown', e => {
+      const c = e.code;
+      if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;   // escribiendo el nombre del diploma
+      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(c)) e.preventDefault();
+      if (this.mode === 'title') { if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
+      if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
+      if (c === 'KeyM' && !e.repeat) this.toggleMute();
+      if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV') this.extras.close(); else this.extras.key(c); } return; }
+      if (c === 'KeyV' && !e.repeat && !this.locked) { this.extras.toggleWardrobe(); return; }
+      if (this.mg.active) { if (!e.repeat) this.mg.key(c, true); return; }
+      if (c === 'Tab') { if (!e.repeat && !this.cine) this.togglePanel(); return; }
+      if (this.ui.dlg) { if (!e.repeat && (c === 'KeyE' || c === 'Space' || c === 'Enter' || c === 'KeyF')) this.ui.advance(); return; }
+      if (this.panel || this.help) return;
+      if (e.repeat) return;
+      this.keys[c] = true;
+      if (c === 'Space') this.jump = true;
+      if (c === 'KeyE' || c === 'KeyF' || c === 'Enter') { if (this.cand) { if (c === 'KeyE') this.eUsed = true; this.interact(this.cand.id); } }
+      if (e.shiftKey && (c === 'KeyQ' || (c === 'KeyE' && !this.eUsed))) { const s = Math.PI / 4; this.cam.yawT = (c === 'KeyQ' ? Math.floor(this.cam.yawT / s + 1e-3) + 1 : Math.ceil(this.cam.yawT / s - 1e-3) - 1) * s; }
+    });
+    window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyE') this.eUsed = false; if (this.mg.active) this.mg.key(e.code, false); });
+    window.addEventListener('blur', () => { this.keys = {}; });
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    cv.addEventListener('pointerdown', e => {
+      cv.setPointerCapture(e.pointerId); this.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      this.drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: 0, right: e.button === 2, touch: e.pointerType === 'touch', pinch: this.ptr.size > 1 ? this.pinchDist() : 0 };
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!this.ptr.has(e.pointerId) || !this.drag) return; const d = this.drag, p = this.ptr.get(e.pointerId), dx = e.clientX - p.x;
+      p.x = e.clientX; p.y = e.clientY; d.moved = Math.max(d.moved, Math.hypot(e.clientX - d.sx, e.clientY - d.sy));
+      if (this.mode !== 'play') return;
+      if (this.ptr.size > 1) { const pd = this.pinchDist(); if (d.pinch > 0) this.cam.distT = clamp(this.cam.distT * d.pinch / pd, 20, 195); d.pinch = pd; d.moved = 99; }
+      else if (d.right || (d.touch && d.moved > 12)) this.cam.yawT -= dx * 0.007;
+    });
+    const up = e => { const d = this.drag; this.ptr.delete(e.pointerId); if (!d) return; if (this.ptr.size === 0) { if (!d.right && d.moved < 7 && e.type === 'pointerup') this.click(e.clientX, e.clientY); this.drag = null; } };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('wheel', e => { e.preventDefault(); if (this.mode === 'play' && !this.panel) this.cam.distT = clamp(this.cam.distT * Math.exp(e.deltaY * 0.0011), 20, 195); }, { passive: false });
+    const hold = (id, fn) => { const b = $(id); let t = null; const stop = () => { clearInterval(t); t = null; }; b.addEventListener('pointerdown', () => { fn(); t = setInterval(fn, 60); }); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop)); };
+    hold('cL', () => { this.cam.yawT += 0.09; }); hold('cR', () => { this.cam.yawT -= 0.09; });
+    hold('cIn', () => { this.cam.distT = clamp(this.cam.distT * 0.94, 20, 195); }); hold('cOut', () => { this.cam.distT = clamp(this.cam.distT * 1.06, 20, 195); });
+  }
+  pinchDist() { const p = [...this.ptr.values()]; return p.length > 1 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0; }
+  resize() {
+    const w = window.innerWidth, h = window.innerHeight; this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    this.fx.setScale(h * this.renderer.getPixelRatio() / (2 * Math.tan(FOV * Math.PI / 360)));
+  }
+
+  // Clic izquierdo: consola/NPC resaltado o navegación automática hacia el punto del terreno
+  click(px, py) {
+    if (this.ui.dlg) return this.ui.advance();
+    if (this.locked) return;
+    const w = this.world, v = new THREE.Vector3(), W = window.innerWidth, H = window.innerHeight;
+    let best = null, bd = 56;
+    for (const it of w.interList) {
+      if (it.state === 'locked') continue;
+      for (const hy of [1.3, it.baseY - it.y]) { v.set(it.x, it.y + hy, it.z).project(this.camera); if (v.z > 1) continue; const d = Math.hypot((v.x * 0.5 + 0.5) * W - px, (-v.y * 0.5 + 0.5) * H - py); if (d < bd) { bd = d; best = it; } }
+    }
+    const c = this.capi;
+    if (best) {
+      if (Math.hypot(best.x - c.pos.x, best.z - c.pos.z) < best.r) return this.interact(best.id);
+      c.navigate(best.x, best.z, best.r - 0.9, () => this.interact(best.id)); this.ringAt(best.x, best.z); return;
+    }
+    const o = this.camera.position, d = v.set(px / W * 2 - 1, -(py / H) * 2 + 1, 0.5).unproject(this.camera).sub(o).normalize();
+    let t0 = 2, hit = null;
+    for (let t = 2; t < 700; t += 1.2) {
+      const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
+      if (x < B.minX || x > B.maxX || z < B.minZ || z > B.maxZ) { t0 = t; if (y < -4) break; continue; }
+      const g = Math.max(w.groundAt(x, z, y + 1.3), w.waterAt(x, z) - 0.3);
+      if (y <= g) { let a = t0, b = t; for (let i = 0; i < 7; i++) { const m = (a + b) / 2, mx = o.x + d.x * m, my = o.y + d.y * m, mz = o.z + d.z * m; if (my <= Math.max(w.groundAt(mx, mz, my + 1.3), w.waterAt(mx, mz) - 0.3)) b = m; else a = m; } hit = { x: o.x + d.x * b, z: o.z + d.z * b }; break; }
+      t0 = t;
+    }
+    if (hit) { c.navigate(hit.x, hit.z, 0.6); this.ringAt(hit.x, hit.z); this.audio.click(); }
+  }
+  ringAt(x, z) { const w = this.world; this.ring.position.set(x, Math.max(w.groundAt(x, z), w.waterAt(x, z)) + 0.14, z); this.ring.visible = true; }
+
+  frame(now) {
+    requestAnimationFrame(t => this.frame(t)); this.kiosk(now);
+    const real = (now - this.last) / 1000, dt = Math.min(0.05, Math.max(0.001, real)); this.last = now; this.time += dt;
+    // Calidad adaptativa: si el equipo no llega a ~30 FPS, baja resolución y sombras por pasos
+    if (this.mode === 'play' && this.autoQuality && real < 0.5) {
+      this.ema = lerp(this.ema, real, 0.05); this.qT += real;
+      if (this.qT > 3 && this.ema > 0.036 && this.quality < 3) {
+        this.qT = 0; this.quality++; const sun = this.world.sun;
+        if (this.quality === 1) { this.renderer.setPixelRatio(1); this.resize(); }
+        else if (this.quality === 2) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+        else { sun.castShadow = false; }
+      }
+    }
+    const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
+    // --- Entrada ---
+    const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
+    if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * dt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * dt; }
+    if (mx || mz) { cam.inspect = null; this.face = null; }
+    const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
+    this.jump = false;
+    if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: true });
+    // --- Simulación ---
+    G.step(dt);
+    if (play) this.missions.update(dt);
+    this.mg.update(dt);
+    // Consola candidata
+    this.cand = null;
+    if (play && !this.locked) { let bd = 1e9; for (const it of w.interList) { if (it.state === 'locked') continue; const d = Math.hypot(it.x - c.pos.x, it.z - c.pos.z); if (d < it.r && d < bd && Math.abs(it.y - c.pos.y) < 4.5) { bd = d; this.cand = it; } } }
+    this.ui.prompt(this.cand ? this.cand.label : null);
+    this.ring.visible = this.ring.visible && !!c.goto; if (this.ring.visible) { this.ring.scale.setScalar(1 + 0.25 * Math.sin(this.time * 9)); }
+    // --- Cámara: seguimiento con amortiguación, órbita y zoom ---
+    if (!play) { cam.yawT += dt * 0.06; }
+    cam.inspectT -= dt; if (cam.inspectT <= 0) cam.inspect = null;
+    if (this.cine) cam.yawT = this.cineYaw + Math.sin(this.time * 0.22) * 0.24;
+    cam.cineK = damp(cam.cineK || 0, this.cine ? 1 : 0, 2.2, dt);
+    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, dt); cam.dist = damp(cam.dist, this.cine ? 7.4 : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, dt);
+    const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + 1.95, c.pos.z) : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
+    cam.target.x = damp(cam.target.x, goal.x, cam.inspect ? 2.5 : 6, dt); cam.target.y = damp(cam.target.y, goal.y, 4, dt); cam.target.z = damp(cam.target.z, goal.z, cam.inspect ? 2.5 : 6, dt);
+    const zt = clamp((cam.dist - 20) / 175, 0, 1), base = (40 + 5 * zt) * Math.PI / 180;
+    // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
+    const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
+    cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, dt); w.setCutaway(cam.cut, c.pos, cam.yaw);
+    const pitch = lerp(base, -0.09, cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
+    this.camera.position.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(pitch) * cam.dist, cam.target.y + Math.sin(pitch) * cam.dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(pitch) * cam.dist);
+    this.camera.lookAt(cam.target);
+    // --- Mundo ---
+    const night = G.night(), pct = G.out.pct, needs = w.interList.filter(it => it.state === 'need');
+    const st = { grid: G, hour: G.hour, night, focus: cam.target, cam: this.camera.position, barrios: [pct >= 33, pct >= 63, pct >= 88], fx: this.fx, zoom: cam.dist, cine: !!this.cine, capi: c.pos, talking: this.ui.talking, needs, busesOn: G.buses, audio: this.audio };
+    w.update(dt, st); this.actors.update(dt, st);
+    c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
+    if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
+    for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine });
+    this.fx.update(dt);
+    // --- Audio y HUD ---
+    const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
+    this.audio.update(dt, { pct, wind: G.wind, windNear: Math.max(0.12, near(70, -12, 75)), waterNear: Math.max(near(-11, -49, 45), c.swimming ? 0.45 : 0), humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
+    if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });
+    const r = this.renderer;
+    r.autoClear = true; r.shadowMap.autoUpdate = true; this.camera.layers.set(0);
+    r.render(this.scene, this.camera);
+    if (play && !this.cine) {   // segunda pasada: silueta de Capi a través de los obstáculos
+      r.autoClear = false; r.shadowMap.autoUpdate = false; this.camera.layers.set(1); this.scene.overrideMaterial = this.xray;
+      const bg = this.scene.background; this.scene.background = null;
+      r.render(this.scene, this.camera);
+      this.scene.background = bg; this.scene.overrideMaterial = null; this.camera.layers.set(0);
+    }
+  }
+}
+
+function boot() {
+  try { window.__game = new Game(); }
+  catch (e) { console.error(e); $('load').textContent = 'No se pudo iniciar el motor 3D: ' + e.message; }
+}
+const fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
+const imgs = [...document.images].map(i => i.decode ? i.decode().catch(() => {}) : Promise.resolve());
+Promise.all([fonts, ...imgs]).then(() => setTimeout(boot, 30));

@@ -15,6 +15,8 @@ import { Missions } from './missions.js';
 import { NavGrid } from './nav.js';
 import { Extras } from './extras.js';
 import { Vida, buildSalto, CLEAR } from './vida.js';
+import { Social, buildSocial, CLEAR2 } from './social.js';
+import './arcade.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -44,8 +46,8 @@ class Game {
     if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
     const ii = $('logoIso');
     if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-    w.clear = CLEAR;
-    buildRoads(w); buildCity(w); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); buildStops(w); buildFlora(w); buildSalto(w);
+    w.clear = CLEAR.concat(CLEAR2);
+    buildRoads(w); buildCity(w); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); buildStops(w); buildFlora(w); buildSalto(w); buildSocial(w);
     w.finalize();
     this.capi = new Capi(this.scene, w, this.fx, this.audio);
     this.actors = new Actors(w, this.scene);
@@ -55,13 +57,14 @@ class Game {
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
-    this.extras = new Extras(this); this.vida = new Vida(this);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
     this.ptr = new Map(); this.drag = null; this.autoQuality = true; this.quality = 0; this.ema = 0.016; this.qT = 0;
     this.bind(); this.resize();
     this.missions.preset(0); this.grid.step(0); this.grid.fossil = this.grid.out.demand - this.grid.out.ren; this.grid.step(0);
-    $('bShort').onclick = () => this.play('corta', 0); $('bLong').onclick = () => this.play('larga', 0);
+    const level = mode => this.extras.choose('¿Cómo querés jugar?', 'Podés cambiar de idea la próxima vez.', [['Explorador', 'Más tranquilo: los minijuegos van más despacio y hay más margen'], ['Ingeniero', 'El desafío completo']], i => this.play(mode, 0, null, i ? 'ingeniero' : 'explorador'));
+    $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
     $('bCred').onclick = () => this.showCredits(null);
     this.refreshTitle();
@@ -76,7 +79,8 @@ class Game {
     if (sv) { const n = sv.mode === 'corta' ? 5 : 7; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
     $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
   }
-  play(mode, phase, saved) {
+  play(mode, phase, saved, level) {
+    this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
     this.audio.start(); this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
     this.cam.distT = 56; this.cam.yawT = 0.35;
@@ -106,7 +110,8 @@ class Game {
   }
   // ---------- Demostración: si nadie toca nada en el título, la cámara pasea por el diorama ----------
   attractStep(dt, real) {
-    if (this.mode !== 'title' || !$('credits').classList.contains('hidden')) { this.titleIdle = 0; if (this.attract) this.stopAttract(); return; }
+    document.body.classList.toggle('arc', this.mode === 'title' && (!!this.mg.active || !!this.extras.open));
+    if (this.mode !== 'title' || !$('credits').classList.contains('hidden') || this.mg.active || this.extras.open) { this.titleIdle = 0; if (this.attract) this.stopAttract(); return; }
     this.titleIdle = (this.titleIdle || 0) + real;
     if (!this.attract) { if (this.titleIdle > (this.kioskCfg ? 12 : 25)) { this.attract = { t: 0, next: 0, i: -1, hour0: this.grid.hour }; document.body.classList.add('attract'); } return; }
     const A = this.attract, cam = this.cam; A.t += real;
@@ -152,10 +157,15 @@ class Game {
       const c = e.code;
       if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;   // escribiendo el nombre del diploma
       if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(c)) e.preventDefault();
+      if (this.mode === 'title' && (this.mg.active || this.extras.open)) {   // feria o elección de nivel desde el título
+        if (c === 'Escape') { if (this.mg.active) this.mg.cancel(); else this.extras.close(); } else if (!e.repeat) { if (this.mg.active) this.mg.key(c, true); else this.extras.key(c); }
+        return;
+      }
       if (this.mode === 'title') { if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
       if (c === 'KeyM' && !e.repeat) this.toggleMute();
-      if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV') this.extras.close(); else this.extras.key(c); } return; }
+      if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV' || c === 'KeyB') this.extras.close(); else this.extras.key(c); } return; }
+      if (c === 'KeyB' && !e.repeat && !this.locked) { this.social.openAlbum(); return; }
       if (c === 'KeyV' && !e.repeat && !this.locked) { this.extras.toggleWardrobe(); return; }
       if (this.mg.active) { if (!e.repeat) this.mg.key(c, true); return; }
       if (c === 'Tab') { if (!e.repeat && !this.cine) this.togglePanel(); return; }
@@ -277,7 +287,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st);
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);

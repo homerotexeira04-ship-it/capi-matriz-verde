@@ -16,7 +16,10 @@ export const OUTFITS = [
   { name: 'Hidro', need: 4, helmet: 0x4fc3f7, vest: 0x2a5fb0, band: 0xbfe9fb },
   { name: 'Solar', need: 6, helmet: 0xff8a2a, vest: 0xffd23f, band: 0xfff3b0 },
   { name: 'Biomasa', need: 8, helmet: 0x57b85a, vest: 0x9a6a3f, band: 0xd9f29b },
-  { name: 'Guardián', need: 10, helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6 }
+  { name: 'Guardián', need: 10, helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6 },
+  { name: 'Gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0 },
+  { name: 'Chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff },
+  { name: 'Control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0 }
 ];
 
 // [x, z, altura extra, pista del lugar, dato]
@@ -52,9 +55,9 @@ export class Extras {
     $('dpName').addEventListener('keydown', e => { if (e.key === 'Enter') $('dGo').click(); });
     this.refresh();
   }
-  data() { return { sparks: [...this.got], outfit: this.outfit }; }
-  reset() { this.got.clear(); this.setOutfit(0); this.refresh(); }
-  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); const o = s && OUTFITS[s.outfit] && OUTFITS[s.outfit].need <= this.got.size ? s.outfit : 0; this.setOutfit(o); this.refresh(); }
+  data() { return { sparks: [...this.got], outfit: this.outfit, favors: this.g.social ? this.g.social.saved() : [] }; }
+  reset() { if (this.g.social) this.g.social.reset(); this.got.clear(); this.setOutfit(0); this.refresh(); }
+  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && (O.favor ? this.g.social && this.g.social.done[O.favor] : O.need <= this.got.size) ? s.outfit : 0; this.setOutfit(o); this.refresh(); }
   refresh() { this.sparks.forEach(s => { s.group.visible = !this.got.has(s.i); }); $('sparkCount').textContent = `Chispas de saber: ${this.got.size}/${SPARKS.length}`; }
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
   colors() { const o = OUTFITS[this.outfit], h = c => '#' + c.toString(16).padStart(6, '0'); return { helmet: h(o.helmet), vest: h(o.vest), band: h(o.band) }; }
@@ -81,8 +84,8 @@ export class Extras {
   drawWardrobe() {
     const box = $('wList'), h = c => '#' + c.toString(16).padStart(6, '0'); box.textContent = '';
     OUTFITS.forEach((o, i) => {
-      const ok = this.got.size >= o.need, b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
-      b.innerHTML = `<span class="sw"><i style="background:${h(o.helmet)}"></i><i style="background:${h(o.vest)}"></i><i style="background:${h(o.band)}"></i></span><b>${o.name}</b><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : `con ${o.need} chispas`}</em>`;
+      const ok = o.favor ? !!this.g.social.done[o.favor] : this.got.size >= o.need, b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
+      b.innerHTML = `<span class="sw"><i style="background:${h(o.helmet)}"></i><i style="background:${h(o.vest)}"></i><i style="background:${h(o.band)}"></i></span><b>${o.name}</b><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas`}</em>`;
       b.onclick = () => { this.setOutfit(i); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
       box.appendChild(b);
     });
@@ -113,7 +116,7 @@ export class Extras {
     this.pick = { n: options.length, go: pick }; $('choice').classList.remove('hidden');
   }
   key(code) {
-    if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
+    if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
     if (this.open === 'travel') { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null) this.travel(n); }
   }
 

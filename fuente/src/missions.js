@@ -80,9 +80,9 @@ export class Missions {
   get short() { return this.mode === 'corta'; }
   get title() { return DEF[this.key].title; }
   lines(arr) { return arr.filter(l => !l.x || !this.short); }
-  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit }; } catch (e) { return null; } }
+  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero' }; } catch (e) { return null; } }
   forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
-  save() { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
   reached(k) { const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
@@ -186,6 +186,7 @@ export class Missions {
 
   // ---- Estados de consolas e interacción ----
   describe(id) {
+    const sd = this.g.social && this.g.social.describe(id); if (sd) return sd;
     const G = this.g.grid, [k, s] = id.split(':'), i = +s, n = i + 1;
     if (k === 'npc') return { state: 'ok', label: 'Hablar con ' + { mateo: 'Don Mateo', valeria: 'la Ing. Valeria', lucia: 'Lucía' }[s] };
     if (k === 'sub') return { state: 'ok', label: 'Abrir el panel de red' };
@@ -224,6 +225,7 @@ export class Missions {
     return { state: 'locked' };
   }
   interact(id) {
+    if (this.g.social && this.g.social.interact(id)) return;
     const g = this.g, G = g.grid, d = this.describe(id), [k, s] = id.split(':'), i = +s, U = g.ui, it = g.world.inter[id];
     const fxOk = () => { g.fx.sparks(it.x, it.y + 2, it.z, 26, 0x5ad1ff); g.audio.power(); g.capi.celebrate(1.2); };
     if (k === 'npc') return this.talk(s);
@@ -273,21 +275,21 @@ export class Missions {
         L('mateo', 'Las cuchillas son lomas largas y suaves: el viento las peina sin tropezar con nada. Por eso los plantamos acá arriba.', 1),
         L('mateo', this.short ? 'Después del mantenimiento quedó uno con el freno puesto. Andá a su consola, soltá el freno y sincronizalo con la red. Los teros te marcan dónde hay lío.' : 'Después del mantenimiento quedaron tres con el freno puesto. Andá a la consola de cada uno y soltá el freno: algunos piden manivela y otros sincronizar con la red. Los teros te marcan dónde hay lío.')]), () => { f.mateo = true; });
       if (K === 'tormenta') return U.dialog([L('mateo', 'Con sudestada los molinos se frenan solos si el viento se pasa de fuerte. No es falla: es que se cuidan. Hay que soltarlos cuando afloja la ráfaga.')]);
-      return U.dialog([L('mateo', this.done('urbano') ? 'Los montes de eucalipto dan madera y los restos van a la caldera. Acá no se tira nada.' : 'Cuando el viento afloja, el río cubre. Y cuando sopla fuerte, se guarda agua. Así de simple es el trato.')]);
+      return g.social.menu('mateo', this.done('urbano') ? 'Los montes de eucalipto dan madera y los restos van a la caldera. Acá no se tira nada.' : 'Cuando el viento afloja, el río cubre. Y cuando sopla fuerte, se guarda agua. Así de simple es el trato.');
     }
     if (who === 'lucia') {
       if (K === 'urbano' && this.active && G.bio.routed && (this.short || f.charged) && !f.busesSeen) return U.dialog(this.lines([
         L('lucia', '¡Llegó la potencia a los cargadores! Cada ómnibus eléctrico que sale es gasoil que no se quema en la ciudad.'),
         L('lucia', 'Carga rápida al atardecer y a recorrer la rambla. ¡Mirá cómo salen!')]), () => { G.buses = true; this.busT = 6; g.inspect('terminal'); g.audio.power(); });
       if (K === 'urbano' && this.active && G.bio.routed && !f.charged) return U.dialog([L('lucia', 'Ya hay potencia. Ahora dale ritmo a los cargadores: es la consola del costado de la terminal, acá al lado.')]);
-      return U.dialog([L('lucia', G.buses ? 'La flota anda sola con energía de acá nomás. Y en silencio: los vecinos, chochos.' : 'Sin potencia en los cargadores no puedo sacar la flota. Avisame cuando la biomasa esté en línea.')]);
+      return g.social.menu('lucia', G.buses ? 'La flota anda sola con energía de acá nomás. Y en silencio: los vecinos, chochos.' : 'Sin potencia en los cargadores no puedo sacar la flota. Avisame cuando la biomasa esté en línea.');
     }
     if (K === 'pico' && this.active && !this.m5 && !this.ceremony) return U.dialog(this.lines([
       L('valeria', 'Es la noche del festival en la rambla: demanda máxima histórica y cero megavatios solares.'),
       L('valeria', 'Terminó el mantenimiento de la Turbina 4, así que la represa va a pleno. Tenés agua, biomasa, baterías y las ráfagas de la noche.', 1),
       L('valeria', `Abrí el panel de red con Tab y pasá las baterías a Automático. Después aguantá ${this.short ? 'un minuto y medio' : 'dos minutos'} al 100${N}% renovable: si algo falla, las baterías te dan margen mientras lo arreglás.`),
       L('valeria', '¿Listo? ¡Arranca la hora pico!')]), () => (this.short ? this.startM5() : this.dryYear()));
-    U.dialog([L('valeria', G.out.pct >= 100 ? 'Equilibrio óptimo: toda la demanda cubierta con renovables y la frecuencia clavada en 50,0 Hz.' : `Estamos en ${Math.round(G.out.pct)}${N}% renovable. Lo que falta lo cubre el respaldo fósil: ${Math.round(G.out.fossil)} MW.`)]);
+    g.social.menu('valeria', G.out.pct >= 100 ? 'Equilibrio óptimo: toda la demanda cubierta con renovables y la frecuencia clavada en 50,0 Hz.' : `Estamos en ${Math.round(G.out.pct)}${N}% renovable. Lo que falta lo cubre el respaldo fósil: ${Math.round(G.out.fossil)} MW.`);
   }
 
   // ---- Decisión de año seco (historia larga): cada opción refuerza la red de una manera distinta ----
@@ -308,7 +310,7 @@ export class Missions {
     const G = this.g.grid, S = this.short;
     G.hydro.t[3].on = true; G.hydro.t.forEach(u => { u.fault = false; }); G.hydro.gates.forEach(g => { g.reg = true; }); G.bat.soc = Math.max(G.bat.soc, 0.93); G.bat.mode = 'hold';
     G.hour = 20; G.clockRate = 0; G.holdAt = S ? 21.5 : 22; G.energyRate = 1 / 60; G.windTarget = 0.85; G.windBase = 0.85; G.gustiness = 0.2; G.demandExtraTarget = 0;
-    this.m5 = { t: S ? 90 : 120, total: S ? 90 : 120, grace: 12, events: S ? [[68, 'wind'], [36, 'hydro']] : [[98, 'wind2'], [64, 'bio'], [30, 'hydro']] };
+    this.m5 = { t: S ? 90 : 120, total: S ? 90 : 120, grace: this.level === 'explorador' ? 22 : 12, events: S ? [[68, 'wind'], [36, 'hydro']] : [[98, 'wind2'], [64, 'bio'], [30, 'hydro']] };
     this.g.ui.toast('¡HORA PICO!', `Mantené el 100${N}% renovable durante ${S ? '90 segundos' : '2 minutos'}`, 3);
   }
   fault(kind) {

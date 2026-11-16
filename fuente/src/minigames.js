@@ -2,9 +2,9 @@
 import { clamp, lerp, rng } from './util.js';
 
 const $ = id => document.getElementById(id);
-const W = 560, H = 300, FONT = '"Lilita One","Arial Black",sans-serif';
-const txt = (g, s, x, y, size, col, align = 'center', font = FONT) => { g.font = `${size}px ${font}`; g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y); };
-const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+export const W = 560, H = 300, FONT = '"Lilita One","Arial Black",sans-serif';
+export const txt = (g, s, x, y, size, col, align = 'center', font = FONT) => { g.font = `${size}px ${font}`; g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y); };
+export const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
 
 // 1) Sincronización de fase: detener el indicador dentro de la ventana verde de 50.0 Hz
 class Sync {
@@ -344,18 +344,20 @@ class SunCharge {
   }
 }
 
-const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge };
+export const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge };
 
 export class Minigames {
   constructor(audio) {
     this.audio = audio; this.active = null; this.cv = $('mgCv'); this.g = this.cv.getContext('2d'); this.end = 0; this.msg = ''; this.time = 0;
-    const pt = e => { const r = this.cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    const pt = e => { const r = this.cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * this.cv.width, (e.clientY - r.top) / r.height * this.cv.height]; };
     this.cv.addEventListener('pointerdown', e => { e.preventDefault(); if (this.active && this.active.down && !this.active.done) { const [x, y] = pt(e); this.active.down(x, y); } });
     this.cv.addEventListener('pointermove', e => { if (this.active && this.active.move && !this.active.done) { const [x, y] = pt(e); this.active.move(x, y); } });
     window.addEventListener('pointerup', () => { if (this.active && this.active.up) this.active.up(); });
   }
+  has(type) { return !!GAMES[type]; }
   start(type, opts, cb) {
-    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0; this.type = type; this.eased = false; this.slow = this.struggle && this.struggle[type] ? 0.8 : 1;
+    const sz = GAMES[type].size || [W, H]; this.cv.width = sz[0]; this.cv.height = sz[1]; $('mg').classList.toggle('big', !!GAMES[type].size);
+    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0; this.type = type; this.eased = false; this.slow = Math.min(this.base || 1, this.struggle && this.struggle[type] ? 0.8 : 1);
     $('mgTitle').textContent = this.active.title; this.setHint(this.active.hint); $('mg').classList.remove('hidden'); this.audio.click();
   }
   setHint(t) { $('mgHint').textContent = t; }
@@ -367,9 +369,9 @@ export class Minigames {
     this.time += dt; const g = this.g;
     g.fillStyle = '#061226'; g.fillRect(0, 0, W, H);
     // Ayuda automática: si el minijuego se alarga, va más despacio; pasado un minuto y medio, Capi lo resuelve
-    const ease = this.time > 50 ? 0.5 : this.time > 24 ? 0.7 : this.slow;
+    const kk = (this.base || 1) < 1 ? 0.6 : 1, ease = a.noEase ? 1 : this.time > 50 * kk ? 0.5 : this.time > 24 * kk ? Math.min(0.7, this.slow) : this.slow;
     if (ease < 0.8 && !this.eased && !a.done) { this.eased = true; (this.struggle = this.struggle || {})[this.type] = true; this.setHint(a.hint + ' Ayuda activada: ahora va más despacio.'); }
-    if (!a.done) { a.update(dt * ease); if (this.time > 90 && !a.done) this.finish(true, '¡LO LOGRAMOS JUNTOS!'); }
+    if (!a.done) { a.update(dt * ease); if (this.time > 90 && !a.done && !a.noEase) this.finish(true, '¡LO LOGRAMOS JUNTOS!'); }
     a.draw(g);
     if (a.done) {
       this.end -= dt; g.fillStyle = 'rgba(6,18,38,.72)'; g.fillRect(0, 0, W, H);

@@ -118,6 +118,7 @@ const TREE = {
   ombu: { th: 2.6, tr: 1.0, tc: 0x7a6248, crowns: [[1.1, 4.6, 2.3, 0x3f8a3a], [1.5, 3.0, 1.7, 0x4b9a44]] },
   palm: { th: 6.2, tr: 0.26, tc: 0x8a6f4d, frond: 2.7, fc: 0x4f9a48 },
   butia: { th: 3.3, tr: 0.42, tc: 0x7b6a55, frond: 2.1, fc: 0x86a892 },
+  naranjo: { th: 1.5, tr: 0.2, tc: 0x6b4a2f, crowns: [[1.05, 1.45, 1.2, 0x2f7d32]] },
   bush: { th: 0, tr: 0, tc: 0, crowns: [[0.5, 0.9, 0.7, 0x58a548]] }
 };
 
@@ -330,7 +331,8 @@ export class World {
     s.fog.color.set(a[2]).lerp(_c2.set(b[2]), k);
     this.sun.color.set(a[3]).lerp(_c2.set(b[3]), k);
     const stm = this.storm || 0; s.background.lerp(_c2.set(0x566270), stm * 0.85); s.fog.color.lerp(_c2.set(0x66727f), stm * 0.85);
-    const sInt = lerp(a[4], b[4], k) * (1 - 0.82 * stm), hInt = lerp(a[5], b[5], k) * (1 - 0.42 * stm) + (this.flash || 0) * 4;
+    const smg = this.smogOn ? (this.smog || 0) : 0; s.fog.color.lerp(_c2.set(0x9a8f7c), smg * 0.6); s.background.lerp(_c2.set(0x9a9488), smg * 0.5); s.fog.near = lerp(150, 70, smg); s.fog.far = lerp(620, 430, smg);
+    const sInt = lerp(a[4], b[4], k) * (1 - 0.82 * stm) * (1 - 0.22 * smg), hInt = lerp(a[5], b[5], k) * (1 - 0.42 * stm) + (this.flash || 0) * 4;
     this.hemi.intensity = hInt; this.hemi.color.copy(s.fog.color).lerp(_c2.set(0xffffff), 0.35);
     this.hemi.groundColor.set(0x6a8a55).lerp(_c2.set(0x1a2440), this.night);
     const ang = Math.PI * (hour - 6) / 12, el = Math.sin(ang);
@@ -349,7 +351,8 @@ export class World {
     this.sun.position.copy(focus).addScaledVector(this.sunDir, 200);
     this.stars.material.opacity = this.night * 0.9; this.stars.position.copy(focus);
     const u = this.waterMat.uniforms;
-    u.uSunDir.value.copy(this.sunDir); u.uSunColor.value.copy(this.sun.color).multiplyScalar(day ? 1 : 0.5);
+    // de noche el brillo del agua sigue a la luna visible
+    u.uSunDir.value.copy(day || md.y < 0.08 ? this.sunDir : md); u.uSunColor.value.copy(this.sun.color).multiplyScalar(day ? 1 : 0.85);
     u.uSky.value.copy(s.fog.color); u.uLight.value = lerp(1, 0.34, this.night);
     this.cloudMat.color.set(0xffffff).lerp(_c2.set(0x39456e), this.night * 0.85);
     if (hour > 17.4 && hour < 19.4) this.cloudMat.color.lerp(_c2.set(0xffb27a), 0.5 * (1 - Math.abs(hour - 18.4)));
@@ -375,7 +378,7 @@ export class World {
   }
   nearRoad(x, z, d) { for (const l of this.roads) if (distPoly(x, z, l) < d) return true; return false; }
 
-  tree(type, x, z, s = 1, y = null) { this.trees.push({ type, x, z, s, y: y == null ? this.groundAt(x, z) : y }); this.addCircle(x, z, type === 'ombu' ? 1.1 : type === 'bush' ? 0 : 0.4); }
+  tree(type, x, z, s = 1, y = null) { if (this.clear && this.clear.some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3])) return; this.trees.push({ type, x, z, s, y: y == null ? this.groundAt(x, z) : y }); this.addCircle(x, z, type === 'ombu' ? 1.1 : type === 'bush' ? 0 : 0.4); }
   lamp(x, z, ry = 0, y = null) { this.lamps.push({ x, z, ry, y: y == null ? this.groundAt(x, z) : y }); }
 
   // Consola de nodo + marcador flotante de interacción
@@ -467,7 +470,7 @@ export class World {
 
   // ---------- Actualización por cuadro ----------
   update(dt, st) {
-    this.time += dt; this.night = st.night; this.zoom = st.zoom;
+    this.time += dt; this.night = st.night; this.zoom = st.zoom; this.smogOn = !st.demo;
     this.waterMat.uniforms.uTime.value = this.time;
     // Temporal: con nubosidad alta el cielo se cierra, llueve y caen rayos
     this.storm = smooth(0.45, 0.9, st.grid.cloud); this.flash = Math.max(0, (this.flash || 0) - dt * 5);
@@ -482,7 +485,8 @@ export class World {
     const flick = st.grid.freq < 49.4 ? (Math.sin(this.time * 37) > 0.2 ? 0.25 : 1) : 1;
     for (let i = 0; i < 3; i++) {
       this.power[i] = lerp(this.power[i], st.barrios[i] ? 1 : 0, Math.min(1, dt * 2));
-      M.win[i].emissiveIntensity = this.power[i] * (0.18 + 1.5 * n) * flick;
+      // las ventanas se encienden por barrios a medida que cae la noche
+      M.win[i].emissiveIntensity = this.power[i] * (0.18 + 1.5 * clamp(n * 1.8 - i * 0.4, 0, 1)) * flick;
     }
     M.bulb.emissiveIntensity = n * 2.4 * flick; M.pool.opacity = n * 0.5 * flick;
     M.beacon.emissiveIntensity = n > 0.2 ? (Math.sin(this.time * 3.2) > 0 ? 3 : 0.1) : 0.2;

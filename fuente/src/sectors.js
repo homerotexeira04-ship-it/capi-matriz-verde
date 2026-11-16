@@ -7,7 +7,7 @@ import { CAP } from './grid.js';
 
 const PAL = [C.cream, C.terra, C.ochre, C.rose, C.white, 0xa9cfe0, 0xd9c6a0, 0xe0d2b4];
 
-function sign(w, text, x, y, z, ry, sw = 7, sh = 1.6, o = {}) {
+export function sign(w, text, x, y, z, ry, sw = 7, sh = 1.6, o = {}) {
   const tex = textTex(text, { w: 512, h: Math.round(512 * sh / sw), bg: o.bg || '#12325a', fg: o.fg || '#ffffff', border: o.border || '#ffc93c', size: 72 });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.3, roughness: 0.8 }));
   m.position.set(x, y + 2.4 + sh / 2, z); m.rotation.y = ry; w.scene.add(m);

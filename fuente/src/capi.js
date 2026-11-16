@@ -93,7 +93,7 @@ export class Capi {
     this.leds.forEach((l, i) => { l.material.emissive.set(good ? 0x4dffa0 : level < 0.4 ? 0xff7a4d : 0xffc93c); l.material.emissiveIntensity = i < n ? 2.2 : 0.05; });
   }
   setOutfit(o) { this.mats.helmet.color.set(o.helmet); this.mats.vest.color.set(o.vest); this.mats.band.color.set(o.band); this.mats.band.emissive.set(o.band).multiplyScalar(0.7); }
-  celebrate(t = 2.4) { this.cele = t; }
+  celebrate(t = 2.4) { this.cele = t; this.celeKind = ((this.celeKind || 0) + 1) % 4; this.celeT = 0; }
   work(t = 1.2) { this.busy = t; }
   // Navegación automática hacia un punto: usa la grilla A* si está disponible
   navigate(x, z, r = 0.6, done = null) {
@@ -187,7 +187,7 @@ export class Capi {
 
   animate(dt, sp, ground, wl, prev) {
     const j = this.j, t = this.t, st = this.state;
-    let legL = 0, legR = 0, armL = 0, armR = 0, armLz = 0.12, armRz = -0.12, tilt = 0, roll = 0, headX = 0, lift = 0, sy = 1;
+    let legL = 0, legR = 0, armL = 0, armR = 0, armLz = 0.12, armRz = -0.12, tilt = 0, roll = 0, headX = 0, lift = 0, sy = 1, spin = 0, flip = 0;
     this.wrench.visible = st === S.INTERACT; this.beltWrench.visible = !this.wrench.visible; this.tablet.visible = st === S.INTERACT;
     if (st === S.RUN) {
       const before = this.phase; this.phase += sp * dt * 1.25;
@@ -195,6 +195,7 @@ export class Capi {
         const wade = ground < wl, hard = this.world.groundAt(this.pos.x, this.pos.z) - this.world.terrainAt(this.pos.x, this.pos.z) > 0.05;
         this.audio.step(wade ? 'agua' : hard ? 'hormigon' : 'pasto');
         if (wade) this.fx.splash(this.pos.x, wl + 0.05, this.pos.z, 4);
+        else if (sp > 5) this.fx.puff(this.pos.x - Math.sin(this.heading) * 0.4, this.pos.y + 0.12, this.pos.z - Math.cos(this.heading) * 0.4, 2, hard ? 0xd9d3c4 : 0xcdbb8c, 0.5);
       }
       const s = Math.sin(this.phase), k = clamp(sp / 11, 0.3, 1);
       legL = s * 1.0 * k; legR = -s * 1.0 * k; armL = -s * 0.85 * k; armR = s * 0.85 * k; lift = Math.abs(Math.cos(this.phase)) * 0.13 * k; roll = s * 0.07; tilt = 0.14 * k; headX = -0.08 + Math.sin(this.phase * 2) * 0.04;
@@ -203,11 +204,22 @@ export class Capi {
     } else if (st === S.SWIM) {
       tilt = 1.12; headX = -0.95; lift = 0; const s = Math.sin(t * (6 + sp * 0.5));
       legL = s * 0.7 - 0.2; legR = -s * 0.7 - 0.2; armL = -1.9 + s * 0.6; armR = -1.9 - s * 0.6; roll = Math.sin(t * 2.2) * 0.05;
+      // estela en el agua
+      if (Math.random() < (4 + sp * 2.2) * dt) { const bx = this.pos.x - Math.sin(this.heading) * (0.5 + Math.random() * 0.6), bz = this.pos.z - Math.cos(this.heading) * (0.5 + Math.random() * 0.6); this.fx.soft.emit(bx + (Math.random() - 0.5) * 0.7, wl + 0.06, bz + (Math.random() - 0.5) * 0.7, 0, 0.04, 0, 1.1 + Math.random() * 0.5, 0.3, 1.25, 0xffffff, 0.55, 0, 1); }
     } else if (st === S.INTERACT) {
       armR = -1.45 + Math.sin(t * 16) * 0.3; armL = -1.0; headX = 0.12 + Math.sin(t * 5) * 0.08; tilt = 0.08;
       if (Math.random() < 14 * dt) { const hx = Math.sin(this.heading), hz = Math.cos(this.heading); this.fx.sparks(this.pos.x + hx * 0.9, this.pos.y + 1.5, this.pos.z + hz * 0.9, 2, 0xffd23f); }
     } else if (st === S.CELEBRATE) {
-      lift = Math.abs(Math.sin(t * 7.5)) * 0.7; armR = -2.9; armRz = -0.25; armL = -0.4; legL = 0.3; legR = -0.3; headX = -0.25; sy = 1 + Math.sin(t * 15) * 0.04;
+      const ck = this.celeKind || 0, ct = this.celeT = (this.celeT || 0) + dt;
+      if (ck === 1) {          // giro con los dos brazos arriba
+        lift = Math.abs(Math.sin(ct * 6)) * 0.45; armL = armR = -2.8; armLz = 0.35; armRz = -0.35; spin = ct * 9; headX = -0.2;
+      } else if (ck === 2) {   // bailecito: brazos alternados y balanceo
+        const s2 = Math.sin(ct * 9); armL = -1.6 - s2 * 1.1; armR = -1.6 + s2 * 1.1; armLz = 0.5; armRz = -0.5; roll = s2 * 0.2; lift = Math.abs(s2) * 0.25; legL = s2 * 0.4; legR = -s2 * 0.4; headX = -0.1;
+      } else if (ck === 3) {   // salto mortal
+        const u = (ct * 1.25) % 1; lift = Math.sin(u * Math.PI) * 1.5; flip = u * Math.PI * 2; armL = armR = -2.4; legL = legR = -0.6;
+      } else {                 // salto con el puño en alto
+        lift = Math.abs(Math.sin(t * 7.5)) * 0.7; armR = -2.9; armRz = -0.25; armL = -0.4; legL = 0.3; legR = -0.3; headX = -0.25; sy = 1 + Math.sin(t * 15) * 0.04;
+      }
     } else if (this.talking) {   // discurso: gesticula con los brazos y asiente
       armR = -1.25 + Math.sin(t * 4.6) * 0.55; armRz = -0.35; armL = -0.45 + Math.sin(t * 2.9 + 1) * 0.3; armLz = 0.3; headX = Math.sin(t * 6.5) * 0.07 - 0.05; roll = Math.sin(t * 1.7) * 0.04; sy = 1 + Math.sin(t * 9) * 0.012;
     } else {
@@ -219,7 +231,7 @@ export class Capi {
     j.armLz = damp(j.armLz, armLz, r, dt); j.armRz = damp(j.armRz, armRz, r, dt); j.tilt = damp(j.tilt, tilt, 9, dt); j.roll = damp(j.roll, roll, r, dt);
     j.headX = damp(j.headX, headX, 10, dt); j.lift = damp(j.lift, lift, 22, dt); j.sy = damp(j.sy, sy, 14, dt);
     this.legL.rotation.x = j.legL; this.legR.rotation.x = j.legR; this.armL.rotation.x = j.armL; this.armR.rotation.x = j.armR; this.armL.rotation.z = -j.armLz; this.armR.rotation.z = -j.armRz;
-    this.rig.rotation.x = j.tilt; this.rig.rotation.z = j.roll; this.rig.position.y = 1.0 + j.lift; this.rig.scale.set(1 / Math.sqrt(j.sy), j.sy, 1 / Math.sqrt(j.sy));
+    this.rig.rotation.x = j.tilt + flip; this.rig.rotation.y = spin; this.rig.rotation.z = j.roll; this.rig.position.y = 1.0 + j.lift; this.rig.scale.set(1 / Math.sqrt(j.sy), j.sy, 1 / Math.sqrt(j.sy));
     this.head.rotation.x = j.headX; this.head.rotation.z = -j.roll * 1.4;
     // Orejas móviles y parpadeo
     const ew = Math.sin(t * 9) * (Math.sin(t * 0.9) > 0.75 ? 0.35 : 0.04) + (st === S.RUN ? Math.sin(this.phase * 2) * 0.12 : 0);

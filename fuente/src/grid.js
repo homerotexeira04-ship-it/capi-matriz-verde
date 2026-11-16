@@ -31,7 +31,7 @@ export class EnergyGrid {
     return 0;
   }
   demandAt(h) { const { a, b, k } = keyAt(DEMAND, h); return lerp(a[1], b[1], k); }
-  head() { const n = this.hydro.gates.filter(g => g.reg).length; return 0.4 + 0.3 * clamp(n - 2, 0, 2); }
+  head() { const n = this.hydro.gates.filter(g => g.reg).length; return 0.4 + 0.3 * clamp(n - 2, 0, 2) + (this.headBonus || 0); }
 
   step(dt) {
     this.t += dt;
@@ -67,10 +67,10 @@ export class EnergyGrid {
     this.solar.a.forEach((u, i) => { const p = u.on && !u.fault ? CAP.solar * sun : 0; this.solarUnit[i] = p; o.solar += p; });
     const bioGoal = this.bio.on && !this.bio.fault ? 1 : 0;
     this.bio.pressure += clamp(bioGoal - this.bio.pressure, -0.2 * dt, 0.3 * dt);
-    o.bio = CAP.bio * this.bio.pressure;
+    o.bio = CAP.bio * this.bio.pressure * (this.bioBoost || 1);
 
     // Demanda
-    o.demand = (this.demandAt(this.hour) + this.demandExtra + (this.buses ? CAP.bus * (0.6 + 0.4 * this.night()) : 0)) * this.demandMul;
+    o.demand = (this.demandAt(this.hour) + this.demandExtra + (this.buses ? CAP.bus * (0.6 + 0.4 * this.night()) : 0)) * this.demandMul * (1 - (this.eff || 0));
     o.ren = o.hydro + o.wind + o.solar + o.bio;
 
     // Baterías: positivo = descarga hacia la red, negativo = carga con excedentes

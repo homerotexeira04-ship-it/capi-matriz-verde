@@ -7,8 +7,10 @@ Videojuego 3D del museo **Energimundo** sobre la matriz eléctrica renovable del
 Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha el parque eólico, la represa, el parque solar con baterías y la planta de biomasa para que la red funcione con energía 100 % renovable.
 
 - **Historia corta:** 5 misiones, unos 10 minutos.
-- **Historia larga:** 6 misiones, 15 a 20 minutos.
-- 7 minijuegos, 10 "chispas de saber" escondidas con datos sobre la energía en Uruguay, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante.
+- **Historia larga:** 7 misiones, unos 20 minutos. Suma la misión de ahorro (cambiar lamparitas por LED y cargar los ómnibus con sol), la sudestada y una decisión de año seco.
+- 9 minijuegos, 10 "chispas de saber" escondidas con datos sobre la energía en Uruguay, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante y un código QR para seguir jugando en casa.
+- Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
+- El aire del diorama se ve gris mientras la red usa respaldo fósil y se limpia a medida que sube el porcentaje renovable.
 
 ## Controles
 

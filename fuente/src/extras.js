@@ -3,6 +3,9 @@ import * as THREE from 'three';
 import { POS, RES } from './terrain.js';
 import { smooth } from './util.js';
 import { drawFace } from './ui.js';
+import qrcode from 'qrcode-generator';
+
+const SITE = 'https://homerotexeira04-ship-it.github.io/capi-matriz-verde/';
 
 const $ = id => document.getElementById(id);
 const N = ' ';
@@ -55,7 +58,7 @@ export class Extras {
   refresh() { this.sparks.forEach(s => { s.group.visible = !this.got.has(s.i); }); $('sparkCount').textContent = `Chispas de saber: ${this.got.size}/${SPARKS.length}`; }
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
   colors() { const o = OUTFITS[this.outfit], h = c => '#' + c.toString(16).padStart(6, '0'); return { helmet: h(o.helmet), vest: h(o.vest), band: h(o.band) }; }
-  close() { if (this.open === 'diploma') return; if (this.open) $(this.open).classList.add('hidden'); this.open = null; }
+  close() { if (this.open === 'diploma' || this.open === 'choice') return; if (this.open) $(this.open).classList.add('hidden'); this.open = null; }
 
   // ---- Chispas de saber ----
   fact(title, text, t = 11) { $('factT').textContent = title; $('factX').textContent = text; $('fact').classList.add('on'); this.factT = t; }
@@ -102,7 +105,15 @@ export class Extras {
       setTimeout(() => { $('fade').classList.remove('on'); this.fading = false; g.ui.note('Llegaste a ' + s[2] + '. Viaje sin humo: este ómnibus anda con electricidad renovable.', 4.5); }, 450);
     }, 650);
   }
+  // Pregunta con opciones (teclas 1-3 o clic); no se puede cerrar sin elegir
+  choose(title, text, options, cb) {
+    this.open = 'choice'; $('chTitle').textContent = title; $('chText').textContent = text; const box = $('chList'); box.textContent = '';
+    const pick = i => { if (this.open !== 'choice') return; $('choice').classList.add('hidden'); this.open = null; this.pick = null; this.g.audio.click(); cb(i); };
+    options.forEach(([label, sub], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.innerHTML = `<kbd>${i + 1}</kbd> ${label}<small>${sub}</small>`; b.onclick = () => pick(i); box.appendChild(b); });
+    this.pick = { n: options.length, go: pick }; $('choice').classList.remove('hidden');
+  }
   key(code) {
+    if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
     if (this.open === 'travel') { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null) this.travel(n); }
   }
 
@@ -115,6 +126,11 @@ export class Extras {
       $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = `${this.got.size} de ${SPARKS.length} chispas de saber`;
       $('dDate').textContent = new Date().toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' });
       const c = this.colors(); drawFace($('dCapi').getContext('2d'), 'capi', 1, false, c);
+      try {   // código QR con la dirección pública del juego
+        const q = qrcode(0, 'M'); q.addData(SITE); q.make(); const n = q.getModuleCount(), cv = $('dQR'), px = 4, pad = 3; cv.width = cv.height = (n + pad * 2) * px;
+        const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = '#0b1a33';
+        for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect((k + pad) * px, (r + pad) * px, px, px);
+      } catch (e) { $('dQR').style.display = 'none'; }
       $('dAsk').classList.add('hidden'); $('dCard').classList.remove('hidden'); this.g.audio.fanfare();
     };
     $('dDone').onclick = () => { el.classList.add('hidden'); this.open = null; this.g.audio.click(); done(); };

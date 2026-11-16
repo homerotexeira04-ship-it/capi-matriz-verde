@@ -147,6 +147,8 @@ kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border
 .wItem.on{border-color:var(--sun)} .wItem:disabled{opacity:.5;cursor:not-allowed}
 .wItem b{font-family:var(--display);font-weight:400;font-size:16px} .wItem em{font-style:normal;font-size:11.5px;color:var(--dim)}
 .sw{display:flex;gap:3px} .sw i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink)}
+#chList{display:grid;gap:8px;width:100%} #chList .btn{text-align:left;font-size:16px} #chList .btn small{display:block;margin:2px 0 0 30px;font-size:13px;font-weight:700;opacity:.8} #chText{max-width:440px}
+.dQr{display:flex;align-items:center;gap:10px;text-align:left} .dQr canvas{width:104px;height:104px;border:2px solid #1b2b4a;border-radius:6px;image-rendering:pixelated;flex:none}
 #tvList{display:grid;gap:7px;width:100%} #tvList .btn{text-align:left;font-size:16px} #tvList .btn:disabled{opacity:.5;cursor:default}
 #dpName{width:100%;max-width:340px;padding:9px 12px;border-radius:10px;border:3px solid var(--ink);background:#07142b;color:var(--ink);font:inherit;font-size:18px;text-align:center}
 .dCard{width:min(640px,96vw);max-height:96%;overflow:auto;background:#fff8e8;color:#1b2b4a;border:6px double #1b2b4a;outline:4px solid var(--sun);border-radius:10px;padding:16px 26px 14px;text-align:center;display:grid;gap:5px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
@@ -164,6 +166,16 @@ kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border
 .dFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:#5a6a86}
 #fade{position:fixed;inset:0;background:#050b18;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;z-index:9}
 #fade.on{opacity:1;pointer-events:auto}
+#smog{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(132,118,92,.72) 0%,rgba(92,84,70,.95) 100%);transition:opacity .6s}
+#attract{position:fixed;inset:0;display:none;pointer-events:none;z-index:8}
+body.attract #attract{display:block} body.attract #title{display:none}
+.aBrand{position:absolute;top:18px;left:18px;display:inline-flex;align-items:center;gap:12px;padding:8px 18px 8px 12px;background:rgba(15,33,64,.92);border:3px solid var(--ink);border-radius:999px;box-shadow:0 5px 0 #071226}
+.aBrand img{height:44px;width:auto;display:block} .aBrand span{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+.aName{position:absolute;left:24px;bottom:22px;font-family:var(--display);font-size:clamp(54px,9vw,112px);line-height:.9;color:var(--sun);-webkit-text-stroke:3px #3a2500;text-shadow:0 6px 0 #3a2500,0 12px 24px rgba(0,0,0,.5);letter-spacing:3px}
+.aName small{display:block;font-size:clamp(17px,2.4vw,28px);color:#fff;-webkit-text-stroke:0;text-shadow:0 3px 0 #071226,0 0 14px #071226;letter-spacing:1px;margin-top:8px}
+.aCta{position:absolute;right:24px;bottom:30px;padding:12px 22px;font-family:var(--display);font-size:clamp(18px,2.4vw,28px);color:#1b1400;background:var(--sun);border:3px solid #3a2500;border-radius:16px;box-shadow:0 6px 0 #3a2500;animation:aPulse 1.5s ease-in-out infinite}
+@keyframes aPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (max-width:700px){.aCta{right:50%;transform:translateX(50%);bottom:18px;animation:none;white-space:nowrap}.aName{bottom:84px}}
 #fade span{font-family:var(--display);font-size:24px;color:var(--sun);text-align:center;padding:16px}
 #credits{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,12,28,.6);padding:12px;z-index:8}
 .cBox{width:min(620px,96vw);max-height:94%;overflow:auto;padding:20px 26px;text-align:center;background:rgba(12,26,52,.97)}
@@ -203,6 +215,7 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
 </head>
 <body>
 <canvas id="gl"></canvas>
+<div id="smog"></div>
 
 <div id="hud" class="hidden">
   <div id="card" class="pane">
@@ -299,6 +312,12 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
   <button class="btn" id="wClose" type="button">Cerrar <kbd>V</kbd></button>
 </div></div>
 
+<div id="choice" class="ov hidden"><div class="oBox pane">
+  <h2 id="chTitle"></h2>
+  <p id="chText"></p>
+  <div id="chList"></div>
+</div></div>
+
 <div id="travel" class="ov hidden"><div class="oBox pane">
   <h2>Ómnibus eléctrico</h2>
   <p>¿A qué parada vas?</p>
@@ -323,10 +342,11 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
     <div class="dLine">por llevar la red eléctrica al 100&nbsp;% renovable junto a Capi, con agua, viento, sol y biomasa del Uruguay.</div>
     <div class="dMeta"><span id="dStory"></span><span id="dSparks"></span><span id="dDate"></span></div>
     <div class="dSign"><canvas id="dCapi" width="24" height="24" aria-hidden="true"></canvas><div><b>Capi</b><em>Ingeniero Jefe de Energía Limpia</em></div><img src="__LOGO_ISO__" alt="" width="170" height="163"></div>
-    <div class="dFoot"><span>Sacale una foto a la pantalla para llevártelo.</span><button class="btn" id="dDone" type="button">Seguir</button></div>
+    <div class="dFoot"><div class="dQr"><canvas id="dQR" width="116" height="116" aria-label="Código QR con la dirección del juego"></canvas><span>Seguí jugando en casa:<br>escaneá el código.<br>Y sacale una foto a tu diploma.</span></div><button class="btn" id="dDone" type="button">Seguir</button></div>
   </div>
 </div>
 
+<div id="attract"><div class="aBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div><div class="aName">CAPI<small>Guardián de la Matriz Verde</small></div><div class="aCta">Tocá la pantalla o una tecla para jugar</div></div>
 <div id="fade"><span id="fadeTxt"></span></div>
 
 <div id="credits" class="hidden"><div class="cBox pane">
@@ -355,7 +375,7 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
   <div class="tBtns">
     <button class="btn hidden" id="bCont" type="button">Continuar</button>
     <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
-    <button class="btn" id="bLong" type="button" disabled>Historia larga<small>6 misiones · 15 a 20 minutos</small></button>
+    <button class="btn" id="bLong" type="button" disabled>Historia larga<small>7 misiones · unos 20 minutos</small></button>
   </div>
   <div class="tBtns2"><button class="btn ghost" id="bCred" type="button">Créditos</button></div>
   <div id="load">Construyendo el diorama…</div>

@@ -278,7 +278,73 @@ class Rhythm {
   }
 }
 
-const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm };
+// Cambio de lamparitas incandescentes por LED
+class Led {
+  constructor(m, o) {
+    this.m = m; this.title = o.title || 'Cambio a LED'; this.t = 0; this.bad = 0;
+    this.hint = 'Tocá las lamparitas viejas (las amarillas, que calientan) o apretá su número para cambiarlas por LED. Las blancas ya son LED: dejalas como están.';
+    const old = new Set(); while (old.size < 4) old.add(Math.floor(Math.random() * 6));
+    this.b = Array.from({ length: 6 }, (_, i) => ({ old: old.has(i), pop: 0 }));
+  }
+  watts() { return this.b.reduce((s, b) => s + (b.old ? 60 : 9), 0); }
+  pick(i) { const b = this.b[i]; if (!b || this.done) return; if (!b.old) { this.bad = 1; this.m.audio.click(); return; } b.old = false; b.pop = 0.4; this.m.audio.ok(); if (!this.b.some(q => q.old)) this.m.finish(true, '¡TODO LED!'); }
+  key(c, d) { if (!d) return; const i = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[c]; if (i != null) this.pick(i); }
+  down(x, y) { if (y > 60 && y < 232) this.pick(Math.floor((x - 22) / 86)); }
+  update(dt) { this.t += dt; this.bad = Math.max(0, this.bad - dt); for (const b of this.b) b.pop = Math.max(0, b.pop - dt); }
+  draw(g) {
+    txt(g, 'Lamparitas de la casa', W / 2, 26, 18, '#fff7e6');
+    this.b.forEach((b, i) => {
+      const x = 65 + i * 86, y = 122, fl = b.old ? 0.75 + 0.25 * Math.sin(this.t * 17 + i * 2) : 1, s = 1 + b.pop * 0.5;
+      const gr = g.createRadialGradient(x, y, 6, x, y, 54 * s); gr.addColorStop(0, b.old ? `rgba(255,170,60,${0.6 * fl})` : 'rgba(190,230,255,.5)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - 60, y - 60, 120, 120);
+      g.fillStyle = b.old ? '#ffb23c' : '#eaf6ff'; g.beginPath(); g.arc(x, y - 6, 24 * s, 0, 7); g.fill();
+      g.fillStyle = '#8fa3c8'; rr(g, x - 11, y + 16, 22, 18, 4); g.fill();
+      if (b.old) { g.strokeStyle = '#b3541e'; g.lineWidth = 3; g.beginPath(); g.moveTo(x - 9, y - 2); g.lineTo(x - 4, y - 12); g.lineTo(x + 1, y - 2); g.lineTo(x + 6, y - 12); g.lineTo(x + 10, y - 2); g.stroke(); }
+      else { g.fillStyle = '#7fd4ff'; for (let k = -1; k <= 1; k++) g.fillRect(x + k * 9 - 3, y - 10, 6, 6); }
+      txt(g, b.old ? '60 W' : '9 W', x, y + 52, 15, b.old ? '#ffb23c' : '#9be7ff');
+      rr(g, x - 15, y + 66, 30, 26, 6); g.fillStyle = '#13284c'; g.fill(); g.lineWidth = 2; g.strokeStyle = b.old ? '#ffc93c' : '#2a4374'; g.stroke(); txt(g, String(i + 1), x, y + 80, 15, '#fff7e6');
+    });
+    const w = this.watts(); rr(g, 60, 264, 440, 20, 10); g.fillStyle = '#0f2140'; g.fill(); g.strokeStyle = '#2a4374'; g.lineWidth = 3; g.stroke();
+    g.fillStyle = w > 120 ? '#ff8f4a' : '#57e389'; rr(g, 63, 267, Math.max(8, 434 * w / 360), 14, 7); g.fill();
+    txt(g, this.bad > 0 ? 'Esa ya es LED: buscá las amarillas' : `Consumo de luz: ${w} W`, W / 2, 246, 16, this.bad > 0 ? '#ffb23c' : '#fff7e6');
+  }
+}
+
+// Carga de ómnibus con el sol del mediodía: se carga solo mientras no hay nubes
+class SunCharge {
+  constructor(m, o) {
+    this.m = m; this.title = o.title || 'Carga con sol'; this.t = 0; this.prog = 0; this.hold = false; this.fossil = 0;
+    this.hint = 'Mantené apretado Espacio (o el dedo en la pantalla) mientras brilla el sol para cargar los ómnibus. Soltá cuando pase una nube: ahí la carga saldría del respaldo fósil.';
+    this.clouds = [[2.6, 1.3], [5.6, 1.1], [8.3, 1.5], [11.4, 1.0], [14.0, 1.4], [17.2, 1.2], [20.3, 1.5], [23.5, 1.1], [26.4, 1.4], [29.6, 1.2]];
+  }
+  get sun() { const p = this.t % 32; return !this.clouds.some(([s, d]) => p > s && p < s + d); }
+  key(c, d) { if (c === 'Space' || c === 'Enter') this.hold = d; }
+  down() { this.hold = true; }
+  up() { this.hold = false; }
+  update(dt) {
+    this.t += dt; this.fossil = Math.max(0, this.fossil - dt);
+    if (this.hold) { if (this.sun) this.prog = Math.min(1, this.prog + dt * 0.17); else { this.prog = Math.max(0, this.prog - dt * 0.1); this.fossil = 0.3; } }
+    if (this.prog >= 1) this.m.finish(true, '¡CARGADOS CON SOL!');
+  }
+  draw(g) {
+    const p = this.t % 32, sx = 150, sun = this.sun;
+    g.fillStyle = sun ? '#3f9be0' : '#5f7388'; rr(g, 30, 16, 500, 112, 14); g.fill();
+    g.save(); rr(g, 30, 16, 500, 112, 14); g.clip();
+    g.fillStyle = sun ? '#ffd23f' : '#c9b56a'; g.beginPath(); g.arc(sx, 70, 28, 0, 7); g.fill();
+    if (sun) { g.strokeStyle = '#ffd23f'; g.lineWidth = 4; for (let k = 0; k < 10; k++) { const a = k * 0.628 + this.t; g.beginPath(); g.moveTo(sx + Math.cos(a) * 36, 70 + Math.sin(a) * 36); g.lineTo(sx + Math.cos(a) * 46, 70 + Math.sin(a) * 46); g.stroke(); } }
+    g.fillStyle = '#eef3f8';
+    for (const [s, d] of this.clouds) for (const off of [0, 32]) { const x0 = sx + (s + off - p) * 62, w = d * 62; if (x0 > 560 || x0 + w < 0) continue; for (let k = 0; k < 3; k++) { g.beginPath(); g.ellipse(x0 + w * (0.2 + k * 0.3), 70 + (k === 1 ? -10 : 4), w * 0.3 + 14, 26, 0, 0, 7); g.fill(); } }
+    g.restore();
+    rr(g, 70, 150, 190, 68, 14); g.fillStyle = '#2ed3c6'; g.fill(); g.fillStyle = '#d8f6ff'; for (let k = 0; k < 4; k++) { rr(g, 84 + k * 42, 161, 32, 24, 5); g.fill(); }
+    g.fillStyle = '#12284c'; g.beginPath(); g.arc(112, 222, 12, 0, 7); g.fill(); g.beginPath(); g.arc(218, 222, 12, 0, 7); g.fill();
+    g.strokeStyle = this.hold ? (sun ? '#57e389' : '#ff5a4a') : '#6f84a8'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.moveTo(260, 192); g.bezierCurveTo(300, 236, 320, 146, 356, 186); g.stroke();
+    rr(g, 356, 150, 150, 68, 10); g.fillStyle = '#0f2140'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#8fa3c8'; g.stroke();
+    g.fillStyle = this.fossil > 0 ? '#ff5a4a' : '#57e389'; rr(g, 362, 156, Math.max(6, 138 * this.prog), 56, 7); g.fill();
+    txt(g, Math.round(this.prog * 100) + '%', 431, 185, 26, '#fff7e6');
+    txt(g, this.hold ? (sun ? 'Cargando con sol' : '¡Nube! Soltá: esa carga sería fósil') : (sun ? 'Mantené apretado ESPACIO' : 'Esperá a que pase la nube'), W / 2, 266, 17, this.hold && !sun ? '#ff8f7a' : '#fff7e6', 'center', 'Nunito,sans-serif');
+  }
+}
+
+const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge };
 
 export class Minigames {
   constructor(audio) {
@@ -289,7 +355,7 @@ export class Minigames {
     window.addEventListener('pointerup', () => { if (this.active && this.active.up) this.active.up(); });
   }
   start(type, opts, cb) {
-    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0;
+    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0; this.type = type; this.eased = false; this.slow = this.struggle && this.struggle[type] ? 0.8 : 1;
     $('mgTitle').textContent = this.active.title; this.setHint(this.active.hint); $('mg').classList.remove('hidden'); this.audio.click();
   }
   setHint(t) { $('mgHint').textContent = t; }
@@ -300,7 +366,10 @@ export class Minigames {
     const a = this.active; if (!a) return;
     this.time += dt; const g = this.g;
     g.fillStyle = '#061226'; g.fillRect(0, 0, W, H);
-    if (!a.done) a.update(dt);
+    // Ayuda automática: si el minijuego se alarga, va más despacio; pasado un minuto y medio, Capi lo resuelve
+    const ease = this.time > 50 ? 0.5 : this.time > 24 ? 0.7 : this.slow;
+    if (ease < 0.8 && !this.eased && !a.done) { this.eased = true; (this.struggle = this.struggle || {})[this.type] = true; this.setHint(a.hint + ' Ayuda activada: ahora va más despacio.'); }
+    if (!a.done) { a.update(dt * ease); if (this.time > 90 && !a.done) this.finish(true, '¡LO LOGRAMOS JUNTOS!'); }
     a.draw(g);
     if (a.done) {
       this.end -= dt; g.fillStyle = 'rgba(6,18,38,.72)'; g.fillRect(0, 0, W, H);

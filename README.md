@@ -46,6 +46,7 @@ El resultado queda en `fuente/web/`. Para publicar una versión nueva, copiá `i
 
 - **Autor:** Homero Texeira
 - **Museo:** Energimundo
+- Salto, Uruguay · 2026
 - Gráficos 3D con [Three.js](https://threejs.org/) (licencia MIT).
 - Tipografías Lilita One y Nunito (SIL Open Font License).
 - Datos de generación eléctrica: Ministerio de Industria, Energía y Minería del Uruguay.

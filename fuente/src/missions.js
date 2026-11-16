@@ -53,7 +53,7 @@ const INTRO = {
 const OUTRO = {
   ahorro: [L('valeria', `La demanda de la ciudad bajó un 6${N}% y los ómnibus cargaron con sol del mediodía. La energía más limpia es la que no hace falta generar.`), L('capi', 'Ahorrar también es generar. ¡Anotado!')],
   viento: [L('valeria', '¡Bien ahí! El parque eólico ya inyecta energía. El viento rinde muchísimo, pero es variable: cuando afloja, alguien tiene que cubrir.')],
-  rio: [L('valeria', 'Embalse estable y tres turbinas en línea. El agua es nuestra energía de base: constante y regulable.'), L('capi', 'Cuando sopla el viento guardamos agua, y cuando afloja la turbinamos.', 1), L('valeria', 'Exacto: viento y agua se complementan. Ahora nos falta el sol.', 1)],
+  rio: [L('valeria', 'Embalse estable y tres turbinas en línea. El agua es nuestra energía de base: constante y regulable.'), L('capi', 'Cuando sopla el viento guardamos agua, y cuando afloja la turbinamos.', 1), L('valeria', 'Exacto: viento y agua se complementan. Ahora nos falta el sol.', 3)],
   sol: [L('valeria', 'Baterías cargadas. El sol del mediodía queda guardado para la noche: eso es mover energía en el tiempo.')],
   urbano: [L('valeria', 'Biomasa firme y transporte eléctrico en marcha. Desde ahora podés tomar el ómnibus en cualquier parada para viajar rápido entre sectores.')],
   tormenta: [L('mateo', 'Pasó lo peor. Viste cómo es: cuando una fuente se cae, las otras la sostienen. Por eso conviene tener de todo un poco.'), L('valeria', 'Red estable en plena sudestada. Eso se llama una matriz diversificada, Capi.')],
@@ -79,10 +79,10 @@ export class Missions {
   get key() { return this.phase < this.seq.length ? this.seq[this.phase] : 'libre'; }
   get short() { return this.mode === 'corta'; }
   get title() { return DEF[this.key].title; }
-  lines(arr) { return arr.filter(l => !l.x || !this.short); }
-  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero' }; } catch (e) { return null; } }
+  lines(arr) { return arr.filter(l => !l.x || (!this.short && !(l.x === 3 && this.swap))); }
+  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
   forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
-  save() { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
   reached(k) { const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
@@ -99,14 +99,14 @@ export class Missions {
   }
   scenario(key, instant) {
     const G = this.g.grid, s = DEF[key].scn;
-    G.windTarget = s.wind; G.gustiness = s.gust; G.demandExtraTarget = s.extra; G.cloudTarget = s.cloud || 0; G.demandMul = 1; G.energyRate = s.energy || 1 / 20;
+    G.windTarget = s.wind; G.gustiness = s.gust; G.demandExtraTarget = s.extra; G.cloudTarget = s.cloud || 0; G.demandMul = key === 'sol' && !this.done('rio') ? 0.45 : 1;   // si el sol va antes que el río, es feriado y la ciudad consume menos G.energyRate = s.energy || 1 / 20;
     if (s.hour == null) { G.clockRate = s.rate; G.holdAt = null; return; }
     if (instant) { G.hour = s.hour; G.windBase = s.wind; G.demandExtra = s.extra; G.cloud = s.cloud || 0; G.clockRate = s.rate; G.holdAt = s.hold; }
     else { this.lapse = { to: s.hour, rate: s.rate, hold: s.hold }; G.clockRate = 7; G.holdAt = s.hour; }
   }
   start(mode, phase, instant = true) {
     const g = this.g; if (g.ui.dlg) { g.ui.dlg = null; document.getElementById('dialog').classList.add('hidden'); }
-    this.mode = mode; this.seq = SEQ[mode]; this.phase = phase; this.step = 0; this.active = false; this.flags = {}; this.pending = 0; this.m5 = null; this.ceremony = false; this.free = phase >= this.seq.length;
+    this.mode = mode; this.seq = SEQ[mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } this.ev = null; this.evT = null; this.fossilT = 0; this.phase = phase; this.step = 0; this.active = false; this.flags = {}; this.pending = 0; this.m5 = null; this.ceremony = false; this.free = phase >= this.seq.length;
     this.preset(phase); this.scenario(this.key, instant); g.grid.step(0); g.grid.fossil = Math.max(0, g.grid.out.demand - g.grid.out.ren); g.grid.step(0);
     g.actors.gather(false);
     if (this.free) { g.ui.toast('MODO LIBRE', 'Sandbox climático desbloqueado: abrí el panel de red con Tab', 4); return; }
@@ -116,7 +116,8 @@ export class Missions {
     const g = this.g;
     g.ui.dialog(this.lines(INTRO[this.key]), () => {
       this.active = true; g.ui.toast('MISIÓN ' + (this.phase + 1), this.title, 3);
-      if (this.key === 'tormenta') { const G = g.grid; G.windP.t[0].fault = true; G.windP.txFault = true; G.hydro.gates[2].reg = false; g.audio.thunder(); }
+      if (this.key === 'tormenta') { const G = g.grid; G.windP.t[0].fault = true; G.windP.txFault = true; G.hydro.gates[2].reg = false; g.audio.thunder(); this.fossilT = 0; g.extras.choose('Sudestada', 'Valeria: “No llegamos a todo a la vez. ¿Qué atendemos primero?”', [['El parque eólico', 'Recuperar potencia cuanto antes'], ['La compuerta de la represa', 'Cuidar el agua del embalse']], i => { this.flags.first = i ? 'dam' : 'wind'; }); }
+      if (this.key === 'sol' && !this.done('rio')) g.ui.note('Hoy es feriado: la ciudad consume menos y sobra sol para estrenar las baterías.', 6);
     });
   }
 
@@ -164,11 +165,9 @@ export class Missions {
       }
       case 'tormenta': {
         const w = [0].filter(i => G.windP.t[i].fault);
-        return [
-          { text: 'Liberar el aerogenerador frenado por las ráfagas', targets: w.map(i => 'wind:' + i), done: !w.length },
-          { text: 'Reconectar el transformador alcanzado por el rayo', targets: ['wind:tx'], done: !G.windP.txFault },
-          { text: 'Regular la compuerta 3: el río viene crecido', targets: ['gate:2'], done: G.hydro.gates[2].reg },
-          { text: `Recuperar el 100${N}% renovable en plena sudestada`, targets: [], done: o.pct >= 100 && !w.length && !G.windP.txFault && G.hydro.gates[2].reg }];
+        const wind = [{ text: 'Liberar el aerogenerador frenado por las ráfagas', targets: w.map(i => 'wind:' + i), done: !w.length }, { text: 'Reconectar el transformador alcanzado por el rayo', targets: ['wind:tx'], done: !G.windP.txFault }];
+        const dam = [{ text: 'Regular la compuerta 3: el río viene crecido', targets: ['gate:2'], done: G.hydro.gates[2].reg }];
+        return (this.flags.first === 'dam' ? dam.concat(wind) : wind.concat(dam)).concat([{ text: `Recuperar el 100${N}% renovable en plena sudestada`, targets: [], done: o.pct >= 100 && !w.length && !G.windP.txFault && G.hydro.gates[2].reg }]);
       }
       case 'pico': {
         const m = this.m5;
@@ -305,6 +304,18 @@ export class Missions {
     });
   }
 
+  // ---- Modo libre: cada tanto pasa algo y hay que decidir ----
+  freeEvent() {
+    const g = this.g, G = g.grid, U = g.ui;
+    if (Math.random() < 0.5) g.extras.choose('Ola de calor', 'Todos prenden el aire acondicionado y la demanda se dispara. ¿Qué hacemos?', [['Pedir a los vecinos que lo pongan en 24 °C', 'Baja el consumo de toda la ciudad'], ['Sostener con baterías y más biomasa', 'Aguanta mientras dure la reserva']], i => {
+      const e0 = G.eff || 0; G.demandExtraTarget += 30; if (i === 0) G.eff = e0 + 0.07; else { G.bioBoost = 1.2; G.bat.mode = 'auto'; }
+      this.ev = { t: 80, undo: () => { G.demandExtraTarget -= 30; G.eff = e0; G.bioBoost = 1; } }; U.note(i === 0 ? 'Los vecinos colaboran: mismo fresco, menos consumo.' : 'Baterías y biomasa al frente. Mirá cuánto dura la reserva.', 5);
+    });
+    else g.extras.choose('Semanas sin lluvia', 'El embalse bajó y la represa rinde menos. ¿Con qué la reemplazamos?', [['Con el viento y el sol que haya', 'No cuesta nada, pero depende del clima'], ['Con más biomasa', 'Firme, mientras alcancen los chips']], i => {
+      G.headBonus = -0.25; if (i === 1) G.bioBoost = 1.25; this.ev = { t: 80, undo: () => { G.headBonus = 0; G.bioBoost = 1; } }; U.note(i === 0 ? 'A mirar el cielo: hoy mandan el viento y el sol.' : 'La caldera trabaja a pleno para cubrir a la represa.', 5);
+    });
+  }
+
   // ---- Final: hora pico nocturna ----
   startM5() {
     const G = this.g.grid, S = this.short;
@@ -359,6 +370,9 @@ export class Missions {
     }
     if (this.free) {
       this.streak = G.out.pct >= 100 ? this.streak + dt : 0; this.best = Math.max(this.best, this.streak);
+      this.evT = (this.evT == null ? 75 : this.evT) - dt;
+      if (this.ev) { this.ev.t -= dt; if (this.ev.t <= 0) { this.ev.undo(); this.ev = null; U.note('Pasó el evento: la red vuelve a la normalidad.', 4); } }
+      else if (this.evT <= 0 && !g.locked) { this.evT = 150 + Math.random() * 60; this.freeEvent(); }
       this.faultT -= dt; if (this.faultT <= 0) { this.faultT = 50 + Math.random() * 40; this.randomFault(); }
       const mm = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
       U.mission('Modo libre', 'Sandbox climático · panel de red con Tab', [
@@ -375,6 +389,7 @@ export class Missions {
       const left = 18.5 - G.hour; if (this.lapse) U.timer(null); else U.timer(G.bat.connected ? `Atardecer en ${Math.max(0, Math.floor(left))} h ${String(Math.max(0, Math.floor((left % 1) * 60))).padStart(2, '0')} min` : 'Sol hasta las 18:30', left < 2);
       if (left <= 0 && cur < st.length && !this.lapse) { this.active = false; U.timer(null); U.dialog([L('valeria', 'Se nos fue el sol antes de completar la carga. No pasa nada: mañana sale de nuevo. Adelanto el reloj y seguimos donde quedamos.')], () => { this.scenario('sol', false); this.active = true; }); }
     }
+    if (K === 'tormenta' && G.out.pct < 99.9) this.fossilT = (this.fossilT || 0) + dt;
     if (K === 'urbano' && this.busT > 0) { this.busT -= dt; if (this.busT <= 0) this.flags.busesSeen = true; }
     if (K === 'pico' && this.m5 && !this.flags.m5won) {
       const m = this.m5;
@@ -398,10 +413,11 @@ export class Missions {
       this.pending = 1; this.active = false; U.timer(null);
       U.toast('¡MISIÓN COMPLETA!', this.title, 3.6); g.audio.fanfare(); g.capi.celebrate(2.6); g.actors.celebrate = 7;
       if (K === 'tormenta') { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); g.vida.showRainbow(45); }   // escampa y sale el arcoíris
-      const done = K;
+      const done = K, fs = Math.round(this.fossilT || 0), extra = K !== 'tormenta' ? null : L('valeria', (this.flags.first === 'dam' ? 'Cuidaste el agua primero, y el viento tardó un poco más en volver.' : 'Recuperaste potencia rápido, aunque el embalse siguió perdiendo agua un rato.') + (fs > 0 ? ` La ciudad pasó ${fs} segundos con respaldo fósil.` : ' Y la ciudad no necesitó respaldo fósil.'));
       setTimeout(() => {
         const next = () => { this.pending = 0; this.flags = {}; this.phase++; this.save(); this.step = 0; this.preset(this.phase); this.scenario(this.key, false); this.begin(); };
-        const out = this.lines(OUTRO[done]); if (out.length) U.dialog(out, next); else next();
+        const go = done !== 'viento' ? next : () => g.extras.choose('¿Por dónde seguimos?', 'Valeria: “Tenemos dos frentes abiertos. Elegí vos el orden: igual vamos a ir a los dos.”', [['A la Central Hidroeléctrica', 'El río: energía de base, firme y regulable'], ['Al Parque Solar', 'El sol del mediodía, guardado en baterías']], i => { this.swap = i === 1; this.seq = SEQ[this.mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } next(); });
+        const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); if (out.length) U.dialog(out, go); else go();
       }, 3000);
     }
   }

@@ -30,6 +30,7 @@ const FAV = {
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Central Hidroeléctrica, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
   valeria: { title: 'Leer 3 medidores', outfit: 'Control', ask: 'Necesito tres lecturas para el informe: los medidores de la Plaza Matriz, de la rambla oeste y de la rambla este. Son los postes blancos con reloj.', done: 'Lecturas recibidas. ¿Ves? La ciudad no gasta igual en todos lados ni a toda hora: por eso miramos la demanda todo el tiempo. Tomá, ya sos del equipo de control.' }
 };
+const SCENES = { valeria: ['despacho', '¿Puedo manejar la red un día entero?', 'Pasá al Centro de Control', 'Centro de Control'], mateo: ['torre', '¿Se puede subir a un molino?', 'Por dentro de la torre, hasta la góndola', 'Torre del aerogenerador'] };
 const ARCADE = [['sync', 'Sincronización de fase', 'Apretá en el momento justo'], ['crank', 'Freno del aerogenerador', 'Girá la manivela a toda velocidad'], ['gates', 'Compuerta del embalse', 'Regulá el paso del agua'], ['helio', 'Matriz solar', 'Limpiá y orientá los paneles'], ['route', 'Subestación', 'Armá el camino de la energía'], ['seq', 'Caldera de biomasa', 'Memorizá la secuencia de arranque'], ['rhythm', 'Compás de carga', 'Seguí el ritmo con las flechas'], ['led', 'Cambio a LED', 'Encontrá las lamparitas que gastan de más'], ['solar', 'Carga con sol', 'Cargá solo mientras brilla el sol'], ['cometa', 'Cometa en la rambla', 'Atrapá las ráfagas de viento'], ['cinta', 'Cinta de chips', 'Sacá lo que no es madera'], ['despacho', 'Centro de Control', 'Manejá la red durante un día entero'], ['torre', 'Torre del aerogenerador', 'Subí por dentro hasta la góndola']];
 
 // ---------- Construcciones (antes de fundir la geometría) ----------
@@ -98,9 +99,11 @@ export class Social {
   menu(who, line) {
     const g = this.g, Wd = WHO[who], f = FAV[who], opts = Wd.q.map(q => [q[0], '']); let fi = -1;
     if (f && !this.done[who] && (who !== 'lucia' || g.grid.buses)) { fi = opts.length; opts.push(this.active === who ? ['¿Cómo era el favor?', ''] : ['¿Necesitás una mano con algo?', 'Un favor corto, con premio']); }
+    const m = g.missions, busy = m.m5 && !m.flags.m5won, sc = busy ? null : SCENES[who]; let si = -1; if (sc) { si = opts.length; opts.push([sc[1], sc[2]]); }
     opts.push(['Nada más, ¡gracias!', '']);
     g.extras.choose(NAMES[who], line || Wd.hi, opts, i => {
       if (i < Wd.q.length) return g.ui.dialog([L(who, Wd.q[i][1])]);
+      if (i === si) return this.enterScene(sc[0], sc[3]);
       if (i !== fi) return;
       if (this.active && this.active !== who) return g.ui.dialog([L(who, 'Primero terminá el favor que ya empezaste, y después volvé por acá.')]);
       this.active = who; if (!this.started || this.started !== who) { this.prog = [false, false, false]; this.started = who; }
@@ -141,7 +144,14 @@ export class Social {
   }
   playArcade(type, name) {
     const g = this.g; $('arcade').classList.add('hidden'); g.extras.open = null; g.audio.start();
+    if (type === 'despacho' || type === 'torre') return this.enterScene(type, name, () => this.openArcade());
     g.mg.start(type, { title: name, from: 'SOLAR', to: 'BATERÍAS', arcade: true }, () => this.openArcade());
+  }
+  // Transición con pantalla propia y escena aparte
+  enterScene(type, name, back) {
+    const g = this.g; $('fadeTxt').textContent = 'Entrando: ' + name + '…'; $('fade').classList.add('on'); g.extras.fading = true;
+    setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; g.audio.start();
+      g.mg.start(type, { title: name }, ok => { if (back) return back(); if (ok && type === 'torre') { g.cam.inspect = new THREE.Vector3(60, 14, -12); g.cam.inspectT = 7; g.ui.note('Así se ve el diorama desde lo alto de la góndola.', 6); } }); }, 900);
   }
   openAlbum() {
     const g = this.g; if (g.locked) return; g.extras.open = 'album'; $('album').classList.remove('hidden'); g.audio.click();

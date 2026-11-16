@@ -80,7 +80,7 @@ class Game {
     $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
   }
   play(mode, phase, saved, level) {
-    this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
+    this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
     this.audio.start(); this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
     this.cam.distT = 56; this.cam.yawT = 0.35;
@@ -103,9 +103,14 @@ class Game {
   }
   // Vuelve a la pantalla de título (útil entre visitantes del museo); el progreso guardado se conserva
   kiosk(now) {
-    const K = this.kioskCfg; if (!K || this.mode === 'title') { this.lastInput = now; return; }
+    const K = this.kioskCfg, busy = this.mode === 'title' && (!!this.mg.active || !!this.extras.open);
+    if (!K || (this.mode === 'title' && !busy)) { this.lastInput = now; return; }
     const idle = (now - this.lastInput) / 1000, left = Math.ceil(K.idle - idle);
-    if (left <= 0) { this.missions.forget(); this.toTitle(); this.lastInput = now; }
+    if (left <= 0) {
+      if (busy) { if (this.mg.active) this.mg.cancel(); const o = this.extras.open; if (o) { $(o).classList.add('hidden'); this.extras.open = null; } }
+      else { this.missions.forget(); this.toTitle(); }
+      this.lastInput = now;
+    }
     else if (left <= K.warn) this.ui.note(`¿Seguís ahí? El juego vuelve al inicio en ${left} s. Mové el ratón o tocá una tecla para seguir.`, 1.2);
   }
   // ---------- Demostración: si nadie toca nada en el título, la cámara pasea por el diorama ----------
@@ -129,13 +134,35 @@ class Game {
     const A = this.attract; if (!A) return; this.attract = null; this.titleIdle = 0; document.body.classList.remove('attract'); $('fade').classList.remove('on');
     this.grid.hour = A.hour0; this.cam.low = 0; this.cam.distT = this.cam.dist = 150; this.cam.target.set(-14, 3, 14); this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.vida.rainbowT = 0;
   }
+  // Modo foto: sin carteles y con la cámara libre
+  togglePhoto() { this.photo = !this.photo; this.keys = {}; if (this.photo) { this.ui.hide(); this.cam.lowP = 0; this.cam.dist0 = this.cam.distT; } else { this.ui.show(); this.cam.distT = this.cam.dist0 || 56; } document.body.classList.toggle('photo', this.photo); this.audio.click(); }
+  // Joystick: palanca o cruceta para moverse y navegar menús; A acción, B saltar, X panel, Y vestuario, LB/RB girar la cámara
+  pad(dt) {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : []; let p = null; for (const q of pads) if (q && q.connected) { p = q; break; } if (!p) return;
+    const b = i => !!(p.buttons[i] && p.buttons[i].pressed), ax = p.axes[0] || 0, ay = p.axes[1] || 0, S = this.padS = this.padS || {};
+    const dirs = { ArrowLeft: ax < -0.5 || b(14), ArrowRight: ax > 0.5 || b(15), ArrowUp: ay < -0.5 || b(12), ArrowDown: ay > 0.5 || b(13) }, A = b(0);
+    const menu = this.mg.active ? null : this.extras.open ? $(this.extras.open) : !$('credits').classList.contains('hidden') ? $('credits') : this.mode === 'title' ? $('title') : this.help ? $('help') : this.panel ? $('panel') : null;
+    if (menu) {   // en los menús se mueve el foco entre botones
+      const btns = [...menu.querySelectorAll('button')].filter(el => el.offsetParent !== null && !el.disabled), cur = btns.indexOf(document.activeElement);
+      const edge = (k, on) => { const was = S[k]; S[k] = on; return on && !was; };
+      const nx = edge('mN', dirs.ArrowDown || dirs.ArrowRight), pv = edge('mP', dirs.ArrowUp || dirs.ArrowLeft);
+      if (btns.length && (nx || pv)) btns[(cur + (nx ? 1 : -1) + btns.length) % btns.length].focus();
+      if (edge('mA', A) && btns.length) (cur >= 0 ? btns[cur] : btns[0]).click();
+      if (edge('mB', b(1)) && this.extras.open) this.extras.close();
+      return;
+    }
+    const want = Object.assign({ Space: b(1) || (A && !!this.mg.active), KeyE: A && !this.mg.active, Tab: b(2), KeyV: b(3), Escape: b(8), KeyP: b(9) }, dirs);
+    for (const c in want) if (!!S[c] !== want[c]) { S[c] = want[c]; window.dispatchEvent(new KeyboardEvent(want[c] ? 'keydown' : 'keyup', { code: c, key: c, bubbles: true })); }
+    if (this.mode === 'play' && !this.locked) this.cam.yawT += ((b(4) ? 1 : 0) - (b(5) ? 1 : 0) - (Math.abs(p.axes[2] || 0) > 0.3 ? p.axes[2] : 0)) * 1.9 * dt;
+  }
   toTitle() {
-    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma'].forEach(id => $(id).classList.add('hidden'));
+    if (this.photo) this.togglePhoto();
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
     this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};
   }
-  get locked() { return this.mode !== 'play' || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading; }
+  get locked() { return this.mode !== 'play' || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading || !!this.photo; }
   togglePanel(on) { if (this.mode !== 'play' || this.mg.active || this.ui.dlg) return; this.panel = on == null ? !this.panel : on; if (this.panel) this.ui.openPanel(this.missions.free); else this.ui.closePanel(); this.audio.click(); }
   toggleHelp(on) { this.help = on; $('help').classList.toggle('hidden', !on); }
   toggleMute() { this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
@@ -162,6 +189,8 @@ class Game {
         return;
       }
       if (this.mode === 'title') { if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
+      if (c === 'KeyP' && !e.repeat && this.mode === 'play' && (this.photo || !this.locked)) { this.togglePhoto(); return; }
+      if (this.photo) { if (c === 'Escape') this.togglePhoto(); else this.keys[c] = true; return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
       if (c === 'KeyM' && !e.repeat) this.toggleMute();
       if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV' || c === 'KeyB') this.extras.close(); else this.extras.key(c); } return; }
@@ -253,7 +282,8 @@ class Game {
     if (mx || mz) { cam.inspect = null; this.face = null; }
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
-    this.attractStep(dt, Math.min(real, 1));
+    this.attractStep(dt, Math.min(real, 1)); this.pad(dt);
+    if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * dt; if (k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * dt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + dt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - dt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * dt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * dt, 8, 195); }
     if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: !this.attract });
     // --- Simulación ---
     G.step(dt);
@@ -276,7 +306,7 @@ class Game {
     // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
     const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
     cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, dt); w.setCutaway(cam.cut, c.pos, cam.yaw);
-    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : 0, 3, dt);
+    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : 0, 3, dt);
     const pitch = lerp(lerp(base, 0.16, cam.lowK), -0.09, cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
     this.camera.position.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(pitch) * cam.dist, cam.target.y + Math.sin(pitch) * cam.dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(pitch) * cam.dist);
     this.camera.lookAt(cam.target);

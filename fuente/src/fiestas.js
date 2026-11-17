@@ -170,7 +170,7 @@ export class Fiestas {
       // Arco de bienvenida en la entrada norte de la plaza
       const arch = new THREE.Group(), tex = textTex('DÍA DEL PATRIMONIO', { w: 1024, h: 160, bg: '#2f7fc1', fg: '#ffffff', border: '#ffffff', size: 92 });
       for (const sx of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 4.5, 8), mat(0xf2efe8)); post.position.set(sx * 3.7, 2.25, 0); arch.add(post); S.solids.push({ x: -44 + sx * 3.7, z: 52.1, r: 0.25 }); }
-      for (const ry of [0, Math.PI]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.15), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 })); bn.position.set(0, 3.85, ry ? -0.02 : 0.02); bn.rotation.y = ry; arch.add(bn); }
+      for (const ry of [0, Math.PI]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.15), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.3 })); bn.position.set(0, 3.85, ry ? -0.02 : 0.02); bn.rotation.y = ry; arch.add(bn); }
       arch.position.set(-44, 2.2, 52.1); S.root.add(arch);
       // Visita guiada por la plaza
       const guide = makePerson({ skin: SKINS[1], shirt: 0x2f7fc1, pants: 0x2b3a55, hair: HAIRS[1], hat: 'gorra', hatColor: 0xffffff });
@@ -209,7 +209,7 @@ export class Fiestas {
     const ax = R.x + Math.cos(5.5 / N * Math.PI * 2) * (R.r + 1.3), az = R.z + Math.sin(5.5 / N * Math.PI * 2) * (R.r + 1.3), ay = gy(ax, az);
     const arch = new THREE.Group(), tex = textTex('SEMANA CRIOLLA', { w: 1024, h: 160, bg: '#8a5a2b', fg: '#fff7e6', border: '#ffd23f', size: 96 });
     for (const sx of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 4.4, 8), wood); post.position.set(sx * 2.6, 2.2, 0); arch.add(post); S.solids.push({ x: ax + sx * 2.6, z: az, r: 0.25 }); }
-    for (const ry of [0, Math.PI]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 0.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 })); bn.position.set(0, 3.9, ry ? -0.02 : 0.02); bn.rotation.y = ry; arch.add(bn); }
+    for (const ry of [0, Math.PI]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 0.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.3 })); bn.position.set(0, 3.9, ry ? -0.02 : 0.02); bn.rotation.y = ry; arch.add(bn); }
     arch.position.set(ax, ay, az); S.root.add(arch);
     const pole = (x, z) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 4.6, 6), wood); p.position.set(x, gy(x, z) + 2.3, z); S.root.add(p); S.solids.push({ x, z, r: 0.25 }); return new THREE.Vector3(x, gy(x, z) + 4.4, z); };
     const aL = new THREE.Vector3(ax - 2.6, ay + 4.3, az), aR = new THREE.Vector3(ax + 2.6, ay + 4.3, az), p1 = pole(61.2, 24.6), p2 = pole(55.4, 15.2), p3 = pole(74.4, 28.2), p4 = pole(79.2, 20.4);
@@ -482,7 +482,7 @@ function puesto(label) {   // puesto de feria con toldo a rayas, mesa con mates 
   for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 1.3), mat(i % 2 ? 0xffffff : 0x5aa9e6)); s.position.set(-1.0 + i * 0.4, 2.3, 0); g.add(s); }
   for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), mat(0x7a4b23)); m.position.set(-0.8 + i * 0.22, 0.98, 0.15); g.add(m); }
   for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.34), mat([0xd4483b, 0x6b8f4e, 0xf2a93b][i])); p.position.set(0.3 + i * 0.42, 0.95, -0.1); g.add(p); }
-  const sg = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.42), new THREE.MeshStandardMaterial({ map: textTex(label, { w: 512, h: 108, bg: '#8a5a2b', fg: '#fff7e6', size: 58 }), side: THREE.DoubleSide })); sg.position.set(0, 2.0, 0.62); g.add(sg);
+  const lt = textTex(label, { w: 512, h: 108, bg: '#8a5a2b', fg: '#fff7e6', size: 58 }), sg = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.42), new THREE.MeshStandardMaterial({ map: lt, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: lt, emissiveIntensity: 0.3 })); sg.position.set(0, 2.0, 0.62); g.add(sg);
   return g;
 }
 function carpa() {   // carpa del puesto de la bicicleta generadora
@@ -490,7 +490,7 @@ function carpa() {   // carpa del puesto de la bicicleta generadora
   for (const [x, z] of [[-1.25, -1.25], [1.25, -1.25], [-1.25, 1.25], [1.25, 1.25]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 6), mat(0xe8e8e8)); p.position.set(x, 1.2, z); g.add(p); }
   const roof = new THREE.Mesh(new THREE.ConeGeometry(2.0, 1.0, 4), mat(0x6a2c91)); roof.rotation.y = Math.PI / 4; roof.position.y = 2.9; g.add(roof);
   const tb = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.8), mat(0xf2efe8)); tb.position.set(0, 0.85, -0.6); g.add(tb);
-  const sg = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.4), new THREE.MeshStandardMaterial({ map: textTex('BICICLETA GENERADORA', { w: 768, h: 128, bg: '#ffc420', fg: '#3a2500', size: 62 }), side: THREE.DoubleSide })); sg.position.set(0, 2.25, 1.27); g.add(sg);
+  const bt = textTex('BICICLETA GENERADORA', { w: 768, h: 128, bg: '#ffc420', fg: '#3a2500', size: 62 }), sg = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.4), new THREE.MeshStandardMaterial({ map: bt, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: bt, emissiveIntensity: 0.3 })); sg.position.set(0, 2.25, 1.27); g.add(sg);
   return g;
 }
 function bici() {   // bicicleta fija con generador

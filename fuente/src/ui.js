@@ -156,7 +156,8 @@ export class UI {
     const t = clamp(pct / 100, 0, 1), col = pct >= 100 ? '#2fe38a' : `rgb(${Math.round(lerp(255, 120, t * t))},${Math.round(lerp(150, 215, t))},${Math.round(lerp(40, 90, t))})`;
     g.strokeStyle = col; g.beginPath(); g.arc(c, c, r, -Math.PI / 2, -Math.PI / 2 + Math.max(0.02, t) * Math.PI * 2); g.stroke();
     g.fillStyle = '#fff7e6'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = (pct >= 99.5 ? 46 : 56) + 'px "Lilita One","Arial Black",sans-serif'; g.fillText(Math.round(pct) + '%', c, c - 6);
-    g.font = '800 17px Nunito,sans-serif'; g.fillStyle = col; g.fillText('RENOVABLE', c, c + 32);
+    g.font = '800 21px Nunito,sans-serif'; const lw = g.measureText('RENOVABLE').width; if (lw > 104) g.font = `800 ${Math.floor(21 * 104 / lw)}px Nunito,sans-serif`;   // que entre dentro del anillo
+    g.fillStyle = col; g.fillText('RENOVABLE', c, c + 31);
   }
   drawPhase(h) {
     const g = this.pc; g.clearRect(0, 0, 68, 68); const day = h > 6 && h < 19;

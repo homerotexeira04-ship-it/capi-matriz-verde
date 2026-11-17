@@ -5,7 +5,6 @@ const uri = (p, mime) => `data:${mime};base64,` + fs.readFileSync(p).toString('b
 let html = fs.readFileSync('index.html', 'utf8');
 html = html.replaceAll('__LOGO_ISO__', uri('logos/iso.png', 'image/png')).replaceAll('__LOGO_LARGO__', uri('logos/largo.webp', 'image/webp'));
 html = html.replace(/__CUR_([a-z]+)_(\d+)__/g, (m, n, px) => uri(`cursores/${n}-${px}.png`, 'image/png'));   // cursores del juego
-fs.writeFileSync('dist/index.html', html);
 // Versión para sitio propio y kiosco: sin ningún pedido a internet (tipografías incluidas)
 const F = (pkg, file) => 'data:font/woff2;base64,' + fs.readFileSync(`node_modules/@fontsource/${pkg}/files/${file}`).toString('base64');
 const faces = [`@font-face{font-family:"Lilita One";font-style:normal;font-weight:400;font-display:swap;src:url(${F('lilita-one', 'lilita-one-latin-400-normal.woff2')}) format("woff2")}`]
@@ -13,6 +12,7 @@ const faces = [`@font-face{font-family:"Lilita One";font-style:normal;font-weigh
 const links = /<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">\s*<link href="https:\/\/fonts\.googleapis\.com[^>]*>/;
 if (!links.test(html)) throw new Error('no encontré los enlaces de tipografías');
 const web = html.replace(links, () => `<style>\n${faces}\n</style>`);
+fs.writeFileSync('dist/index.html', web);   // el artefacto también lleva las tipografías incluidas
 fs.mkdirSync('web', { recursive: true });
 fs.writeFileSync('web/index.html', web); fs.copyFileSync('dist/game.js', 'web/game.js');
 fs.writeFileSync('web/kiosco.html', web.replace('<script src="game.js"></script>', () => '<script>window.CAPI_KIOSCO={idle:180,warn:30};</script>\n<script src="game.js"></script>'));

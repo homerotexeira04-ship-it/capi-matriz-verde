@@ -1,6 +1,7 @@
 // Extras: chispas de saber coleccionables, vestuario de Capi, viaje rápido en ómnibus y diploma final.
 import { ACCS, FIESTAS } from './fiestas.js';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { POS, RES } from './terrain.js';
 import { smooth } from './util.js';
 import { drawFace } from './ui.js';
@@ -34,20 +35,32 @@ const SPARKS = [
   [-66.5, -68, 0, 'el pasillo entre las matrices solares', 'Un panel con seguidor gira durante el día para mirar siempre al sol. Así produce más energía que uno fijo.'],
   [-43, -79.4, 0, 'el fondo del banco de baterías', 'LFP quiere decir litio-ferrofosfato: un tipo de batería de litio muy segura, que aguanta miles de cargas y descargas. Por eso se usa para guardar energía de la red.'],
   [93.15, 40.75, 0, 'el monte de eucaliptos', 'En Uruguay la biomasa para generar electricidad sale de residuos forestales, del licor negro de las plantas de celulosa y de la cáscara de arroz, entre otros.'],
-  [-46, -17, 0, 'lo más alto del puente', 'El ceibo, de flores rojas, es la flor nacional del Uruguay. Crece a orillas de ríos y arroyos, como los que se ven desde este puente.']
+  [-46, -27, 0, 'lo más alto del puente', 'El ceibo, de flores rojas, es la flor nacional del Uruguay. Crece a orillas de ríos y arroyos, como los que se ven desde este puente.'],
+  // Ciudad ampliada
+  [-20, 55.4, 0, 'la vereda de la terminal de bóvedas', 'Eladio Dieste fue un ingeniero uruguayo que inventó la cerámica armada: bóvedas finísimas de ladrillo. En Salto hizo la Terminal de Ómnibus de 1974, con voladizos de 14 metros, y la de la empresa Turlit.'],
+  [-52, 26.2, 0, 'las escalinatas del teatro', 'El Teatro Larrañaga de Salto se inauguró el 6 de octubre de 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Hoy es Monumento Histórico Nacional.'],
+  [17, 106.6, 0, 'la punta del muelle de pasajeros', 'Entre Salto y Concordia, en Argentina, cruza una lancha de pasajeros: el viaje por el río Uruguay dura unos 15 o 20 minutos. El servicio volvió en 2025.'],
+  [24.5, -2.1, 0, 'la calle del Barrio Jardín', 'Desde 2010 una casa uruguaya puede poner paneles solares, conectarse a la red de UTE y venderle la energía que le sobra. Se llama microgeneración.'],
+  [-46.8, 9.4, 0, 'el patio de la escuela', 'En 2007 Uruguay empezó el Plan Ceibal: una computadora portátil para cada niño y cada maestro de las escuelas públicas del país.'],
+  [-68, -3.1, 0, 'la puerta de emergencias del hospital', 'Un hospital no se puede quedar sin luz: tiene generadores y baterías que arrancan solos si se corta la red. Por eso la ciudad pide energía aun de madrugada.'],
+  [-36, 6, 0, 'el pasillo del mercado', 'Las frutas y verduras de la zona viajan pocos kilómetros hasta el mercado. Menos viaje es menos combustible gastado en camiones.'],
+  [34, 98.6, 0, 'la escollera del faro', 'El puente sobre la represa de Salto Grande une Salto con Concordia desde 1982. Por arriba pasan autos y camiones, y tiene también vía de tren.'],
+  [-6, -8.4, 0, 'el borde de la cancha del barrio', 'Un motor eléctrico convierte en movimiento casi toda la energía que recibe; un motor a nafta pierde la mayor parte en calor. Por eso los autos eléctricos gastan mucha menos energía.']
 ];
 
 export class Extras {
   constructor(game) {
     this.g = game; this.got = new Set(); this.outfit = 0; this.acc = new Set(); this.accOn = null; this.open = null; this.t = 0; this.factT = 0; this.fading = false;
-    const w = game.world, mat = new THREE.MeshBasicMaterial({ color: 0xffe066, fog: false }), geo = new THREE.OctahedronGeometry(0.42, 0);
+    const w = game.world, mat = new THREE.MeshBasicMaterial({ color: 0xffe066, fog: false });
+    // estrella de cuatro puntas en una sola malla (una llamada de dibujo por chispa)
+    const geo = mergeGeometries([new THREE.OctahedronGeometry(0.42, 0).scale(0.55, 1.5, 0.55), new THREE.OctahedronGeometry(0.42, 0).scale(1.5, 0.55, 0.55)]);
     this.sparks = SPARKS.map(([x, z, dy, place, text], i) => {
-      const g = new THREE.Group(), a = new THREE.Mesh(geo, mat), b = new THREE.Mesh(geo, mat); a.scale.set(0.55, 1.5, 0.55); b.scale.set(1.5, 0.55, 0.55); g.add(a, b);
+      const g = new THREE.Group(); g.add(new THREE.Mesh(geo, mat));
       // Silueta que se ve a través de árboles y techos cuando Capi anda cerca
       const ghost = new THREE.MeshBasicMaterial({ color: 0xfff3a8, fog: false, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
-      for (const m of [a, b]) { const q = new THREE.Mesh(geo, ghost); q.scale.copy(m.scale); q.renderOrder = 30; g.add(q); }
+      const gm = new THREE.Mesh(geo, ghost); gm.renderOrder = 30; gm.visible = false; g.add(gm);
       const y = Math.max(w.groundAt(x, z), z < -56 ? (w.terrainAt(x, z) < RES ? RES : 0) : 0) + 1.5 + dy; g.position.set(x, y, z); game.scene.add(g);
-      return { i, x, y, z, place, text, group: g, ghost };
+      return { i, x, y, z, place, text, group: g, ghost, gm };
     });
     // Interfaz
     $('bWard').onclick = () => this.toggleWardrobe();
@@ -73,7 +86,7 @@ export class Extras {
     g.fx.sparks(s.x, s.y, s.z, 34, 0xffe066); g.audio.ok(); [84, 88, 91, 96].forEach((m, k) => g.audio.tone(440 * Math.pow(2, (m - 69) / 12), 0.14, 'triangle', 0.08, 0.08 + k * 0.07));
     const un = OUTFITS.find(o => o.need === n && o.need > 0);
     this.fact(`Chispa de saber ${n} de ${SPARKS.length}`, s.text + (un ? `  ·  ¡Nuevo atuendo para Capi: ${un.name}! Abrí el vestuario con la tecla V.` : ''), un ? 14 : 11);
-    if (n === SPARKS.length) g.ui.toast('¡TODAS LAS CHISPAS!', 'Encontraste los 10 datos escondidos', 4);
+    if (n === SPARKS.length) g.ui.toast('¡TODAS LAS CHISPAS!', `Encontraste los ${SPARKS.length} datos escondidos`, 4);
     this.refresh(); g.missions.save();
   }
   hint() { const left = this.sparks.filter(s => !this.got.has(s.i)); return left.length ? 'Pista: buscá una chispa en ' + left[0].place + '.' : 'Ya encontraste todas las chispas.'; }
@@ -127,7 +140,7 @@ export class Extras {
   }
   key(code) {
     if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
-    if (this.open === 'travel') { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null) this.travel(n); }
+    if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([1-9])$/.exec(code), n = m ? +m[1] - 1 : null; if (n != null && n < POS.stops.length) this.travel(n); }
   }
 
   // ---- Diploma final ----
@@ -156,7 +169,7 @@ export class Extras {
       if (this.got.has(s.i)) continue;
       s.group.rotation.y += dt * 2.4; s.group.position.y = s.y + Math.sin(this.t * 2.6 + s.i) * 0.22;
       st.fx.glow.sprite(s.x, s.group.position.y, s.z, 3.4, 0xffe066, 0.55 + 0.25 * Math.sin(this.t * 5 + s.i));
-      const d = Math.hypot(c.x - s.x, c.z - s.z); s.ghost.opacity = 0.6 * (1 - smooth(10, 20, d));
+      const d = Math.hypot(c.x - s.x, c.z - s.z); s.ghost.opacity = 0.6 * (1 - smooth(10, 20, d)); s.gm.visible = s.ghost.opacity > 0.01;
       if (st.play && d < 1.9 && Math.abs(c.y + 1.2 - s.y) < 3.6) this.collect(s);
     }
   }

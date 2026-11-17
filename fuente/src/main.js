@@ -21,6 +21,8 @@ import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
 import { Fiestas } from './fiestas.js';
+import { buildBarrios, CLEAR3 } from './barrios.js';
+import { Urbano } from './urbano.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -29,11 +31,15 @@ const FOV = 40;
 const SHOTS = [
   { x: -44, z: 42, d: 40, yaw: 0.45, low: 0.45, h: 19.4, t: 10, capi: [-36.4, 47, -47, 37.6] },
   { x: 4, z: -58, d: 64, yaw: 0.15, low: 0.5, h: 10.5, t: 10, rainbow: true },
-  { x: -40, z: -16, d: 58, yaw: 0.25, low: 0.55, h: 6.7, t: 10 },
+  { x: -42, z: -4, d: 54, yaw: 2.75, low: 0.5, h: 6.7, t: 10 },
+  { x: -50, z: 10, d: 46, yaw: 0.6, low: 0.45, h: 10.5, t: 10, capi: [-49, -4.5, -30, -4.5] },
   { x: 62, z: -8, d: 60, yaw: 0.9, low: 0.55, h: 16, t: 9 },
   { x: 78, z: -73, d: 42, yaw: -0.25, low: 0.35, h: 11.5, t: 10 },
   { x: -30, z: 96, d: 58, yaw: 0.3, low: 0.6, h: 18.4, t: 10, capi: [-22.4, 73.4, -46, 74] },
-  { x: -38, z: -28, d: 19, yaw: 0.6, low: 0.25, h: 9, t: 9 },
+  { x: -34, z: -18, d: 19, yaw: 0.6, low: 0.25, h: 9, t: 9 },
+  { x: 20, z: 96, d: 62, yaw: 0.35, low: 0.5, h: 20.2, t: 10 },
+  { x: 26, z: -10, d: 44, yaw: 0.7, low: 0.45, h: 12.5, t: 9 },
+  { x: -40, z: 38, d: 70, yaw: 2.6, low: 0.4, h: 17.2, t: 10 },
   { x: -62, z: -80, d: 50, yaw: 0.2, low: 0.4, h: 13, t: 9, capi: [-66.5, -66, -66.5, -78] },
   { x: -30, z: 45, d: 96, yaw: -0.5, low: 0.3, h: 21.5, t: 10 }
 ];
@@ -45,25 +51,38 @@ class Game {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2200);
     this.grid = new EnergyGrid(); this.audio = new AudioSynth(); this.fx = new FX(this.scene);
+    this.ready = this.init(r);
+  }
+
+  // Construcción del diorama por etapas, con barra de progreso en la pantalla de inicio
+  async init(r) {
+    const steps = 9; let k = 0;
+    const stage = async (txt) => { const el = $('load'); if (el) { el.textContent = txt; el.style.setProperty('--p', Math.round(k++ / steps * 100) + '%'); } await new Promise(res => requestAnimationFrame(() => setTimeout(res, 0))); };
+    await stage('Levantando el relieve y el río…');
     // WorldBuilder
     const w = this.world = new World(this.scene, r);
     const li = $('logoLargo');
     if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
     const ii = $('logoIso');
     if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-    w.clear = CLEAR.concat(CLEAR2);
-    buildRoads(w); buildCity(w); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); buildStops(w); buildFlora(w); buildSalto(w); buildSocial(w);
-    w.finalize();
+    w.clear = CLEAR.concat(CLEAR2, CLEAR3);
+    await stage('Trazando calles, rambla y puente…'); buildRoads(w); buildCity(w);
+    await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
+    await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w);
+    await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSalto(w); buildSocial(w);
+    await stage('Uniendo las piezas de la maqueta…'); w.finalize();
+    await stage('Calculando caminos para Capi…');
     this.capi = new Capi(this.scene, w, this.fx, this.audio);
     this.actors = new Actors(w, this.scene);
     this.capi.nav = new NavGrid(w);
+    await stage('Despertando a los vecinos…');
     this.capiLight = new THREE.PointLight(0xfff0c8, 0, 22, 1.6); this.scene.add(this.capiLight);
     const ring = this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -77,7 +96,8 @@ class Game {
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
     $('bCred').onclick = () => this.showCredits(null);
     document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
-    this.refreshTitle();
+    await stage('¡Listo!');
+    this.refreshTitle(); $('load').style.removeProperty('--p');
     this.last = performance.now();
     requestAnimationFrame(t => this.frame(t));
   }
@@ -367,7 +387,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st);
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
@@ -375,7 +395,7 @@ class Game {
     if (!play) {   // pantalla de inicio y demostración: el sonido sigue a la cámara
       const f = cam.target, nf = (x, z, r) => clamp(1 - Math.hypot(f.x - x, f.z - z) / r, 0, 1), wide = clamp((cam.dist - 75) / 55, 0, 1);
       const water = Math.max(clamp(1 - coastD(f.x, f.z) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(0, -68, 42), nf(-11, -49, 38));
-      const city = Math.max(nf(-32, 42, 52), nf(-20, 62, 30)), field = nf(58, -6, 58);
+      const city = Math.max(nf(-32, 42, 52), nf(-20, 62, 30), nf(-44, 4, 34)), field = nf(58, -6, 58);
       amb = { water: lerp(water, 0.45, wide), city: lerp(city, 0.4, wide), field: lerp(field, 0.3, wide), green: clamp(1 - city * 0.7, 0.3, 1), plaza: nf(-44, 38, 24) * (1 - wide), night, hour: G.hour };
       windNear = Math.max(0.08, 0.6 * lerp(Math.max(field, nf(70, -12, 75) * 0.6), 0.3, wide)); waterNear = amb.water * 0.45;
     }
@@ -394,8 +414,8 @@ class Game {
   }
 }
 
-function boot() {
-  try { window.__game = new Game(); }
+async function boot() {
+  try { const g = new Game(); await g.ready; window.__bootMs = Math.round(performance.now()); window.__game = g; }
   catch (e) { console.error(e); $('load').textContent = 'No se pudo iniciar el motor 3D: ' + e.message; }
 }
 const fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();

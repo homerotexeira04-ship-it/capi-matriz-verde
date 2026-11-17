@@ -237,7 +237,7 @@ body.attract #attract{display:block} body.attract #title{display:none}
 body.cine::before,body.cine::after{content:"";position:fixed;left:0;right:0;height:8vh;background:#050b18;z-index:3;pointer-events:none}
 body.cine::before{top:0} body.cine::after{bottom:0}
 body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
-#load{display:inline-block;margin-top:14px;font-size:clamp(13px,min(1vw,1.8vh),17px);color:var(--ink);text-shadow:none;background:rgba(8,20,44,.6);padding:3px 12px;border-radius:999px}
+#load{display:inline-block;margin-top:14px;font-size:clamp(13px,min(1vw,1.8vh),17px);color:var(--ink);text-shadow:none;background:linear-gradient(90deg,rgba(255,201,60,.55) var(--p,0%),rgba(8,20,44,.6) var(--p,0%));padding:3px 12px;border-radius:999px;transition:background .2s}
 .hBox{width:min(720px,96vw);max-height:92%;overflow:auto;padding:16px 20px;background:rgba(12,26,52,.97)}
 .hBox h2{margin:0 0 8px;font-family:var(--display);font-weight:400;color:var(--sun);font-size:26px}
 .hBox dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0 0 12px;font-size:14.5px;align-items:center}
@@ -469,7 +469,7 @@ input[type=text]{cursor:text}
     <dt>Motor gráfico</dt><dd>Three.js</dd>
     <dt>Tipografías</dt><dd>Lilita One y Nunito</dd>
     <dt>Datos de la matriz eléctrica</dt><dd>Ministerio de Industria, Energía y Minería · Balance Energético 2025</dd>
-    <dt>Elenco</dt><dd>Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía, Pepe y su grupo escolar, los carpinchos, los teros, Pampa y los vecinos de la rambla; y en las fiestas, la Mama Vieja, el payador, Marta, Nico y Papá Noel</dd>
+    <dt>Elenco</dt><dd>Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía, Pepe y su grupo escolar, los carpinchos, los teros, Pampa, los vecinos de la rambla y del Barrio Norte, los escolares, los feriantes, los pescadores y la tripulación de la lancha; y en las fiestas, la Mama Vieja, el payador, Marta, Nico y Papá Noel</dd>
   </dl>
   <p class="cEnd">Salto, Uruguay · 2026 · ¡Gracias por jugar!</p>
   <button class="btn" id="crClose" type="button">Volver</button>

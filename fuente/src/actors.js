@@ -176,7 +176,7 @@ export class Actors {
       if (b.state === 'parked' && st.busesOn) { b.wait -= dt; if (b.wait <= 0) b.state = 'leaving'; }
       if (!st.busesOn && b.state !== 'parked') { b.state = 'parked'; b.x = b.px; b.z = 62.8; b.h = 0; }
       if (b.state === 'leaving') { b.z += 5 * dt; b.h = 0; if (b.z >= 69.5) { b.state = 'loop'; b.s = -12 - b.x; } }
-      else if (b.state === 'loop') { b.s += 9 * dt; const p = loopPoint(b.s, this.tmp); b.x = damp(b.x, p.x, 6, dt); b.z = damp(b.z, p.z, 6, dt); b.h += angDiff(b.h, p.h) * Math.min(1, dt * 3); }
+      else if (b.state === 'loop') { b.s += 9 * dt * (this.busBlock ? this.busBlock(b, dt) : 1); const p = loopPoint(b.s, this.tmp); b.x = damp(b.x, p.x, 6, dt); b.z = damp(b.z, p.z, 6, dt); b.h += angDiff(b.h, p.h) * Math.min(1, dt * 3); }
       b.g.position.set(b.x, 2.12, b.z); b.g.rotation.y = b.h;
       w.dynCircles.push({ x: b.x, z: b.z, r: 2.0 });
       if (st.night > 0.3 && b.state !== 'parked') st.fx.glow.sprite(b.x + Math.sin(b.h) * 4.6, 3.1, b.z + Math.cos(b.h) * 4.6, 3.2, 0xfff0b0, 0.5 * st.night);

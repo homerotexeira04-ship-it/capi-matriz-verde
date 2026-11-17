@@ -5,7 +5,7 @@ import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
-const NAR = [64.5, -74], TER = [91.5, -73], TERMICA = [28, 54], FAM = [-38, -29];
+const NAR = [64.5, -74], TER = [91.5, -73], TERMICA = [28, 54], FAM = [-34, -18.5];
 // Claros donde no se plantan árboles del monte (naranjal, termas, central térmica)
 export const CLEAR = [[52, 77, -87, -61], [79, 104, -85, -61], [18, 38, 44, 64]];
 
@@ -101,7 +101,7 @@ export class Vida {
       const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 5.4, 5), new THREE.MeshStandardMaterial({ color: 0x7b6a55 })); mast.position.set(0, 3.1, 0.3); g.add(mast);
       g.add(new THREE.Mesh(tri([0, 0.95, 0.15, 0, 5.6, 0.25, 0, 0.95, -2.5]), S)); g.add(new THREE.Mesh(tri([0, 0.95, 0.5, 0, 4.6, 0.4, 0, 0.95, 2.7]), Cm));
       g.traverse(o => { if (o.isMesh) o.castShadow = true; }); sc.add(g); return g; };
-    this.boats = [[-66, 111, 34, 6, 0xe6007e, 0.5], [22, 113, 46, 6.5, 0x2ed3c6, 2.6], [78, 109, 20, 4.5, 0xffc420, 4.4]].map(([cx, cz, rx, rz, col, a], i) => ({ g: boat(col), cx, cz, rx, rz, a, sp: (i % 2 ? -1 : 1) * (1.6 + i * 0.3), i }));
+    this.boats = [[-66, 112, 34, 6, 0xe6007e, 0.5], [46, 121, 36, 6, 0x2ed3c6, 2.6], [92, 112, 18, 4.5, 0xffc420, 4.4]].map(([cx, cz, rx, rz, col, a], i) => ({ g: boat(col), cx, cz, rx, rz, a, sp: (i % 2 ? -1 : 1) * (1.6 + i * 0.3), i }));
     // ---------- Luciérnagas y reflejos de estrellas en el agua ----------
     this.flies = []; for (const [fx, fz, r, k] of [[FAM[0], FAM[1], 13, 12], [NAR[0], NAR[1], 11, 8], [-44, 44, 13, 8], [34, 27, 9, 6]]) for (let i = 0; i < k; i++) { const a = R() * 6.283, d = Math.sqrt(R()) * r, x = fx + Math.cos(a) * d, z = fz + Math.sin(a) * d; this.flies.push({ x, z, y: Math.max(w.groundAt(x, z), w.waterAt(x, z)) + 0.9 + R() * 1.3, ph: R() * 6.283, sp: 0.6 + R() * 0.8 }); }
     this.glints = []; for (let i = 0; i < 46; i++) this.glints.push({ x: lerp(-122, 106, R()), z: lerp(98, 123, R()), y: 0.06, ph: R() * 6.283 });

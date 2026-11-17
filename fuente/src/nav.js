@@ -3,7 +3,7 @@ import { B, waterAt } from './terrain.js';
 
 export class NavGrid {
   constructor(world) {
-    const N = this.N = 188, cell = this.cell = (B.maxX - B.minX) / N, n = N * N;
+    const N = this.N = Math.round((B.maxX - B.minX) / 1.25), cell = this.cell = (B.maxX - B.minX) / N, n = N * N;
     this.h = new Float32Array(n); this.ok = new Uint8Array(n); this.water = new Uint8Array(n); this.deck = new Uint8Array(n);
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const x = B.minX + (i + 0.5) * cell, z = B.minZ + (j + 0.5) * cell, c = j * N + i, g = world.groundAt(x, z), wl = waterAt(x, z);

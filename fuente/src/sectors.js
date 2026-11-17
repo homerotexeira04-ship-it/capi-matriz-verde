@@ -1,11 +1,11 @@
 // WorldBuilder (sectores): ciudad y rambla, represa, parque eólico, parque solar + baterías, biomasa, red de transmisión y flora.
 import * as THREE from 'three';
 import { clamp, lerp, damp, smooth, noise2 } from './util.js';
-import { POS, CITY_Y, B, coastD, channelD, resInside, terrainH, RES } from './terrain.js';
-import { C, canvasTex, textTex } from './world.js';
+import { POS, CITY_Y, B0 as B, coastD, channelD, resInside, terrainH, RES } from './terrain.js';
+import { C, canvasTex, textTex, Batch } from './world.js';
 import { CAP } from './grid.js';
 
-const PAL = [C.cream, C.terra, C.ochre, C.rose, C.white, 0xa9cfe0, 0xd9c6a0, 0xe0d2b4];
+export const PAL = [C.cream, C.terra, C.ochre, C.rose, C.white, 0xa9cfe0, 0xd9c6a0, 0xe0d2b4];
 
 export function sign(w, text, x, y, z, ry, sw = 7, sh = 1.6, o = {}) {
   const tex = textTex(text, { w: 512, h: Math.round(512 * sh / sw), bg: o.bg || '#12325a', fg: o.fg || '#ffffff', border: o.border || '#ffc93c', size: 72 });
@@ -17,7 +17,7 @@ export function sign(w, text, x, y, z, ry, sw = 7, sh = 1.6, o = {}) {
 }
 
 // Cartel con el logotipo del museo (textura tomada de la imagen incrustada en la página)
-function logoSign(w, x, y, z, ry, sw = 6, lift = 2.4) {
+export function logoSign(w, x, y, z, ry, sw = 6, lift = 2.4) {
   if (!w.logoTex) return;
   const sh = sw * 200 / 720, mat = new THREE.MeshStandardMaterial({ map: w.logoTex, emissive: 0xffffff, emissiveMap: w.logoTex, emissiveIntensity: 0.45, roughness: 0.8 });
   for (const r of [ry, ry + Math.PI]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), mat); m.position.set(x + Math.sin(r) * 0.09, y + lift + sh / 2, z + Math.cos(r) * 0.09); m.rotation.y = r; w.scene.add(m); }
@@ -26,7 +26,7 @@ function logoSign(w, x, y, z, ry, sw = 6, lift = 2.4) {
 }
 
 // Pabellón nacional flameando (textura procedural)
-function flag(w, x, y, z, fw, fh, mast) {
+export function flag(w, x, y, z, fw, fh, mast) {
   if (!w.flagTex) w.flagTex = canvasTex(360, 240, (g) => {
     g.fillStyle = '#fff'; g.fillRect(0, 0, 360, 240); g.fillStyle = '#0038a8';
     for (let i = 0; i < 4; i++) g.fillRect(0, 240 / 9 * (1 + i * 2), 360, 240 / 9);
@@ -45,7 +45,7 @@ function flag(w, x, y, z, fw, fh, mast) {
   });
 }
 
-function windows(w, cx, cz, bw, bd, y0, bh, barrio) {
+export function windows(w, cx, cz, bw, bd, y0, bh, barrio) {
   const wb = w.winBatch[barrio], nf = Math.max(1, Math.floor((bh - 0.8) / 1.7)), quad = new THREE.PlaneGeometry(0.78, 1.0);
   const face = (len, fx, fz, ry) => {
     const nc = Math.max(1, Math.floor((len - 0.8) / 1.45));
@@ -56,7 +56,7 @@ function windows(w, cx, cz, bw, bd, y0, bh, barrio) {
   };
   face(bw, 0, 1, 0); face(bw, 0, -1, Math.PI); face(bd, 1, 0, Math.PI / 2); face(bd, -1, 0, -Math.PI / 2);
 }
-function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
+export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
   const b = w.cityBatch, y0 = 2.2, R = w.rand, trim = 0xf3ecdc;
   b.boxB(cx, y0, cz, bw, bh, bd, col);
   b.boxB(cx, y0, cz, bw + 0.2, 0.55, bd + 0.2, 0x8d8478);
@@ -89,6 +89,7 @@ export function buildCity(w) {
   for (const z of zsS) for (let x = -76; x < -11; x += 3.2) b.boxB(x, 2.1, z, 1.4, 0.02, 0.14, 0xe9e2c8);
 
   const xs = [-68, -52, -36, -20], zs = [20, 34, 48, 62];
+  const dummy = { rand: R, cityBatch: new Batch(), batch: new Batch(), winBatch: [new Batch(), new Batch(), new Batch()], addSolid() {}, addOcc() {} };
   for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
     const cx = xs[i], cz = zs[j], key = i + ',' + j, barrio = i === 0 ? 0 : i === 3 ? 2 : 1;
     if ((i === 1 || i === 2) && (j === 1 || j === 2)) continue;   // las cuatro manzanas centrales son la Plaza Matriz
@@ -96,10 +97,12 @@ export function buildCity(w) {
     if (key === '3,0') { substation(w, cx, cz); continue; }
     if (key === '3,3') { terminal(w, cx, cz); continue; }
     if (key === '2,0') { tower(w, cx, cz); continue; }
+    // El teatro y la catedral ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
+    const land = key === '1,0' || key === '2,3', bw0 = land ? dummy : w;
     const n = R() < 0.45 ? 2 : 3, total = 10.6, gap = 0.5, bw = (total - gap * (n - 1)) / n;
     for (let k = 0; k < n; k++) {
       const x = cx - total / 2 + bw / 2 + k * (bw + gap), tall = (i === 1 || i === 2) ? 6.5 + R() * 6.5 : 4.2 + R() * 4;
-      building(w, x, cz + (R() - 0.5) * 0.6, bw, 7 + R() * 1.0, tall, PAL[Math.floor(R() * PAL.length)], barrio, Math.floor(R() * 4));
+      building(bw0, x, cz + (R() - 0.5) * 0.6, bw, 7 + R() * 1.0, tall, PAL[Math.floor(R() * PAL.length)], barrio, Math.floor(R() * 4));
     }
     w.tree(R() < 0.5 ? 'jaca' : 'native', cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y);
   }
@@ -201,7 +204,7 @@ function tower(w, cx, cz) {
   w.addSolid(cx - 5, cx + 5, cz - 4.3, cz + 4.3); w.addOcc(cx - 5, cx + 5, cz - 4.3, cz + 4.3, Y + 8.8); w.addOcc(cx - 3.3, cx + 3.3, cz - 3, cz + 3, Y + 15.6); w.addOcc(cx - 2.1, cx + 2.1, cz - 2.1, cz + 2.1, Y + 22);
 }
 
-function transformer(w, x, y, z, s = 1) {
+export function transformer(w, x, y, z, s = 1) {
   const b = w.batch;
   b.boxB(x, y, z, 2.6 * s, 2.3 * s, 1.9 * s, 0x8c949c);
   for (let k = -2; k <= 2; k++) { b.boxB(x + k * 0.5 * s, y + 0.3 * s, z + 1.1 * s, 0.12 * s, 1.7 * s, 0.4 * s, 0x6f777f); b.boxB(x + k * 0.5 * s, y + 0.3 * s, z - 1.1 * s, 0.12 * s, 1.7 * s, 0.4 * s, 0x6f777f); }
@@ -215,7 +218,7 @@ function gantry(w, x, y, z, ry = 0, wd = 6, h = 6.5) {
   b.box(x, y + h, z, wd + 0.6, 0.3, 0.3, C.steel, ry);
   for (let k = -1; k <= 1; k++) b.cyl(x + s * k * 0.7, y + h - 0.9, z + c * k * 0.7, 0.08, 0.14, 0.8, 0xb9684a, 5);
 }
-function fence(w, x0, x1, z0, z1, y, gaps = []) {
+export function fence(w, x0, x1, z0, z1, y, gaps = []) {
   const b = w.batch;
   const run = (ax, az, bx, bz) => { w.addSolid(Math.min(ax, bx) - 0.08, Math.max(ax, bx) + 0.08, Math.min(az, bz) - 0.08, Math.max(az, bz) + 0.08, y + 1.5); const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 2.2); for (let i = 0; i <= n; i++) b.boxB(lerp(ax, bx, i / n), y, lerp(az, bz, i / n), 0.1, 1.5, 0.1, 0x6b7480); b.box((ax + bx) / 2, y + 1.45, (az + bz) / 2, Math.abs(bx - ax) + 0.1, 0.07, Math.abs(bz - az) + 0.1, 0x6b7480); b.box((ax + bx) / 2, y + 0.8, (az + bz) / 2, Math.abs(bx - ax) + 0.05, 0.05, Math.abs(bz - az) + 0.05, 0x6b7480); };
   run(x0, z0, x1, z0); run(x0, z0, x0, z1); run(x1, z0, x1, z1);
@@ -240,16 +243,24 @@ function substation(w, cx, cz) {
 function terminal(w, cx, cz) {
   const b = w.batch, Y = 2.2;
   b.boxB(cx, Y, cz, 12.4, 0.05, 10.4, 0x7b828c);
-  for (const dx of [-5, 0, 5]) for (const dz of [-3.6, 3.6]) b.cyl(cx + dx, Y, cz + dz, 0.22, 0.26, 5, C.white, 8);
-  const cb = w.cityBatch; cb.boxB(cx, Y + 5, cz, 12.6, 0.35, 9.2, C.celeste); cb.boxB(cx, Y + 5.35, cz, 12.2, 0.08, 8.8, 0xf4f1ea);
-  for (let i = -2; i <= 2; i++) for (let j = -1; j <= 1; j++) cb.box(cx + i * 2.3, Y + 5.56, cz + j * 2.7, 2.0, 0.08, 2.3, 0x1f3c88, 0, 0.12);
+  for (const dx of [-5, 0, 5]) for (const dz of [-3.6, 3.6]) b.cyl(cx + dx, Y, cz + dz, 0.2, 0.3, 4.9, 0xd8cdbb, 8);
+  // Cubierta de bóvedas autoportantes de ladrillo, en homenaje a Eladio Dieste: cinco cáscaras finas con voladizo
+  const cb = w.cityBatch, nV = 5, cw = 12.6 / nV, rise = 0.72, rr = (cw * cw / 4 + rise * rise) / (2 * rise), ha = Math.asin(cw / 2 / rr), L = 12.4;
+  const vault = new THREE.CylinderGeometry(rr, rr, L, 14, 1, true, Math.PI - ha, ha * 2);
+  for (let i = 0; i < nV; i++) {
+    const vx = cx - 6.3 + cw / 2 + i * cw;
+    cb.add(vault, i % 2 ? 0xb5603a : 0xc06a42, vx, Y + 5 - rr * Math.cos(ha), cz, 1, 1, 1, Math.PI / 2, 0, 0, 0.04);
+    cb.box(vx, Y + 5 + rise - 0.02, cz, 0.1, 0.05, L, 0xd7895e);   // lomo de la bóveda
+  }
+  for (let i = 0; i <= nV; i++) cb.box(cx - 6.3 + i * cw, Y + 4.96, cz, 0.22, 0.16, L + 0.1, 0x8f4a2c);   // canaletas entre bóvedas
+  cb.box(cx, Y + 4.8, cz, 12.8, 0.24, 0.5, 0x8f4a2c);   // viga central que sostiene las cáscaras
   w.dyn.chargers = [];
   [-4, 0, 4].forEach((dx) => {
     b.boxB(cx + dx, Y, cz - 2.9, 0.7, 2.0, 0.5, 0xf4f1ea); b.boxB(cx + dx, Y + 2.0, cz - 2.9, 0.8, 0.14, 0.6, C.celeste);
     const led = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.1, 0.06), w.mats.charger); led.position.set(cx + dx, Y + 1.25, cz - 2.62); w.scene.add(led);
     w.addCircle(cx + dx, cz - 2.9, 0.5);
   });
-  w.addOcc(cx - 6.3, cx + 6.3, cz - 4.6, cz + 4.6, Y + 5.6);
+  w.addOcc(cx - 6.4, cx + 6.4, cz - 6.2, cz + 6.2, Y + 5.8);
   sign(w, 'TERMINAL RAMBLA · ÓMNIBUS ELÉCTRICOS', cx, Y + 3.4, cz + 4.7, 0, 9, 1.0, { bg: '#0b5a4a', border: '#7dffb0' });
   w.addInter('npc:lucia', POS.lucia[0], POS.lucia[1], { console: false, y: CITY_Y, h: 3.6 });
   w.addInter('term', -13.9, 61.2, { y: Y, ry: Math.PI / 2, h: 3.4 });
@@ -479,11 +490,12 @@ export function buildRoads(w) {
   w.road([[66, -1], [60, -14], [54.5, -25.5]], 2.2, G); w.road([[66, -1], [70, -18], [72.5, -33]], 2.2, G);
   w.road([[66, -1], [78, -8], [88, -10]], 2.2, G); w.road([[66, -1], [76, 8], [85, 13.5]], 2.2, G);
   w.road([[-10, 69], [8, 70], [28, 66.5], [44, 62.5]], 3.6, A);
-  w.road([[-44, 11], [-45.5, 4], [-46, -3]], 3.4, A); w.road([[-46, -31], [-47, -42], [-52, -52], [-57, -58.6]], 3.4, A);
+  w.road([[-44, 11], [-44, 0], [-44.6, -7], [-46, -12]], 3.4, A); w.road([[-46, -42], [-47, -48], [-52, -53.5], [-57, -58.6]], 3.4, A);
   w.road([[-12, 13], [4, 2], [16, -14], [24, -34], [27.5, -49], [26, -55]], 3.4, A);
   w.road([[-24, -55], [-36, -57.5], [-47, -59.2], [-57, -58.6]], 3.2, A);
   // Puente arqueado sobre el canal
-  const b = w.batch, Br = POS.bridge, f = z => 2.02 + 1.7 * Math.sin(Math.PI * clamp((z - Br.z0) / (Br.z1 - Br.z0), 0, 1));
+  const b = w.batch, Br = POS.bridge, hA = w.terrainAt(Br.x, Br.z0) + 0.05, hB = w.terrainAt(Br.x, Br.z1) + 0.05;
+  const f = z => { const t = clamp((z - Br.z0) / (Br.z1 - Br.z0), 0, 1); return lerp(hA, hB, t) + 1.9 * Math.sin(Math.PI * t); };
   w.addPlatform(Br.x - 2.3, Br.x + 2.3, Br.z0, Br.z1, (x, z) => f(z));
   const n = 14, L = (Br.z1 - Br.z0) / n;
   for (let i = 0; i < n; i++) {
@@ -491,7 +503,7 @@ export function buildRoads(w) {
     b.box(Br.x, f(zm) - 0.2, zm, 4.6, 0.4, L + 0.12, C.concrete, 0, rx); b.box(Br.x, f(zm) + 0.01, zm, 3.6, 0.03, L + 0.1, A, 0, rx);
     for (const s of [-1, 1]) { b.boxB(Br.x + s * 2.2, f(z0), z0, 0.14, 1.0, 0.14, C.white); b.box(Br.x + s * 2.2, f(zm) + 0.95, zm, 0.12, 0.12, L + 0.1, C.white, 0, rx); }
   }
-  for (const z of [-23.5, -10.5]) for (const s of [-1.5, 1.5]) b.cyl(Br.x + s, -3, z, 0.5, 0.6, f(z) + 2.8, C.concreteD, 8);
+  for (const z of [Br.z0 + (Br.z1 - Br.z0) * 0.3, Br.z0 + (Br.z1 - Br.z0) * 0.7]) for (const s of [-1.5, 1.5]) b.cyl(Br.x + s, -3, z, 0.5, 0.6, f(z) + 2.8, C.concreteD, 8);
   w.lamp(Br.x + 2.6, Br.z1 + 1, -Math.PI / 2); w.lamp(Br.x - 2.6, Br.z0 - 1, Math.PI / 2);
 }
 
@@ -529,8 +541,8 @@ export function buildLines(w) {
   };
   const S = [POS.substation[0] - 1.4, POS.substation[1] - 4.1, 7];
   mk('eolica', [[POS.windTx[0] + 2.6, POS.windTx[1] - 1.4, 6.5], [33, 12], [14, 15], [-2, 16.5], S], 0x9be7ff, 40);
-  mk('hidro', [[23, -50, 3], [31, -42], [26, -22], [15, -4], [0, 9], S], 0x5ad1ff, 144);
-  mk('solar', [[POS.batYard[0], POS.batYard[1] - 7.6, 6], [-39, -50], [-38, -33], [-30, -5], [-22, 6], S], 0xffe066, 98);
+  mk('hidro', [[23, -50, 3], [17, -38], [9, -24], [2, -6], S], 0x5ad1ff, 144);
+  mk('solar', [[POS.batYard[0], POS.batYard[1] - 7.6, 6], [-39, -50], [-35, -44], [-24, -16], S], 0xffe066, 98);
   mk('biomasa', [[POS.bioSub[0] + 2.2, POS.bioSub[1] - 1.6, 6.3], [56, 46], [36, 40], [16, 34], [-4, 22], S], 0xb6f27a, 40);
   // Alimentador urbano en postes de baja tensión (con nidos de hornero)
   const poles = [[-11, 28], [-11, 40], [-11, 52], [-11, 64]], fp = [];
@@ -590,7 +602,8 @@ export function buildFlora(w) {
   while (placed < 230 && tries++ < 4000) {
     const x = lerp(B.minX + 4, B.maxX - 3, R()), z = lerp(B.minZ + 3, B.maxZ - 4, R());
     if (coastD(x, z) < 5 || terrainH(x, z) < 1.6) continue;
-    if (x > -88 && x < 20 && z > 6 && z < 80) continue;                        // ciudad
+    if (x > -88 && x < 20 && z > -10 && z < 80) continue;                      // ciudad, Barrio Norte y costanera
+    if ((x > 0 && x < 47 && z > -35 && z < 12) || (x > -12 && x < 44 && z > 62 && z < 90)) continue;   // Barrio Jardín y puerto
     if (x > -92 && x < -33 && z > -107 && z < -57) continue;                    // parque solar
     if (x > 38 && z > 28) continue;                                             // biomasa y montes
     if (resInside(x, z) > -7 || (z < -44 && z > -62 && Math.abs(x) < 32)) continue;
@@ -605,5 +618,5 @@ export function buildFlora(w) {
   }
   for (let i = 0; i < 26; i++) { const a = R() * 6.283, x = -62 + Math.cos(a) * (34 + R() * 6) * 0.9, z = -78 + Math.sin(a) * 30; if (coastD(x, z) > 5 && resInside(x, z) < -7 && !(x > -90 && x < -34 && z > -106 && z < -58)) w.tree('native', x, z, 0.8); }
   // Piedras
-  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 20 && z > 6 && z < 80) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
+  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 20 && z > -10 && z < 80) && !(x > 0 && x < 47 && z > -35 && z < 12) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
 }

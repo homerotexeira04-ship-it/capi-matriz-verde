@@ -1,6 +1,6 @@
 // UIManager: HUD de telemetría, tarjeta de misión, diálogos con retratos, minimapa-brújula y panel de red.
 import { clamp, lerp, fmtHour } from './util.js';
-import { B, ZONES, terrainH, waterAt, coastD, POS } from './terrain.js';
+import { B, ZONES, terrainH, waterAt, coastD, farD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
@@ -80,9 +80,9 @@ export class UI {
       const x = B.minX + (i + 0.5) / S * W, z = B.minZ + (j + 0.5) / S * D, h = terrainH(x, z), wl = waterAt(x, z), k = (j * S + i) * 4;
       let r, gg, b;
       if (h < wl - 0.15) { r = 40; gg = 120 + (wl > 1 ? 40 : 0); b = 200; }
-      else if (coastD(x, z) < 5 && h < 2.6) { r = 232; gg = 214; b = 164; }
+      else if ((coastD(x, z) < 5 || (z > 120 && farD(x, z) < 5)) && h < 2.6) { r = 232; gg = 214; b = 164; }
       else { const t = clamp((h - 2) / 8, 0, 1); r = lerp(96, 150, t); gg = lerp(178, 205, t); b = lerp(72, 96, t); }
-      if (x > -84 && x < -9 && z > 10 && z < 76) { r = 176; gg = 170; b = 160; }
+      if (x > -84 && x < -9 && z > -8 && z < 76) { r = 176; gg = 170; b = 160; }
       if (x > -88 && x < -36 && z > -104 && z < -60 && h > 5) { r = 205; gg = 198; b = 172; }
       d[k] = r; d[k + 1] = gg; d[k + 2] = b; d[k + 3] = 255;
     }
@@ -90,7 +90,8 @@ export class UI {
     const X = x => (x - B.minX) / W * S, Z = z => (z - B.minZ) / D * S;
     g.strokeStyle = 'rgba(70,70,80,.9)'; g.lineWidth = 1.6;
     for (const l of this.g.world.roads) { g.beginPath(); l.forEach((p, i) => i ? g.lineTo(X(p[0]), Z(p[1])) : g.moveTo(X(p[0]), Z(p[1]))); g.stroke(); }
-    g.fillStyle = '#9a948a'; g.fillRect(X(-24), Z(-58), X(24) - X(-24), 6); g.fillRect(X(-48), Z(-31), 4, Z(-3) - Z(-31));
+    g.fillStyle = '#9a948a'; g.fillRect(X(-24), Z(-58), X(24) - X(-24), 6); g.fillRect(X(POS.bridge.x - 2), Z(POS.bridge.z0), 4, Z(POS.bridge.z1) - Z(POS.bridge.z0));
+    g.fillRect(X(POS.muelle.x - 1.7), Z(POS.muelle.z0), 4, Z(POS.muelle.z1) - Z(POS.muelle.z0)); g.fillRect(X(POS.orilla.x - 1.7), Z(POS.orilla.z0), 4, Z(POS.orilla.z1) - Z(POS.orilla.z0)); g.fillRect(X(POS.faro[0] - 1.3), Z(82), 3, Z(101) - Z(82));
     g.fillStyle = '#1f3f9a'; for (const [x, z] of POS.solar) g.fillRect(X(x - 6), Z(z - 5.5), 13, 12);
     g.fillStyle = '#fff'; for (const [x, z] of POS.windT) { g.beginPath(); g.arc(X(x), Z(z), 2.2, 0, 7); g.fill(); }
     this.map = c; this.mapScale = S / W;
@@ -143,7 +144,7 @@ export class UI {
     this.drawGauge(o.pct); this.drawPhase(G.hour); drawFace(this.fc, 'capi', this.t, st.capiTalk, st.colors);
     this.drawMini(st);
     // Cartel de sector
-    let z = null; for (const q of ZONES) if (Math.hypot(st.capi.x - q.x, st.capi.z - q.z) < (q.id === 'ciudad' ? 46 : 34)) z = q;
+    let z = null; for (const q of ZONES) if (q.rect ? (st.capi.x > q.rect[0] && st.capi.x < q.rect[1] && st.capi.z > q.rect[2] && st.capi.z < q.rect[3]) : Math.hypot(st.capi.x - q.x, st.capi.z - q.z) < (q.id === 'ciudad' ? 46 : 34)) z = q;
     if (z && z.id !== this.zoneId) { this.zoneId = z.id; $('zone').textContent = z.name; this.zoneT = 5; } else if (!z) { this.zoneId = ''; this.zoneT = Math.min(this.zoneT, 0.6); }
     if (this.zoneT > 0) { this.zoneT -= 0.09; $('zone').style.opacity = clamp(this.zoneT, 0, 1); }
     if (st.panel) { this.drawPanel(); if ((this._pd = (this._pd || 0) + 1) % 4 === 0) this.panelDom(); }

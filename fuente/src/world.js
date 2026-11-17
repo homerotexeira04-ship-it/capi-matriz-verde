@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
-import { B, LAND, RES, terrainH, waterAt, coastD, channelD, resInside, CHANNEL } from './terrain.js';
+import { B, LAND, RES, terrainH, waterAt, coastD, channelD, resInside, CHANNEL, farD } from './terrain.js';
 
 export const C = {
   cream: 0xf2e4c4, terra: 0xc8674a, ochre: 0xe2b25c, rose: 0xe9bba6, white: 0xf5f1e8, celeste: 0x8fcdea, concrete: 0xbdb5a8, concreteD: 0x9c958a,
@@ -162,7 +162,7 @@ export class World {
 
   // ---------- Relieve ----------
   buildTerrain() {
-    const N = 188, W = B.maxX - B.minX, D = B.maxZ - B.minZ;
+    const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.25);   // celdas de 1,25 (el diorama es cuadrado)
     this.N = N; this.cell = W / N;
     const g = new THREE.PlaneGeometry(W, D, N, N);
     g.rotateX(-Math.PI / 2); g.translate((B.minX + B.maxX) / 2, 0, (B.minZ + B.maxZ) / 2);
@@ -273,7 +273,7 @@ export class World {
     }]);
     this.waterMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, fog: true, depthWrite: false });
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ;
-    const g = new THREE.PlaneGeometry(W, D, 96, 96); g.rotateX(-Math.PI / 2);
+    const g = new THREE.PlaneGeometry(W, D, 120, 120); g.rotateX(-Math.PI / 2);
     const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + B.maxX) / 2, 0, (B.minZ + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
     const rg = new THREE.PlaneGeometry(76, 54, 30, 22); rg.rotateX(-Math.PI / 2);
     const res = new THREE.Mesh(rg, this.waterMat); res.position.set(0, RES, -83); res.renderOrder = 5; this.scene.add(res);
@@ -516,7 +516,7 @@ export class World {
 // Color del suelo por zona, altura y pendiente.
 const cA = new THREE.Color(), cB = new THREE.Color();
 function groundColor(c, x, z, h, ny) {
-  const wl = waterAt(x, z), d = coastD(x, z);
+  const wl = waterAt(x, z), d = Math.min(coastD(x, z), Math.max(farD(x, z), 0) + (z > 120 ? 0 : 99));
   if (h < wl - 0.15) { c.set(0x2c556b).lerp(cA.set(0xcdbb8c), smooth(wl - 3.4, wl - 0.1, h)); return; }
   const banks = Math.min(channelD(x, z) - 8, 99), ri = resInside(x, z);
   if ((d < 5.2 && h < 2.6) || h < wl + 0.5) { c.set(0xe8d6a4).lerp(cA.set(0xd8c08a), noise2(x * 0.4, z * 0.4)); return; }
@@ -529,6 +529,9 @@ function groundColor(c, x, z, h, ny) {
   c.lerp(cA.set(0xb89264), inR(42, 80, 51, 71) * 0.9);
   c.lerp(cA.set(0x6f9a52), inR(40, 108, 31, 50) * 0.7);
   c.lerp(cA.set(0x8f9a8a), inR(-86, -6, 9, 78));
+  c.lerp(cA.set(0x8f9a8a), inR(-86, -8, -8, 10));                 // Barrio Norte y costanera
+  c.lerp(cA.set(0x7fb35a), inR(4, 44, -32, 9) * 0.55);            // Barrio Jardín: pasto cuidado
+  if (z > 120) c.lerp(cA.set(0x79b04f), 0.35);                    // la otra orilla
   c.lerp(cA.set(0xcabd9a), inR(41, 57, 2, 15) * 0.9);
   if (ny < 0.82) c.lerp(cA.set(0x9c8a66), smooth(0.82, 0.6, ny));
 }

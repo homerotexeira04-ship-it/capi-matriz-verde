@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 
 const $ = id => document.getElementById(id);
-const TARGET = [-28.5, 22.5];
+const TARGET = [-30.3, 22.4];   // vereda de la torre (la calle es de los autos)
 const K = s => s.split(' ').map(k => `<kbd>${k}</kbd>`).join('');
 const STEPS = [
   { id: 'walk', title: 'Caminá hasta la luz',

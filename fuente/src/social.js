@@ -40,13 +40,13 @@ const WHO = {
   payador: { hi: '¡Buenas, Capi! Arrímese al fogón, que la guitarra está templada.', q: [
     ['¿Qué es una payada?', 'Es poesía improvisada con guitarra. En la payada de contrapunto, dos payadores se contestan en verso, por turnos y sin libreto.'],
     ['¿Me cantás una payada?', ['Ahí va, compañero, una décima de mi cosecha:', 'Con permiso, compañero,\nle canto a la red de acá,\nque el viento soplando va\npor la cuchilla y el estero;', 'el río, fiel y certero,\ngira turbinas; de día\ncarga el sol con alegría;', 'la biomasa da su llama,\ny el Capi, que tiene fama,\n¡cuida la red, alma mía!'], 'payada'],
-    ['¿Qué es la Semana Criolla?', 'Una fiesta de las tradiciones del campo que se hace en Semana de Turismo: jineteadas, fogones, payadores y artesanías. La del Prado, en Montevideo, se hace desde 1925.']] },
+    ['¿Qué es la Semana Criolla?', 'Una fiesta de las tradiciones del campo que se hace en Semana de Turismo: desfile de tropillas, fogones, payadores y artesanías. La del Prado, en Montevideo, se hace desde 1925.']] },
   nico: { hi: '¡Bienvenido a Museos en la Noche, Capi! ¿Te animás con la bicicleta generadora?', q: [
     ['¿Qué es Museos en la Noche?', 'Una noche al año, en diciembre, museos de todo el país abren en un horario distinto y con entrada libre, con actividades para toda la familia.'],
     ['¿Cómo funciona la bicicleta generadora?', 'Al pedalear, un pequeño generador transforma el movimiento en electricidad. Es lo mismo que pasa en una turbina o en un molino, pero con tus piernas.'],
     ['¿Cuánta energía da una persona pedaleando?', 'Pedaleando parejo, unos 100 vatios: alcanza para varias lamparitas LED, pero no para una estufa. ¡Por eso usamos el agua, el viento y el sol!']] }
 };
-export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno' };
+export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Central Hidroeléctrica, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
@@ -89,7 +89,7 @@ export class Social {
       rosa: add({ skin: 0xd9a17a, shirt: 0xf2a93b, pants: 0x4a6b3a, hair: 0x5a4636, hat: 'boina', hatColor: 0xe9dcc0 }, ...NEW.rosa),
       beto: add({ skin: 0xc58b62, shirt: 0x3f7d8c, pants: 0x3a3a44, hair: 0x555555, hat: 'gorra', hatColor: 0xd4483b, bigote: true }, ...NEW.beto),
       sofi: add({ skin: 0xe0ac86, shirt: 0x35c9d2, pants: 0xf4f1ea, hair: 0x1a1412, pony: true }, ...NEW.sofi),
-      guia: add({ skin: 0xd9a17a, shirt: 0xe6007e, jacket: 0x6a2c91, pants: 0x2b2d42, hair: 0x2a1c12 }, ...NEW.guia)
+      guia: add({ skin: 0xc58b62, shirt: 0xe6007e, jacket: 0x6a2c91, pants: 0x2b2d42, hair: 0x3b2314, hat: 'gorra', hatColor: 0xffc420 }, ...NEW.guia)
     };
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 3.6, 5), new THREE.MeshStandardMaterial({ color: 0x5a4636 })); rod.position.set(0.5, 1.9, 1.5); rod.rotation.x = 1.05; this.npc.beto.group.add(rod);
     this.kids = [0xffc420, 0x4fc3f7, 0x57e389, 0xff8fab].map((col, i) => add({ skin: i % 2 ? 0xc58b62 : 0xe0ac86, shirt: 0xffffff, pants: 0x23395d, hair: i % 2 ? 0x1a1412 : 0x5a4636, hat: 'gorra', hatColor: col, scale: 0.62 }, NEW.guia[0] + 2.2 + (i % 2) * 1.1, NEW.guia[1] - 1.4 + i * 0.95, -1.9));

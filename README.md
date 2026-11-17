@@ -20,12 +20,12 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Modo guía** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Cómo abrirlo está en las instrucciones de la carpeta del kiosco.
 - **Modo festivo** (se elige desde el modo guía y queda guardado en la PC), con cinco fiestas:
   - **Carnaval:** banderines, estandartes de comparsa y llamadas por la rambla al caer la tarde. La Mama Vieja, el Gramillero y el Escobero bailan en la plaza.
-  - **Semana Criolla:** en la cuchilla, junto al rancho de Don Mateo: ruedo con jineteada, fogón con parrilla, caballos en el palenque, puestos de artesanías y un payador que canta una décima sobre la energía.
+  - **Semana Criolla:** en la cuchilla, junto al rancho de Don Mateo: ruedo con desfile de tropillas, fogón con parrilla, caballos en el palenque, puestos de artesanías y un payador que canta una décima sobre la energía.
   - **Día del Patrimonio:** banderines celestes y blancos, arco de bienvenida y una visita guiada con Marta, que recomienda lugares para conocer en Salto.
   - **Museos en la Noche:** luminarias en la plaza, una proyección de luces en la torre y un puesto con una bicicleta generadora (minijuego) a cargo de Nico.
   - **Fin de año:** luces que titilan, arbolito con luces LED, Papá Noel y fuegos artificiales de noche.
   - Los personajes saludan con algo de la fiesta, y el de cada fiesta le regala a Capi un **accesorio** para el vestuario: antifaz, pañuelo criollo, escarapela, farol o gorro navideño.
-  - Desde el modo guía, "¡Empezar la fiesta ahora!" lleva al momento fuerte: las llamadas, la jineteada, la visita guiada, la proyección o la cuenta regresiva de Año Nuevo.
+  - Desde el modo guía, "¡Empezar la fiesta ahora!" lleva al momento fuerte: las llamadas, el desfile de tropillas, la visita guiada, la proyección o la cuenta regresiva de Año Nuevo.
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
 - **Sonido en la pantalla de inicio:** una versión tranquila de la música y el ambiente del diorama (río, viento, pájaros como el benteveo y el tero, bicicletas, ómnibus eléctricos y grillos de noche). Durante la demostración el sonido sigue a la cámara: tambores en la plaza al atardecer, agua en la represa, viento en el parque eólico. En el kiosco arranca solo; en la web, con el primer clic o tecla, porque así lo exigen los navegadores. La tecla M lo silencia.
 - **Cursor propio:** una flecha amarilla como el casco de Capi, con el rayo de Energimundo. Cambia sobre lo que se puede usar, sobre el piso (clic para caminar) y al girar la cámara. Con letra grande también se agranda.
@@ -76,5 +76,5 @@ El resultado queda en `fuente/web/`. Para publicar una versión nueva, copiá `i
 - Salto, Uruguay · 2026
 - Gráficos 3D con [Three.js](https://threejs.org/) (licencia MIT).
 - Tipografías Lilita One y Nunito (SIL Open Font License).
-- Elenco: Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía, el grupo escolar con su guía, los vecinos de la ciudad, la cuerda de tambores y Pampa.
+- Elenco: Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía, Pepe y su grupo escolar, los vecinos de la ciudad, la cuerda de tambores y Pampa; y en las fiestas, la Mama Vieja, el payador, Marta, Nico y Papá Noel.
 - Datos de generación eléctrica: Ministerio de Industria, Energía y Minería del Uruguay.

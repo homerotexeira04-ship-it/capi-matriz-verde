@@ -51,7 +51,7 @@ const LINES = {
     sofi: 'En las fiestas las termas se llenan de turistas: el agua calentita gusta hasta en verano.'
   },
   criolla: {
-    mateo: '¡Llegó la Semana Criolla, m\'hijo! Hay jineteada en el ruedo, al lado de mi rancho, y el payador está junto al fogón.',
+    mateo: '¡Llegó la Semana Criolla, m\'hijo! Hay desfile de tropillas en el ruedo, al lado de mi rancho, y el payador está junto al fogón.',
     valeria: 'En Semana de Turismo media ciudad sale de paseo. Igual la red no descansa: alguien tiene que cuidar los 50 Hz.',
     lucia: 'Esta semana la flota lleva gente a la fiesta criolla de la cuchilla. ¡Bajate en la parada del parque eólico!',
     guia: 'La Semana Criolla celebra las tradiciones del campo: el mate, el asado con cuero, la guitarra y los caballos.'
@@ -194,7 +194,7 @@ export class Fiestas {
     if (S.cast) for (const c of S.cast.list) { c.p.group.position.set(c.x, 2.2, c.z); c.p.group.rotation.y = c.ry; S.root.add(c.p.group); S.solids.push({ x: c.x, z: c.z, r: 0.55 }); }
     return S;
   }
-  // ---------- Semana Criolla en la cuchilla: ruedo con jineteada, fogón con payador, puestos y caballos ----------
+  // ---------- Semana Criolla en la cuchilla: ruedo con desfile de tropillas, fogón con payador, puestos y caballos ----------
   buildCriolla(S) {
     const w = this.g.world, gy = (x, z) => w.groundAt(x, z), wood = mat(0x7b5a3a), R = RUEDO;
     const N = 24, posts = [];
@@ -235,10 +235,14 @@ export class Fiestas {
       { p: pay, key: 'payador', x: PAY[0], z: PAY[1], ry: 0.3, dance: 'payador', sit: true },
       { p: oy[0], x: 60.2, z: 19.2, ry: -1.9, dance: 'listen', sit: true },
       { p: oy[1], x: 60.9, z: 17.6, ry: -1.4, dance: 'listen', sit: true }] };
-    // jineteada en el ruedo y público alrededor
-    const hz = horse(0x6b3f22, 0x2a1c12); S.root.add(hz.group);
-    const rider = makePerson({ skin: 0xc58b62, shirt: 0xf2efe8, pants: 0x26262b, hair: 0x1a1412, hat: 'boina', hatColor: 0x1c1c1e }); rider.group.position.set(0, -0.38, -0.12); rider.legL.rotation.z = 0.5; rider.legR.rotation.z = -0.5; rider.legL.rotation.x = rider.legR.rotation.x = -0.4; rider.group.add(neckerchief(0xd4483b)); hz.body.add(rider.group);
-    S.jine = { hz, rider, t: 0, a: 0 };
+    // desfile de tropillas: la yegua madrina con su cencerro adelante, la tropilla de un mismo pelo atrás y el tropillero a caballo cerrando
+    const tropa = [];
+    const madrina = horse(0xe2ddd2, 0x8f8a80); const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.18, 8), mat(0xc9a14a)); bell.position.set(0, 0.25, 0.25); madrina.neck.add(bell); tropa.push({ h: madrina, gap: 0 });
+    for (let i = 0; i < 6; i++) tropa.push({ h: horse(0xc9955a, 0x3a2414), gap: 1 + i });
+    const montado = horse(0x3b2a1e, 0x1a1412), rider = makePerson({ skin: 0xc58b62, shirt: 0xf2efe8, pants: 0x26262b, hair: 0x1a1412, hat: 'boina', hatColor: 0x1c1c1e, poncho: 0xb0302a });
+    rider.group.position.set(0, -0.38, -0.12); rider.legL.rotation.z = 0.5; rider.legR.rotation.z = -0.5; rider.legL.rotation.x = rider.legR.rotation.x = -0.4; montado.body.add(rider.group); tropa.push({ h: montado, gap: 7.4, rider });
+    tropa.forEach(o => S.root.add(o.h.group));
+    S.tropa = { list: tropa, a: 0, rider };
     S.crowd = [];
     for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 + 0.3; if (Math.abs(a - Math.PI / 2) < 0.45) continue; const x = R.x + Math.cos(a) * (R.r + 1.25), z = R.z + Math.sin(a) * (R.r + 1.25);
       const p = makePerson({ skin: SKINS[i % SKINS.length], shirt: [0x5aa9e6, 0xf2efe8, 0xd4483b, 0x6b8f4e, 0xffd23f][i % 5], pants: [0x26262b, 0x4a3b2a, 0x2b3a55][i % 3], hair: HAIRS[i % HAIRS.length], hat: i % 3 === 0 ? 'boina' : i % 3 === 1 ? 'gorra' : undefined, hatColor: [0x1c1c1e, 0xf2efe8][i % 2], scale: i % 4 === 3 ? 0.66 : 1 });
@@ -301,7 +305,7 @@ export class Fiestas {
     if (k === 'carnaval') { G.hour = 19.5; S.parade.x = clamp(c.x + 9, -76, -16); this.cfT = 0.5; if (play) g.ui.note(c.z > 55 ? '¡Ahí vienen las llamadas por la rambla!' : '¡Arrancan las llamadas en la rambla! Bajá a verlas.', 6); }
     if (k === 'patrimonio') { G.hour = 10.5; const T = S.tour; T.i = 0; T.wait = 2; T.x = TOUR[0][0]; T.z = TOUR[0][1]; T.vis.forEach(v => { v.x = T.x + v.o[0]; v.z = T.z + v.o[1]; }); if (play) g.ui.note('Arranca la visita guiada del Día del Patrimonio en la Plaza Matriz.', 6); }
     if (k === 'fiestas') { G.hour = 23.9; this.count = 10.999; this.countN = 11; }
-    if (k === 'criolla') { G.hour = 15.5; this.jineNow = 10; if (play) g.ui.note('¡Arranca la jineteada en el ruedo de la cuchilla, al lado del rancho de Don Mateo!', 6); }
+    if (k === 'criolla') { G.hour = 15.5; this.trotT = 14; if (play) g.ui.note('¡Arranca el desfile de tropillas en el ruedo de la cuchilla, al lado del rancho de Don Mateo!', 6); }
     if (k === 'museos') { G.hour = 21; this.show = 40; if (play) g.ui.note('¡Empieza Museos en la Noche! Hay una proyección en la torre y una bicicleta generadora en la plaza.', 6); }
   }
   countdown(dt, st) {
@@ -354,16 +358,15 @@ export class Fiestas {
     if (this.payadaT > 0) this.payadaT -= dt;
     S.flames.forEach((f, i) => { const k = 0.8 + Math.sin(t * (9 + i * 3) + i) * 0.15 + Math.random() * 0.1; f.scale.set(k, 0.85 + Math.sin(t * (11 + i * 2)) * 0.2 + Math.random() * 0.12, k); });
     if (st.fx && st.fx.soft && Math.random() < 9 * dt) st.fx.soft.emit(FOGON.x + (Math.random() - 0.5) * 0.4, w.groundAt(FOGON.x, FOGON.z) + 1.2, FOGON.z + (Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.3, 1.1 + Math.random() * 0.6, (Math.random() - 0.5) * 0.3, 2.6, 0.35, 1.3, 0x9a9a9a, 0.32, -0.05, 0.4);
-    // jineteada: un rato al paso y después corcovos, con el público que grita
-    const J = S.jine, hz = J.hz; J.t += dt; const cyc = J.t % 18, buck = cyc > 9 || this.jineNow > 0; if (this.jineNow > 0) this.jineNow -= dt;
-    if (!buck) { J.a += dt * 0.42; } else J.a += dt * 0.15;
-    const rr = buck ? 1.6 : 3.2, x = R.x + Math.cos(J.a) * rr, z = R.z + Math.sin(J.a) * rr, gy = w.groundAt(x, z);
-    hz.group.position.set(x, gy + (buck ? Math.abs(Math.sin(t * 5.5)) * 0.45 : 0), z); hz.group.rotation.y = -J.a + (buck ? Math.sin(t * 2.7) * 0.9 : 0);
-    hz.body.rotation.x = buck ? Math.sin(t * 5.5) * 0.42 : Math.sin(t * 6) * 0.03;
-    hz.legs.forEach((l, i) => { l.rotation.x = buck ? Math.sin(t * 5.5 + (i < 2 ? 0 : Math.PI)) * 0.5 : Math.sin(t * 6 + i * 1.6) * 0.35; });
-    hz.tail.rotation.x = 0.5 + Math.sin(t * 3) * 0.25;
-    J.rider.armR.rotation.x = buck ? -2.6 + Math.sin(t * 6) * 0.5 : -0.4; J.rider.group.rotation.x = buck ? -Math.sin(t * 5.5) * 0.3 : 0;
-    S.crowd.forEach((p, i) => { p.armR.rotation.x = buck && Math.sin(t * 4 + i) > 0 ? -2.7 : 0; p.armL.rotation.x = buck && Math.sin(t * 3.3 + i * 2) > 0.3 ? -2.5 : 0; });
+    // desfile de tropillas: siguen a la madrina en ronda dentro del ruedo; con el botón del modo guía van al trote
+    const T = S.tropa, trot = this.trotT > 0; if (trot) this.trotT -= dt;
+    const rr = 3.7, speed = trot ? 1.9 : 0.95, step = 2.15 / rr; T.a += dt * speed / rr;
+    T.list.forEach((o, i) => { const h = o.h, a = T.a - o.gap * step, x = R.x + Math.cos(a) * rr, z = R.z + Math.sin(a) * rr, gy = w.groundAt(x, z), f = t * (trot ? 9 : 5.5) + i * 1.3;
+      h.group.position.set(x, gy + (trot ? Math.abs(Math.sin(f)) * 0.08 : 0), z); h.group.rotation.y = -a;
+      h.body.rotation.x = Math.sin(f) * (trot ? 0.05 : 0.025); h.legs.forEach((l, j) => { l.rotation.x = Math.sin(f + (j === 0 || j === 3 ? 0 : Math.PI)) * (trot ? 0.45 : 0.32); });
+      h.tail.rotation.x = 0.45 + Math.sin(t * 2.2 + i) * 0.2; h.neck.rotation.x = -0.55 + Math.sin(f) * 0.06; });
+    T.rider.armR.rotation.x = -2.5 + Math.sin(t * 1.4) * 0.35;   // el tropillero saluda con el brazo en alto
+    const clap = Math.sin(t * 9) > 0; S.crowd.forEach((p, i) => { const cheer = trot || Math.sin(t * 0.6 + i) > 0.55; p.armR.rotation.x = cheer ? (clap ? -1.5 : -1.2) : 0; p.armL.rotation.x = cheer ? (clap ? -1.2 : -1.5) : 0; });
     S.tied.forEach((h, i) => { h.tail.rotation.x = 0.4 + Math.sin(t * 2.3 + i * 2) * 0.35; h.neck.rotation.x = -0.55 + Math.sin(t * 0.8 + i) * 0.1; });
     S.stalls.forEach((v, i) => { v.armR.rotation.x = Math.sin(t * 1.3 + i * 2) > 0.85 ? -2.4 : 0; });
     // sonido: guitarra del payador, chisporroteo del fogón y gritos del público
@@ -371,7 +374,9 @@ export class Fiestas {
       const dP = Math.hypot(L.x - PAY[0], L.z - PAY[1]), vP = clamp(1 - dP / 18, 0, 1) * (this.payadaT > 0 ? 1.5 : 0.75);
       const e8 = 0.3, beat = Math.floor(t / e8); if (vP > 0.03 && beat !== this.lastBeat) { const pos = beat % 8, bar = Math.floor(beat / 8); if (pos === 0 || pos === 3 || pos === 6) A.strum(bar % 2 ? E7 : AM, vP * (pos === 0 ? 1 : 0.7)); } this.lastBeat = beat;
       const dF = Math.hypot(L.x - FOGON.x, L.z - FOGON.z); if (dF < 14 && Math.random() < 7 * dt * (1 - dF / 14)) A.crackle(1 - dF / 14);
-      const dR = Math.hypot(L.x - R.x, L.z - R.z); if (buck && dR < 32 && (this.cheerT = (this.cheerT || 0) - dt) <= 0) { this.cheerT = 1.6 + Math.random() * 1.6; A.cheer(1 - dR / 32); }
+      const dR = Math.hypot(L.x - R.x, L.z - R.z);
+      if (dR < 32 && (this.bellT = (this.bellT || 0) - dt) <= 0) { this.bellT = trot ? 0.45 : 0.75; A.cencerro(1 - dR / 32); }
+      if (dR < 32 && (this.cheerT = (this.cheerT || 0) - dt) <= 0) { this.cheerT = trot ? 1.8 + Math.random() * 1.5 : 5 + Math.random() * 5; A.cheer((1 - dR / 32) * (trot ? 1 : 0.5)); }
     }
   }
   museos(S, dt, t, st, L) {

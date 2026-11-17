@@ -84,6 +84,7 @@ export class AudioSynth {
   bell(v = 1) { for (const d of [0, 0.19]) { this.tone(2650, 0.55, 'sine', 0.026 * v, d); this.tone(3980, 0.35, 'sine', 0.01 * v, d); } }
   busBy(v = 1) { this.swell(3, 0.03 * v, 'bandpass', 380, 0.8, 620); this.tone(440, 3, 'sine', 0.008 * v, 0, 610); }
   strum(ch, v = 1) { ch.forEach((m, i) => { const f = mtof(m), w = i * 0.017; this.tone(f, 1.1, 'triangle', 0.05 * v, w, f * 0.996, null, 0.003); this.tone(f * 2, 0.4, 'sine', 0.014 * v, w, null, null, 0.003); }); }   // rasgueo de guitarra
+  cencerro(v = 1) { this.tone(780, 0.28, 'square', 0.012 * v, 0, 760); this.tone(1265, 0.22, 'triangle', 0.016 * v, 0.004, 1240); this.noise(0.03, 0.02 * v, 'bandpass', 2600, 4); }   // campana de la yegua madrina
   crackle(v = 1) { this.noise(0.025, 0.06 * v, 'highpass', 2400 + Math.random() * 2400, 1); }   // chisporroteo del fogón
   cheer(v = 1) { this.swell(1.8, 0.06 * v, 'bandpass', 850, 0.6, 1250); if (Math.random() < 0.6) this.tone(1500 + Math.random() * 500, 0.35, 'sine', 0.02 * v, 0.3, 2300); }   // aplausos y gritos del público
   lap(v = 1) { this.noise(0.55, 0.035 * v, 'lowpass', 520, 0.6); this.tone(330, 0.09, 'sine', 0.012 * v, 0.12, 190); }

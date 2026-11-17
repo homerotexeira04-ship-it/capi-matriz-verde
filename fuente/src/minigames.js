@@ -212,6 +212,36 @@ class Crank {
   }
 }
 
+// Bicicleta generadora (Museos en la Noche): pedalear alternando teclas para prender seis lamparitas LED
+class Bici {
+  constructor(m, o) { this.m = m; this.title = o.title || 'Bicicleta generadora'; this.hint = 'Alterná ← y → (o A y D) para pedalear: el generador transforma tu movimiento en electricidad y se prenden las lamparitas LED. En pantalla táctil: tocá un lado y el otro.'; this.prog = 0; this.side = 0; this.ang = 0; this.t = 0; this.kick = 0; this.lit = 0; }
+  push(s) { if (this.done || s === this.side) return; this.side = s; this.prog = Math.min(1, this.prog + 0.034); this.ang += 0.6; this.kick = 0.12; const n = Math.floor(this.prog * 6 + 1e-6); if (n > this.lit) this.m.audio.blip(n); this.lit = n; if (this.prog >= 1) this.m.finish(true, '¡LAS 6 LAMPARITAS PRENDIDAS!'); }
+  key(c, d) { if (!d) return; if (c === 'ArrowLeft' || c === 'KeyA') this.push(-1); else if (c === 'ArrowRight' || c === 'KeyD') this.push(1); }
+  down(x) { this.push(x < W / 2 ? -1 : 1); }
+  update(dt) { this.t += dt; this.kick = Math.max(0, this.kick - dt); this.prog = Math.max(0, this.prog - dt * 0.07); this.lit = Math.floor(this.prog * 6 + 1e-6); }
+  draw(g) {
+    // lamparitas LED que se van prendiendo
+    for (let i = 0; i < 6; i++) { const x = 70 + i * 52, y = 48, on = i < this.lit;
+      if (on) { g.fillStyle = 'rgba(255,214,90,.35)'; g.beginPath(); g.arc(x, y, 24, 0, 7); g.fill(); }
+      g.fillStyle = on ? '#fff3b0' : '#33415c'; g.beginPath(); g.arc(x, y, 14, 0, 7); g.fill(); g.fillStyle = '#8fa3c8'; g.fillRect(x - 7, y + 12, 14, 9); }
+    g.strokeStyle = '#57e389'; g.lineWidth = 3; g.beginPath(); g.moveTo(70, 78); g.lineTo(330, 78); g.lineTo(330, 152); g.lineTo(312, 162); g.stroke();
+    // bicicleta vista de costado
+    const cx = 205, cy = 188, a = this.ang;
+    for (const wx of [120, 300]) { g.strokeStyle = '#d8e2f2'; g.lineWidth = 6; g.beginPath(); g.arc(wx, cy, 44, 0, 7); g.stroke(); for (let k = 0; k < 6; k++) { const q = (wx === 300 ? a * 1.6 : 0) + k * Math.PI / 3; g.lineWidth = 2; g.beginPath(); g.moveTo(wx, cy); g.lineTo(wx + Math.cos(q) * 44, cy + Math.sin(q) * 44); g.stroke(); } }
+    g.strokeStyle = '#e6007e'; g.lineWidth = 8; g.lineCap = 'round'; g.beginPath(); g.moveTo(120, cy); g.lineTo(185, cy - 65); g.lineTo(cx, cy); g.lineTo(300, cy); g.lineTo(255, cy - 65); g.lineTo(185, cy - 65); g.moveTo(255, cy - 65); g.lineTo(300, cy); g.moveTo(255, cy - 65); g.lineTo(250, cy - 85); g.stroke();
+    g.fillStyle = '#26262b'; rr(g, 232, cy - 93, 40, 10, 5); g.fill(); g.strokeStyle = '#d8e2f2'; g.lineWidth = 5; g.beginPath(); g.moveTo(185, cy - 65); g.lineTo(175, cy - 87); g.lineTo(160, cy - 87); g.stroke();
+    g.fillStyle = '#2a4374'; rr(g, 296, cy - 45, 34, 26, 6); g.fill(); txt(g, 'G', 313, cy - 31, 15, '#57e389');
+    const px = Math.cos(a) * 26, py = Math.sin(a) * 26; g.strokeStyle = '#ffc93c'; g.lineWidth = 7; g.beginPath(); g.moveTo(cx - px, cy - py); g.lineTo(cx + px, cy + py); g.stroke();
+    for (const s of [-1, 1]) { g.fillStyle = '#ffc93c'; g.fillRect(cx + s * px - 11, cy + s * py - 4, 22, 8); }
+    // teclas y potencia
+    for (const [s, x, lab] of [[-1, 420, '←'], [1, 500, '→']]) { const on = this.side === s && this.kick > 0; rr(g, x - 32, 110, 64, 64, 12); g.fillStyle = on ? '#ffc93c' : this.side === s ? '#2a4374' : '#13284c'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#6f84a8'; g.stroke(); txt(g, lab, x, 143, 30, on ? '#3a2500' : '#fff7e6'); }
+    txt(g, this.side === 0 ? 'Empezá con cualquiera' : 'Ahora la otra', 460, 196, 15, '#a9bbd6', 'center', 'Nunito,sans-serif');
+    rr(g, 60, 262, 440, 20, 10); g.fillStyle = '#0f2140'; g.fill(); g.strokeStyle = '#2a4374'; g.lineWidth = 3; g.stroke();
+    g.fillStyle = '#ffc93c'; rr(g, 63, 265, Math.max(8, 434 * this.prog), 14, 7); g.fill();
+    txt(g, 'POTENCIA ' + Math.round(this.prog * 100) + ' W · ' + this.lit + ' de 6 LED', W / 2, 244, 16, '#fff7e6');
+  }
+}
+
 // 6) Secuencia de arranque: repetir el orden en que se encienden las etapas de la caldera
 const PADS = [{ k: ['ArrowUp', 'KeyW'], lab: '↑', name: 'AIRE', col: '#5ad1ff', x: 280, y: 78, f: 660 }, { k: ['ArrowRight', 'KeyD'], lab: '→', name: 'CHISPA', col: '#ffc93c', x: 385, y: 150, f: 880 }, { k: ['ArrowDown', 'KeyS'], lab: '↓', name: 'CHIPS', col: '#ff8a4a', x: 280, y: 222, f: 440 }, { k: ['ArrowLeft', 'KeyA'], lab: '←', name: 'VAPOR', col: '#e8f1f2', x: 175, y: 150, f: 550 }];
 class Seq {
@@ -344,7 +374,7 @@ class SunCharge {
   }
 }
 
-export const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge };
+export const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge, bici: Bici };
 
 export class Minigames {
   constructor(audio) {

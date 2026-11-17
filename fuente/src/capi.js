@@ -77,7 +77,7 @@ export class Capi {
       const rim = add(new THREE.TorusGeometry(0.15, 0.035, 5, 10), mYellow, sx * 0.44, 0.42, -0.1, head); rim.rotation.y = Math.PI / 2; rim.rotation.x = sx * 0.4;
     }
     // Casco con dos aberturas para las orejas
-    const helm = new THREE.Group(); helm.position.set(0, 0.2, -0.04); helm.rotation.x = -0.3; head.add(helm);   // echado hacia atrás para que se vean los ojos
+    const helm = new THREE.Group(); helm.position.set(0, 0.2, -0.04); helm.rotation.x = -0.3; head.add(helm); this.helm = helm;   // echado hacia atrás para que se vean los ojos
     add(new THREE.SphereGeometry(0.58, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mYellow, 0, 0.03, 0, helm).scale.set(1.0, 0.72, 1.04);
     add(new THREE.CylinderGeometry(0.61, 0.63, 0.06, 18), mYellow, 0, 0.04, 0, helm); add(new THREE.BoxGeometry(0.44, 0.05, 0.16), mYellow, 0, 0.04, 0.62, helm);
     add(new THREE.BoxGeometry(0.12, 0.07, 0.9), mYellow, 0, 0.45, 0, helm);
@@ -87,7 +87,34 @@ export class Capi {
     root.traverse(o => { if (o.isMesh) { o.layers.enable(1); o.renderOrder = 3; const m = o.material; m.stencilWrite = true; m.stencilRef = 1; m.stencilFunc = THREE.AlwaysStencilFunc; m.stencilZPass = THREE.ReplaceStencilOp; } });
     root.position.copy(this.pos); scene.add(root);
     this.buildProps(scene, add, M);
+    this.buildAccessories(add, M);
   }
+  // Accesorios de fiesta (vestuario): antifaz, escarapela, gorro navideño, pañuelo criollo y farol
+  buildAccessories(add, M) {
+    const A = this.accs = {}, side = { side: THREE.DoubleSide };
+    const mk = A.antifaz = new THREE.Group(); this.head.add(mk);
+    const purple = M(0x6a2c91), gold = M(0xffd23f, { metalness: 0.4, roughness: 0.4 });
+    for (const sx of [-1, 1]) { const p = add(new THREE.BoxGeometry(0.34, 0.22, 0.03), purple, sx * 0.41, 0.06, 0.45, mk); p.rotation.y = sx * 0.62; const r = add(new THREE.TorusGeometry(0.12, 0.035, 6, 14), gold, sx * 0.4, 0.05, 0.48, mk); r.rotation.y = sx * 0.62; }
+    add(new THREE.BoxGeometry(0.2, 0.07, 0.04), purple, 0, 0.1, 0.55, mk);
+    const fe = add(new THREE.ConeGeometry(0.06, 0.46, 6), M(0xe6007e), 0.62, 0.3, 0.28, mk); fe.rotation.z = -0.7;
+    const fe2 = add(new THREE.ConeGeometry(0.05, 0.36, 6), M(0x2ed3c6), 0.66, 0.22, 0.2, mk); fe2.rotation.z = -1.0;
+    const es = A.escarapela = new THREE.Group(); es.position.set(0.3, 0.32, 0.6); es.rotation.y = 0.5; this.rig.add(es);
+    add(new THREE.CircleGeometry(0.15, 16), M(0x5aa9e6, side), 0, 0, 0, es); add(new THREE.CircleGeometry(0.1, 16), M(0xffffff, side), 0, 0, 0.006, es); add(new THREE.CircleGeometry(0.05, 12), M(0x5aa9e6, side), 0, 0, 0.012, es);
+    for (const sx of [-1, 1]) { const t = add(new THREE.BoxGeometry(0.06, 0.2, 0.01), M(0x5aa9e6), sx * 0.05, -0.18, -0.006, es); t.rotation.z = sx * 0.25; }
+    const go = A.gorro = new THREE.Group(); go.position.set(0, 0.06, 0); this.helm.add(go);   // calzado sobre el casco
+    add(new THREE.CylinderGeometry(0.7, 0.7, 0.16, 18), M(0xf7f7f7), 0, 0, 0, go); add(new THREE.ConeGeometry(0.68, 1.05, 16), M(0xd42a2a), 0, 0.6, 0, go);
+    add(new THREE.SphereGeometry(0.13, 8, 6), M(0xf7f7f7), 0, 1.14, 0, go);
+    const pa = A.panuelo = new THREE.Group(); pa.position.set(0, 0.52, 0); this.rig.add(pa);   // sobre el borde del chaleco (Capi casi no tiene cuello)
+    const ring = add(new THREE.TorusGeometry(0.62, 0.085, 6, 22), M(0x5aa9e6), 0, 0, 0, pa); ring.rotation.x = Math.PI / 2; ring.scale.y = 0.94;
+    const tri = add(new THREE.ConeGeometry(0.3, 0.5, 3), M(0x5aa9e6), 0, -0.2, 0.64, pa); tri.rotation.set(Math.PI + 0.25, 0, 0); tri.scale.z = 0.3;
+    add(new THREE.SphereGeometry(0.08, 6, 5), M(0xffffff), 0, 0.02, 0.66, pa);
+    const fa = A.farol = new THREE.Group(); fa.position.set(0, -0.66, 0.12); this.armL.add(fa);
+    const frame = M(0x26262b); add(new THREE.TorusGeometry(0.07, 0.015, 4, 10, Math.PI), frame, 0, -0.02, 0, fa);
+    add(new THREE.BoxGeometry(0.2, 0.04, 0.2), frame, 0, -0.06, 0, fa); add(new THREE.BoxGeometry(0.2, 0.04, 0.2), frame, 0, -0.34, 0, fa);
+    this.farolGlass = add(new THREE.BoxGeometry(0.15, 0.24, 0.15), new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc420, emissiveIntensity: 1.4 }), 0, -0.2, 0, fa);
+    for (const k in A) A[k].visible = false;
+  }
+  setAccessory(k) { for (const key in this.accs) this.accs[key].visible = key === k; }
   // Objetos de los festejos de cada misión
   buildProps(scene, add, M) {
     const P = this.props = {}, dark = M(0x15151f, { metalness: 0.5, roughness: 0.2 });

@@ -1,4 +1,5 @@
 // Extras: chispas de saber coleccionables, vestuario de Capi, viaje rápido en ómnibus y diploma final.
+import { ACCS, FIESTAS } from './fiestas.js';
 import * as THREE from 'three';
 import { POS, RES } from './terrain.js';
 import { smooth } from './util.js';
@@ -38,7 +39,7 @@ const SPARKS = [
 
 export class Extras {
   constructor(game) {
-    this.g = game; this.got = new Set(); this.outfit = 0; this.open = null; this.t = 0; this.factT = 0; this.fading = false;
+    this.g = game; this.got = new Set(); this.outfit = 0; this.acc = new Set(); this.accOn = null; this.open = null; this.t = 0; this.factT = 0; this.fading = false;
     const w = game.world, mat = new THREE.MeshBasicMaterial({ color: 0xffe066, fog: false }), geo = new THREE.OctahedronGeometry(0.42, 0);
     this.sparks = SPARKS.map(([x, z, dy, place, text], i) => {
       const g = new THREE.Group(), a = new THREE.Mesh(geo, mat), b = new THREE.Mesh(geo, mat); a.scale.set(0.55, 1.5, 0.55); b.scale.set(1.5, 0.55, 0.55); g.add(a, b);
@@ -55,11 +56,13 @@ export class Extras {
     $('dpName').addEventListener('keydown', e => { if (e.key === 'Enter') $('dGo').click(); });
     this.refresh();
   }
-  data() { return { sparks: [...this.got], outfit: this.outfit, favors: this.g.social ? this.g.social.saved() : [] }; }
-  reset() { if (this.g.social) this.g.social.reset(); this.got.clear(); this.setOutfit(0); this.refresh(); }
-  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && (O.favor ? this.g.social && this.g.social.done[O.favor] : O.need <= this.got.size) ? s.outfit : 0; this.setOutfit(o); this.refresh(); }
+  data() { return { sparks: [...this.got], outfit: this.outfit, favors: this.g.social ? this.g.social.saved() : [], acc: [...this.acc], accOn: this.accOn }; }
+  reset() { if (this.g.social) this.g.social.reset(); this.got.clear(); this.setOutfit(0); this.acc.clear(); this.setAcc(null); this.refresh(); }
+  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && (O.favor ? this.g.social && this.g.social.done[O.favor] : O.need <= this.got.size) ? s.outfit : 0; this.setOutfit(o); this.acc = new Set((s && Array.isArray(s.acc) ? s.acc : []).filter(k => ACCS[k])); this.setAcc(s && s.accOn); this.refresh(); }
   refresh() { this.sparks.forEach(s => { s.group.visible = !this.got.has(s.i); }); $('sparkCount').textContent = `Chispas de saber: ${this.got.size}/${SPARKS.length}`; }
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
+  setAcc(k) { this.accOn = k && this.acc.has(k) ? k : null; this.g.capi.setAccessory(this.accOn); }
+  giveAcc(k) { this.acc.add(k); this.setAcc(k); }
   colors() { const o = OUTFITS[this.outfit], h = c => '#' + c.toString(16).padStart(6, '0'); return { helmet: h(o.helmet), vest: h(o.vest), band: h(o.band) }; }
   close() { if (this.open === 'diploma' || this.open === 'choice') return; if (this.open) $(this.open).classList.add('hidden'); this.open = null; }
 
@@ -89,6 +92,13 @@ export class Extras {
       b.onclick = () => { this.setOutfit(i); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
       box.appendChild(b);
     });
+    const head = document.createElement('div'); head.className = 'wHead'; head.textContent = 'Accesorios de fiesta'; box.appendChild(head);
+    for (const k in ACCS) {
+      const A = ACCS[k], ok = this.acc.has(k), on = this.accOn === k, b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (on ? ' on' : ''); b.disabled = !ok;
+      b.innerHTML = `<span class="sw"><i style="background:${h(A.color)}"></i></span><b>${A.name}</b><em>${ok ? (on ? 'puesto · tocá para sacarlo' : 'disponible') : 'en ' + FIESTAS[A.fest]}</em>`;
+      b.onclick = () => { this.setAcc(on ? null : k); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
+      box.appendChild(b);
+    }
     $('wHint').textContent = `Tenés ${this.got.size} de ${SPARKS.length} chispas. ` + this.hint();
   }
 

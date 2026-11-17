@@ -4,7 +4,7 @@ import { B, ZONES, terrainH, waterAt, coastD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
-export const NAMES = { capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel' };
+export const NAMES = { capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno' };
 
 // Retratos pixelados (grilla 24×24) con parpadeo y boca animada
 export function drawFace(g, who, t, talking, col) {
@@ -31,7 +31,9 @@ export function drawFace(g, who, t, talking, col) {
     guia: { bg: '#6a2c91', skin: '#d9a17a', hair: '#2a1c12', body: '#e6007e', hat: '#e6007e' },
     mamavieja: { bg: '#e6007e', skin: '#6b4a33', hair: '#1a1412', body: '#f7f7f7', hat: '#f4f1ea' },
     marta: { bg: '#2f7fc1', skin: '#c58b62', hair: '#3b2a1e', body: '#2f7fc1', hat: '#ffffff' },
-    papanoel: { bg: '#1f7a3a', skin: '#f1c9a5', hair: '#f4f4f4', body: '#d42a2a', hat: '#d42a2a' }
+    papanoel: { bg: '#1f7a3a', skin: '#f1c9a5', hair: '#f4f4f4', body: '#d42a2a', hat: '#d42a2a' },
+    payador: { bg: '#8a5a2b', skin: '#c58b62', hair: '#1a1412', body: '#f2efe8', hat: '#1c1c1e' },
+    nico: { bg: '#3a1f6b', skin: '#e0ac86', hair: '#3b2a1e', body: '#ffc420', hat: '#3b2a1e' }
   }[who] || { bg: '#23395d', skin: '#d9a17a', hair: '#2a1c12', body: '#4aa3d8', hat: '#4aa3d8' };
   R(0, 0, 24, 24, P.bg); R(3, 18, 18, 6, P.body); R(10, 16, 4, 3, P.skin);
   R(6, 6, 12, 11, P.skin); R(5, 7, 2, 8, P.hair); R(17, 7, 2, 8, P.hair);
@@ -41,6 +43,8 @@ export function drawFace(g, who, t, talking, col) {
   if (who === 'lucia') { R(5, 2, 14, 5, P.hat); R(5, 6, 16, 1, P.hat); R(19, 8, 2, 9, P.hair); R(9, 19, 6, 1, '#fff'); }
   if (who === 'mamavieja') { R(4, 2, 16, 6, P.hat); R(7, 4, 1, 1, '#e6007e'); R(12, 3, 1, 1, '#e6007e'); R(16, 5, 1, 1, '#e6007e'); R(5, 13, 1, 2, '#ffd23f'); R(18, 13, 1, 2, '#ffd23f'); }
   if (who === 'marta') { R(5, 3, 14, 4, P.hat); R(12, 6, 9, 1, P.hat); }
+  if (who === 'payador') { R(3, 3, 18, 4, P.hat); R(9, 3, 6, 1, P.hat); R(8, 13, 8, 2, '#2a1c12'); R(9, 18, 6, 2, '#5aa9e6'); }
+  if (who === 'nico') { R(5, 3, 14, 4, P.hair); R(6, 9, 5, 4, '#20242c'); R(13, 9, 5, 4, '#20242c'); R(11, 10, 2, 1, '#20242c'); }
   if (who === 'papanoel') { R(5, 1, 14, 5, P.hat); R(18, 0, 4, 4, '#ffffff'); R(4, 6, 16, 2, '#ffffff'); R(6, 13, 12, 6, '#f4f4f4'); R(3, 21, 18, 1, '#ffffff'); }
   if (!blink) { R(8, 10, 2, 2, '#20242c'); R(14, 10, 2, 2, '#20242c'); } else { R(8, 11, 2, 1, '#20242c'); R(14, 11, 2, 1, '#20242c'); }
   if (open) R(10, 14, 4, 2, '#7a2f2f'); else R(10, 14, 4, 1, '#8a4a3a');

@@ -11,9 +11,9 @@ const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 21.5, x1: 29.5, z0: 37.5, z1: 44.5, g0: 24, g1: 27 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-60, 74.5, 'la rambla oeste', 0.15], [8, 74.5, 'la rambla este', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-58, 78.2, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5] };
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-58, 78.2, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
-const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas' };
+const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
 export const CLEAR2 = [[20, 31.5, 36, 46.5]];
 
@@ -36,9 +36,17 @@ const WHO = {
   papanoel: { hi: '¡Jo, jo, jo! Hola, Capi. Con este calor, el traje rojo pesa más que la bolsa de regalos.', q: [
     ['¿Cómo repartís tantos regalos?', 'Este año me muevo en los ómnibus eléctricos de Lucía: me dejan en cada parada sin echar ni un poquito de humo.'],
     ['¿Las luces de Navidad gastan mucho?', 'Si son LED, muy poco: alumbran lo mismo que las lamparitas viejas con mucha menos electricidad. Y conviene apagarlas al irse a dormir.'],
-    ['¿Qué pedís para el año que viene?', '¡Una red cien por ciento renovable todos los días! Y un ventilador para el trineo, que en diciembre acá hace un calor bárbaro.']] }
+    ['¿Qué pedís para el año que viene?', '¡Una red cien por ciento renovable todos los días! Y un ventilador para el trineo, que en diciembre acá hace un calor bárbaro.']] },
+  payador: { hi: '¡Buenas, Capi! Arrímese al fogón, que la guitarra está templada.', q: [
+    ['¿Qué es una payada?', 'Es poesía improvisada con guitarra. En la payada de contrapunto, dos payadores se contestan en verso, por turnos y sin libreto.'],
+    ['¿Me cantás una payada?', ['Ahí va, compañero, una décima de mi cosecha:', 'Con permiso, compañero,\nle canto a la red de acá,\nque el viento soplando va\npor la cuchilla y el estero;', 'el río, fiel y certero,\ngira turbinas; de día\ncarga el sol con alegría;', 'la biomasa da su llama,\ny el Capi, que tiene fama,\n¡cuida la red, alma mía!'], 'payada'],
+    ['¿Qué es la Semana Criolla?', 'Una fiesta de las tradiciones del campo que se hace en Semana de Turismo: jineteadas, fogones, payadores y artesanías. La del Prado, en Montevideo, se hace desde 1925.']] },
+  nico: { hi: '¡Bienvenido a Museos en la Noche, Capi! ¿Te animás con la bicicleta generadora?', q: [
+    ['¿Qué es Museos en la Noche?', 'Una noche al año, en diciembre, museos de todo el país abren en un horario distinto y con entrada libre, con actividades para toda la familia.'],
+    ['¿Cómo funciona la bicicleta generadora?', 'Al pedalear, un pequeño generador transforma el movimiento en electricidad. Es lo mismo que pasa en una turbina o en un molino, pero con tus piernas.'],
+    ['¿Cuánta energía da una persona pedaleando?', 'Pedaleando parejo, unos 100 vatios: alcanza para varias lamparitas LED, pero no para una estufa. ¡Por eso usamos el agua, el viento y el sol!']] }
 };
-export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel' };
+export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Central Hidroeléctrica, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
@@ -114,10 +122,12 @@ export class Social {
     const g = this.g, Wd = WHO[who], f = FAV[who], opts = Wd.q.map(q => [q[0], '']); let fi = -1;
     if (f && !this.done[who] && (who !== 'lucia' || g.grid.buses)) { fi = opts.length; opts.push(this.active === who ? ['¿Cómo era el favor?', ''] : ['¿Necesitás una mano con algo?', 'Un favor corto, con premio']); }
     const m = g.missions, busy = m.m5 && !m.flags.m5won, sc = busy ? null : SCENES[who]; let si = -1; if (sc) { si = opts.length; opts.push([sc[1], sc[2]]); }
+    const ex = (g.fiestas && g.fiestas.extraOptions(who)) || [], ei = opts.length; ex.forEach(e => opts.push([e[0], e[1]]));
     opts.push(['Nada más, ¡gracias!', '']);
     const fl = g.fiestas && g.fiestas.line(who); if (fl) line = fl;
     g.extras.choose(NAMES[who], line || Wd.hi, opts, i => {
-      if (i < Wd.q.length) return g.ui.dialog([L(who, Wd.q[i][1])]);
+      if (i < Wd.q.length) { const a = Wd.q[i][1]; if (Wd.q[i][2] && g.fiestas) g.fiestas.onAsk(who, Wd.q[i][2]); return g.ui.dialog((Array.isArray(a) ? a : [a]).map(x => L(who, x))); }
+      if (i >= ei && i < ei + ex.length) return ex[i - ei][2]();
       if (i === si) return this.enterScene(sc[0], sc[3]);
       if (i !== fi) return;
       if (this.active && this.active !== who) return g.ui.dialog([L(who, 'Primero terminá el favor que ya empezaste, y después volvé por acá.')]);

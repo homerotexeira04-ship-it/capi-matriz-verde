@@ -1,7 +1,7 @@
 // Arranque del juego: render, cámara isométrica orbital, entrada (teclado, ratón y táctil) y bucle principal.
 import * as THREE from 'three';
 import { clamp, lerp, damp, angDiff } from './util.js';
-import { B, POS, ZONES, CITY_Y } from './terrain.js';
+import { B, POS, ZONES, CITY_Y, coastD, channelD } from './terrain.js';
 import { EnergyGrid } from './grid.js';
 import { World, canvasTex } from './world.js';
 import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops } from './sectors.js';
@@ -68,6 +68,8 @@ class Game {
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
     this.ptr = new Map(); this.drag = null; this.autoQuality = true; this.quality = 0; this.ema = 0.016; this.qT = 0;
     this.bind(); this.resize();
+    if (this.kioskCfg) this.audio.start();   // el lanzador del kiosco permite sonido sin tocar nada
+    for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => this.audio.start(), { capture: true, passive: true });
     this.missions.preset(0); this.grid.step(0); this.grid.fossil = this.grid.out.demand - this.grid.out.ren; this.grid.step(0);
     const level = mode => this.extras.choose('¿Cómo querés jugar?', 'Podés cambiar de idea la próxima vez.', [['Explorador', 'Más tranquilo: los minijuegos van más despacio y hay más margen'], ['Ingeniero', 'El desafío completo']], i => this.play(mode, 0, null, i ? 'ingeniero' : 'explorador'));
     $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
@@ -209,6 +211,7 @@ class Game {
     for (const ev of ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart']) window.addEventListener(ev, e => { this.titleIdle = 0; if (this.attract) { this.stopAttract(); if (ev === 'keydown') { e.stopPropagation(); e.preventDefault(); } } }, { capture: true });
     const K = window.CAPI_KIOSCO; this.kioskCfg = K ? { idle: Math.max(30, +K.idle || 180), warn: Math.max(5, +K.warn || 30) } : null; this.lastInput = performance.now();
     if (this.kioskCfg) { this.missions.forget(); for (const ev of ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart']) window.addEventListener(ev, () => { this.lastInput = performance.now(); }, { passive: true, capture: true }); window.addEventListener('contextmenu', e => e.preventDefault()); }
+    window.addEventListener('pointermove', e => { this.mouse = e.pointerType === 'mouse' ? { x: e.clientX, y: e.clientY } : null; }, { passive: true });
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('keydown', e => {
       const c = e.code;
@@ -218,7 +221,7 @@ class Game {
         if (c === 'Escape') { if (this.mg.active) this.mg.cancel(); else this.extras.close(); } else if (!e.repeat) { if (this.mg.active) this.mg.key(c, true); else this.extras.key(c); }
         return;
       }
-      if (this.mode === 'title') { if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
+      if (this.mode === 'title') { if (c === 'KeyM' && !e.repeat) this.toggleMute(); if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
       if (c === 'KeyP' && !e.repeat && this.mode === 'play' && (this.photo || !this.locked)) { this.togglePhoto(); return; }
       if (this.photo) { if (c === 'Escape') this.togglePhoto(); else this.keys[c] = true; return; }
       if (c === 'Escape' && this.tut.on && !this.extras.open && !this.mg.active && !this.ui.dlg) { this.tut.skip(); return; }
@@ -270,12 +273,7 @@ class Game {
     if (this.ui.dlg) return this.ui.advance();
     if (this.locked) return;
     const w = this.world, v = new THREE.Vector3(), W = window.innerWidth, H = window.innerHeight;
-    let best = null, bd = 56;
-    for (const it of w.interList) {
-      if (it.state === 'locked') continue;
-      for (const hy of [1.3, it.baseY - it.y]) { v.set(it.x, it.y + hy, it.z).project(this.camera); if (v.z > 1) continue; const d = Math.hypot((v.x * 0.5 + 0.5) * W - px, (-v.y * 0.5 + 0.5) * H - py); if (d < bd) { bd = d; best = it; } }
-    }
-    const c = this.capi;
+    const best = this.pickAt(px, py), c = this.capi;
     if (best) {
       if (Math.hypot(best.x - c.pos.x, best.z - c.pos.z) < best.r) return this.interact(best.id);
       c.navigate(best.x, best.z, best.r - 0.9, () => this.interact(best.id)); this.ringAt(best.x, best.z); return;
@@ -290,6 +288,22 @@ class Game {
       t0 = t;
     }
     if (hit) { c.navigate(hit.x, hit.z, 0.6); this.ringAt(hit.x, hit.z); this.audio.click(); }
+  }
+  // Consola o personaje más cercano al puntero en pantalla (para el clic y para el cursor)
+  pickAt(px, py) {
+    const v = this.pickV || (this.pickV = new THREE.Vector3()), W = window.innerWidth, H = window.innerHeight; let best = null, bd = 56;
+    for (const it of this.world.interList) {
+      if (it.state === 'locked' || it.state === 'hidden') continue;
+      for (const hy of [1.3, it.baseY - it.y]) { v.set(it.x, it.y + hy, it.z).project(this.camera); if (v.z > 1) continue; const d = Math.hypot((v.x * 0.5 + 0.5) * W - px, (-v.y * 0.5 + 0.5) * H - py); if (d < bd) { bd = d; best = it; } }
+    }
+    return best;
+  }
+  // Cursor según lo que hay debajo: usar, caminar o girar la cámara
+  cursor() {
+    const d = this.drag, m = this.mouse; let s = '';
+    if (d && d.right && !d.touch) s = 'rot';
+    else if (m && this.mode === 'play' && !this.locked && !this.ui.dlg && !this.panel && !this.help && !this.mg.active && !this.extras.open && !this.photo && !this.cine) s = this.pickAt(m.x, m.y) ? 'use' : 'walk';
+    if (s !== this.curS) { this.curS = s; if (s) document.body.dataset.cur = s; else delete document.body.dataset.cur; }
   }
   ringAt(x, z) { const w = this.world; this.ring.position.set(x, Math.max(w.groundAt(x, z), w.waterAt(x, z)) + 0.14, z); this.ring.visible = true; }
 
@@ -355,7 +369,16 @@ class Game {
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
-    this.audio.update(dt, { pct, wind: G.wind, windNear: Math.max(0.12, near(70, -12, 75)), waterNear: Math.max(near(-11, -49, 45), c.swimming ? 0.45 : 0), humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
+    let amb = null, windNear = Math.max(0.12, near(70, -12, 75)), waterNear = Math.max(near(-11, -49, 45), c.swimming ? 0.45 : 0);
+    if (!play) {   // pantalla de inicio y demostración: el sonido sigue a la cámara
+      const f = cam.target, nf = (x, z, r) => clamp(1 - Math.hypot(f.x - x, f.z - z) / r, 0, 1), wide = clamp((cam.dist - 75) / 55, 0, 1);
+      const water = Math.max(clamp(1 - coastD(f.x, f.z) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(0, -68, 42), nf(-11, -49, 38));
+      const city = Math.max(nf(-32, 42, 52), nf(-20, 62, 30)), field = nf(58, -6, 58);
+      amb = { water: lerp(water, 0.45, wide), city: lerp(city, 0.4, wide), field: lerp(field, 0.3, wide), green: clamp(1 - city * 0.7, 0.3, 1), plaza: nf(-44, 38, 24) * (1 - wide), night, hour: G.hour };
+      windNear = Math.max(0.08, 0.6 * lerp(Math.max(field, nf(70, -12, 75) * 0.6), 0.3, wide)); waterNear = amb.water * 0.45;
+    }
+    this.audio.update(dt, { pct, title: !play, amb, wind: G.wind, windNear, waterNear, humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
+    if ((this.curT = (this.curT || 0) - dt) <= 0) { this.curT = 0.08; this.cursor(); }
     if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });
     const r = this.renderer;
     r.autoClear = true; r.shadowMap.autoUpdate = true; this.camera.layers.set(0);

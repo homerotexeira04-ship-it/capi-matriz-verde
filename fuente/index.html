@@ -245,6 +245,16 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
 @media (max-width:560px){ #fact{left:8px;transform:none;bottom:150px;width:calc(100vw - 104px);padding:8px 12px} #fact span{font-size:13px;line-height:1.35} #tele{transform:translateX(-50%) scale(.62)} #card{top:84px;transform:scale(.78)} #tr{top:auto;bottom:160px;right:8px;flex-direction:column} #dFace{width:64px;height:64px} #dText{font-size:15px} }
 @media (max-height:520px){ .tBrand{margin-bottom:4px;padding:5px 14px 5px 10px} .tBrand img{height:28px} .tBox .eyebrow{font-size:11px} .tBox h1{font-size:clamp(40px,14vh,64px);-webkit-text-stroke:2px #3a2500;text-shadow:0 4px 0 #3a2500} .tBox h2{margin-top:4px;font-size:20px} .tBox p{margin-top:6px;font-size:13.5px;line-height:1.35} .tBtns{margin-top:10px} .tBtns .btn{font-size:18px;padding:6px 16px} .tBtns2{margin-top:8px} .tBtns2 .btn{font-size:13px;padding:5px 10px} }
 @media (max-width:560px){ #zone{bottom:345px;max-width:200px;font-size:15px} }
+/* Cursor propio: flecha casco con el rayo de Energimundo */
+html,body{cursor:url(__CUR_flecha_32__) 2 2,auto;cursor:-webkit-image-set(url(__CUR_flecha_32__) 1x,url(__CUR_flecha_64__) 2x) 2 2,auto}
+button:not(:disabled),#prompt,#dialog,#mgCv,#pCv,#fact.on,body[data-cur=use] #gl{cursor:url(__CUR_usar_32__) 2 2,pointer;cursor:-webkit-image-set(url(__CUR_usar_32__) 1x,url(__CUR_usar_64__) 2x) 2 2,pointer}
+body[data-cur=walk] #gl{cursor:url(__CUR_caminar_32__) 9 9,crosshair;cursor:-webkit-image-set(url(__CUR_caminar_32__) 1x,url(__CUR_caminar_64__) 2x) 9 9,crosshair}
+body[data-cur=rot] #gl{cursor:url(__CUR_girar_32__) 16 16,grabbing;cursor:-webkit-image-set(url(__CUR_girar_32__) 1x,url(__CUR_girar_64__) 2x) 16 16,grabbing}
+body.bigText,body.bigText #gl{cursor:url(__CUR_flecha_48__) 3 3,auto;cursor:-webkit-image-set(url(__CUR_flecha_48__) 1x,url(__CUR_flecha_96__) 2x) 3 3,auto}
+body.bigText :is(button:not(:disabled),#prompt,#dialog,#mgCv,#pCv,#fact.on),body.bigText[data-cur=use] #gl{cursor:url(__CUR_usar_48__) 3 3,pointer;cursor:-webkit-image-set(url(__CUR_usar_48__) 1x,url(__CUR_usar_96__) 2x) 3 3,pointer}
+body.bigText[data-cur=walk] #gl{cursor:url(__CUR_caminar_48__) 13 13,crosshair;cursor:-webkit-image-set(url(__CUR_caminar_48__) 1x,url(__CUR_caminar_96__) 2x) 13 13,crosshair}
+body.bigText[data-cur=rot] #gl{cursor:url(__CUR_girar_48__) 24 24,grabbing;cursor:-webkit-image-set(url(__CUR_girar_48__) 1x,url(__CUR_girar_96__) 2x) 24 24,grabbing}
+input[type=text]{cursor:text}
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>

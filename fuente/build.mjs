@@ -4,6 +4,7 @@ await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 
 const uri = (p, mime) => `data:${mime};base64,` + fs.readFileSync(p).toString('base64');
 let html = fs.readFileSync('index.html', 'utf8');
 html = html.replaceAll('__LOGO_ISO__', uri('logos/iso.png', 'image/png')).replaceAll('__LOGO_LARGO__', uri('logos/largo.webp', 'image/webp'));
+html = html.replace(/__CUR_([a-z]+)_(\d+)__/g, (m, n, px) => uri(`cursores/${n}-${px}.png`, 'image/png'));   // cursores del juego
 fs.writeFileSync('dist/index.html', html);
 // Versión para sitio propio y kiosco: sin ningún pedido a internet (tipografías incluidas)
 const F = (pkg, file) => 'data:font/woff2;base64,' + fs.readFileSync(`node_modules/@fontsource/${pkg}/files/${file}`).toString('base64');

@@ -19,6 +19,8 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Neblina sobre el río al amanecer**, que se levanta a media mañana.
 - **Modo guía** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Cómo abrirlo está en las instrucciones de la carpeta del kiosco.
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
+- **Sonido en la pantalla de inicio:** una versión tranquila de la música y el ambiente del diorama (río, viento, pájaros como el benteveo y el tero, bicicletas, ómnibus eléctricos y grillos de noche). Durante la demostración el sonido sigue a la cámara: tambores en la plaza al atardecer, agua en la represa, viento en el parque eólico. En el kiosco arranca solo; en la web, con el primer clic o tecla, porque así lo exigen los navegadores. La tecla M lo silencia.
+- **Cursor propio:** una flecha amarilla como el casco de Capi, con el rayo de Energimundo. Cambia sobre lo que se puede usar, sobre el piso (clic para caminar) y al girar la cámara. Con letra grande también se agranda.
 - El aire del diorama se ve gris mientras la red usa respaldo fósil y se limpia a medida que sube el porcentaje renovable.
 - **Festejos de Capi:** cada misión cierra con un festejo propio (cometa, chapuzón, lentes de sol, bandera a cuadros, lamparita LED o paraguas). La primera vez que la red llega al 100 % renovable caen papelitos con los colores de Energimundo, y la ceremonia final termina con una cuerda de tambores y todo el elenco bailando candombe en el escenario.
 - **Una ciudad con vida:** los vecinos siguen la hora del día (mate en los bancos al mediodía, corredores y ciclistas en la rambla, fútbol en la playa, casi nadie en la calle de noche), abren el paraguas con la tormenta, festejan cuando vuelve la luz al barrio y saludan a Capi. La Ing. Valeria y Don Mateo se mueven por su lugar de trabajo, Lucía sale a manejar un ómnibus, los teros defienden su nido a los gritos y Pampa, el perro de Don Mateo, acompaña a Capi un rato.
@@ -36,6 +38,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 | Vestuario | V |
 | Álbum de chispas | B |
 | Modo foto | P |
+| Silenciar el sonido | M |
 | Joystick | Palanca o cruceta para moverse y elegir; A usar, B saltar, X panel, Y vestuario, LB y RB cámara |
 
 También funciona con pantalla táctil.

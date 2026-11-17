@@ -14,7 +14,7 @@ const LEAD = [
 const CLAVE = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0], PIANO = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0], BASS = [[0, 0], [6, 7], [8, 12], [12, 7]];
 
 export class AudioSynth {
-  constructor() { this.ctx = null; this.muted = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; }
+  constructor() { this.ctx = null; this.muted = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; this.title = true; this.soft = 0; this.ev = { bird: 2, cric: 1, bell: 9, bus: 6, lap: 3 }; }
   start() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
@@ -29,7 +29,7 @@ export class AudioSynth {
       // Ambiente: viento, agua y zumbido de transformadores
       const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.start();
       const mk = (type, f, q) => { const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = c.createGain(); g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.master); return { fl, g }; };
-      this.aWind = mk('bandpass', 420, 0.8); this.aWater = mk('lowpass', 1400, 0.3);
+      this.aWind = mk('bandpass', 420, 0.8); this.aWater = mk('lowpass', 1400, 0.3); this.aCity = mk('lowpass', 190, 0.7);
       const hum = c.createOscillator(); hum.type = 'sawtooth'; hum.frequency.value = 100; const hf = c.createBiquadFilter(); hf.type = 'lowpass'; hf.frequency.value = 260; this.aHum = c.createGain(); this.aHum.gain.value = 0;
       hum.connect(hf); hf.connect(this.aHum); this.aHum.connect(this.master); hum.start();
       this.next = c.currentTime + 0.3;
@@ -68,6 +68,32 @@ export class AudioSynth {
   boom() { this.noise(0.5, 0.2, 'lowpass', 500, 0.5); this.noise(0.3, 0.06, 'highpass', 2500, 0.5, 0.05); }
   thunder() { this.noise(1.6, 0.34, 'lowpass', 170, 0.4); this.noise(0.25, 0.2, 'bandpass', 900, 0.5); this.tone(52, 1.4, 'sine', 0.2, 0.05, 34); }
   alarm() { this.tone(660, 0.16, 'sine', 0.06); this.tone(520, 0.2, 'sine', 0.06, 0.18); }
+  // ---- Ambiente de la pantalla de inicio y de la demostración ----
+  swell(dur, vol, type, f, q, f2) {   // ruido que crece y se apaga: algo que pasa cerca
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noiseBuf; s.loop = true; fl.type = type; fl.Q.value = q; fl.frequency.setValueAtTime(f, t); fl.frequency.linearRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.5); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(this.sfx); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  }
+  benteveo(v = 1) {   // «bien-te-veo»
+    const a = 0.032 * v, d = 0.04 * Math.random();
+    this.tone(2750, 0.13, 'sine', a, d, 2300); this.tone(2100, 0.08, 'sine', a * 0.8, d + 0.17); this.tone(2950, 0.3, 'sine', a, d + 0.31, 2150); this.tone(5900, 0.3, 'sine', a * 0.12, d + 0.31, 4300);
+  }
+  chirps(v = 1) { const n = 3 + Math.floor(Math.random() * 3), f = 3400 + Math.random() * 1200; for (let k = 0; k < n; k++) this.tone(f + k * 60, 0.045, 'sine', 0.018 * v, k * 0.075, f * 0.82); }
+  cricket(v = 1) { const f = 4400 + Math.random() * 500; for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) this.tone(f, 0.022, 'sine', 0.011 * v, r * 0.32 + k * 0.045); }
+  bell(v = 1) { for (const d of [0, 0.19]) { this.tone(2650, 0.55, 'sine', 0.026 * v, d); this.tone(3980, 0.35, 'sine', 0.01 * v, d); } }
+  busBy(v = 1) { this.swell(3, 0.03 * v, 'bandpass', 380, 0.8, 620); this.tone(440, 3, 'sine', 0.008 * v, 0, 610); }
+  lap(v = 1) { this.noise(0.55, 0.035 * v, 'lowpass', 520, 0.6); this.tone(330, 0.09, 'sine', 0.012 * v, 0.12, 190); }
+  ambience(dt, a) {
+    const E = this.ev, day = 1 - a.night;
+    this.aCity.g.gain.setTargetAtTime(a.city * 0.045 * (0.45 + 0.55 * day), this.ctx.currentTime, 0.6);
+    this.soft = a.plaza * (a.hour >= 17.5 || a.hour < 1 ? 1 : 0.4);
+    if ((E.bird -= dt) <= 0) { E.bird = 2.5 + Math.random() * 5.5; if (day > 0.5 && a.green > 0.2) { const r = Math.random(); if (r < 0.5) this.benteveo(a.green); else if (r < 0.72 && a.field > 0.3) this.tero(0.45 * a.field); else this.chirps(a.green); } }
+    if ((E.cric -= dt) <= 0) { E.cric = 0.4 + Math.random() * 1.2; if (a.night > 0.5) this.cricket(0.5 + 0.5 * a.green); }
+    if ((E.bell -= dt) <= 0) { E.bell = 11 + Math.random() * 15; if (a.city > 0.35 && day > 0.3) this.bell(a.city); }
+    if ((E.bus -= dt) <= 0) { E.bus = 8 + Math.random() * 10; if (a.city > 0.3) this.busBy(a.city); }
+    if ((E.lap -= dt) <= 0) { E.lap = 2 + Math.random() * 4; if (a.water > 0.4) this.lap(a.water); }
+  }
 
   // ---- Música ----
   drum(kind, t, v) {
@@ -85,10 +111,11 @@ export class AudioSynth {
     for (const n of notes) for (const det of [-5, 5]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = mtof(n); o.detune.value = det; o.connect(f); o.start(t); o.stop(t + dur * 1.1); }
   }
   schedule() {
-    const c = this.ctx, sd = 60 / 92 / 4;
+    const c = this.ctx, sd = 60 / (this.title ? 74 : 92) / 4;
     while (this.next < c.currentTime + 0.25) {
       const s = this.step16, bar = Math.floor(s / 16) % 8, st = s % 16, ch = CH[bar], t = this.next, w = t - c.currentTime, p = this.pct;
       const layer = p >= 90 ? 3 : p >= 65 ? 2 : p >= 35 ? 1 : 0;
+      if (this.title) { this.calm(s, bar, st, ch, t, w, sd); this.step16++; this.next += sd; continue; }
       if (st === 0) this.pad(ch, t, sd * 16, layer / 3);
       for (const [bs, iv] of BASS) if (bs === st) this.tone(mtof(ch.b + iv), sd * 2.6, 'triangle', 0.16, w, null, this.music, 0.01);
       if (layer >= 1) { if (CLAVE[st]) this.drum('clave', t, 1); if (st % 4 !== 0) this.drum('chico', t, st % 4 === 1 ? 1 : 0.55); }
@@ -98,9 +125,18 @@ export class AudioSynth {
       this.step16++; this.next += sd;
     }
   }
+  // Versión tranquila del tema para la pantalla de inicio: colchón, bajo suave, cajita de música y la melodía cada dos vueltas
+  calm(s, bar, st, ch, t, w, sd) {
+    const M = this.music;
+    if (st === 0) { this.pad(ch, t, sd * 16, 0.15); this.tone(mtof(ch.b), sd * 7, 'triangle', 0.1, w, null, M, 0.03); }
+    if (st === 8) this.tone(mtof(ch.b + 7), sd * 5, 'triangle', 0.07, w, null, M, 0.03);
+    if (st % 4 === 2) { const n = ch.n[((st >> 2) + bar) % 4] + 12; this.tone(mtof(n), 0.8, 'sine', 0.04, w, null, M, 0.008); this.tone(mtof(n) * 2, 0.3, 'sine', 0.01, w, null, M, 0.008); }
+    if (Math.floor(s / 128) % 2 === 1) for (const [ls, m, l] of LEAD[bar]) if (ls === st) { this.tone(mtof(m), sd * l * 1.1, 'triangle', 0.026, w, null, M, 0.07); this.tone(mtof(m) * 1.002, sd * l * 1.1, 'sine', 0.03, w, null, M, 0.09); }
+    if (this.soft > 0.05) { const v = this.soft * 0.55; if (CLAVE[st]) this.drum('clave', t, v); if (st % 2) this.drum('chico', t, v * 0.8); if (PIANO[st] || st === 8) this.drum('piano', t, v * 1.2); if ([3, 7, 11, 14].includes(st)) this.drum('repique', t, v); }
+  }
   update(dt, st) {
     if (!this.ctx || this.ctx.state !== 'running') return;
-    this.pct = st.pct;
+    this.pct = st.pct; this.title = !!st.title;
     if (this.next < this.ctx.currentTime - 1) this.next = this.ctx.currentTime + 0.1;
     this.schedule();
     const now = this.ctx.currentTime;
@@ -108,6 +144,8 @@ export class AudioSynth {
     this.aWind.fl.frequency.setTargetAtTime(320 + st.wind * 500, now, 0.5);
     this.aWater.g.gain.setTargetAtTime(st.waterNear * 0.16, now, 0.3);
     this.aHum.gain.setTargetAtTime(st.humNear * 0.07, now, 0.3);
+    this.music.gain.setTargetAtTime(this.title ? 0.3 : 0.34, now, 0.8);
+    if (st.amb) this.ambience(dt, st.amb); else { this.aCity.g.gain.setTargetAtTime(0, now, 0.5); this.soft = 0; }
     if (st.deficit) { this.alarmT -= dt; if (this.alarmT <= 0) { this.alarm(); this.alarmT = 1.6; } } else this.alarmT = 0.4;
   }
 }

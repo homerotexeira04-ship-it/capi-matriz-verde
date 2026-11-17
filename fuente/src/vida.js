@@ -1,7 +1,7 @@
 // Paisaje y vida: guiños a Salto (naranjal, termas), central térmica de respaldo con humo,
 // familia de carpinchos, bandadas, veleros, luciérnagas, reflejos nocturnos y arcoíris.
 import * as THREE from 'three';
-import { RES } from './terrain.js';
+import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
@@ -112,6 +112,16 @@ export class Vida {
       fragmentShader: 'varying vec2 vUv; uniform float uA; vec3 hue(float h){ return clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0); } void main(){ float r = length(vec2((vUv.x-0.5)*2.0, vUv.y)); float t = (r-0.80)/0.17; if (t < 0.0 || t > 1.0) discard; float a = smoothstep(0.0,0.2,t)*smoothstep(1.0,0.8,t)*smoothstep(0.02,0.3,vUv.y); gl_FragColor = vec4(hue(0.78*(1.0-t)), a*uA*0.62); }' }));
     this.rainbow.rotation.order = 'YXZ'; this.rainbow.visible = false; this.rainbow.renderOrder = 40; sc.add(this.rainbow);
     this.smogEl = document.getElementById('smog');
+    // ---------- Neblina sobre el agua al amanecer ----------
+    const mc = document.createElement('canvas'); mc.width = mc.height = 128; const mg = mc.getContext('2d'), gr = mg.createRadialGradient(64, 64, 4, 64, 64, 62);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); mg.fillStyle = gr; mg.fillRect(0, 0, 128, 128);
+    const mtex = new THREE.CanvasTexture(mc); mtex.colorSpace = THREE.SRGBColorSpace;
+    this.mistMats = [0.62, 0.42].map(o => new THREE.MeshBasicMaterial({ map: mtex, color: 0xf2f6f8, transparent: true, opacity: 0, depthWrite: false, fog: false, userData: { o } }));
+    const pg = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), wet = (x, z) => w.terrainAt(x, z) < w.waterAt(x, z) - 0.25;
+    this.mist = []; const bank = (x, z, sx, sz, layer) => { if (!wet(x, z)) return; const m = new THREE.Mesh(pg, this.mistMats[layer]); const y = w.waterAt(x, z) + 0.45 + layer * 0.9; m.position.set(x, y, z); m.scale.set(sx, 1, sz); m.rotation.y = R() * 6.283; m.renderOrder = 8; m.visible = false; sc.add(m); this.mist.push({ m, hx: x, hz: z, ph: R() * 6.283, sp: 0.6 + R() * 0.8 }); };
+    for (let i = 0; i < 26; i++) for (const L of [0, 1]) bank(lerp(-118, 100, R()), lerp(96, 121, R()), 18 + R() * 16, 10 + R() * 8, L);   // el río frente a la rambla
+    for (let s = 0; s < CHANNEL.length - 1; s++) { const [ax, az] = CHANNEL[s], [bx, bz] = CHANNEL[s + 1], n = Math.max(2, Math.round(Math.hypot(bx - ax, bz - az) / 9)); for (let k = 0; k < n; k++) { const t = (k + R() * 0.6) / n; for (const L of [0, 1]) bank(lerp(ax, bx, t) + (R() - 0.5) * 6, lerp(az, bz, t) + (R() - 0.5) * 5, 14 + R() * 10, 9 + R() * 6, L); } }
+    for (let i = 0; i < 16; i++) bank(lerp(-26, 26, R()), lerp(-104, -60, R()), 16 + R() * 12, 10 + R() * 8, i % 2);   // el embalse
   }
 
   // sky: arco vertical sobre el embalse (tomas con horizonte). Si no, acompaña a la cámara y se ve desde arriba.
@@ -119,6 +129,9 @@ export class Vida {
 
   update(dt, st) {
     const w = this.w, t = this.t += dt, night = st.night, storm = w.storm || 0;
+    // Neblina: aparece al amanecer y se deshace a media mañana, empujada por el viento
+    const mk = w.mist || 0; this.mistMats.forEach(m => { m.opacity = mk * m.userData.o; });
+    for (const b of this.mist) { b.m.visible = mk > 0.01; if (!b.m.visible) continue; const wd = st.grid.windDir || 0, dr = Math.sin(t * 0.05 * b.sp + b.ph) * 5; b.m.position.x = b.hx + Math.cos(wd) * dr; b.m.position.z = b.hz + Math.sin(wd) * dr * 0.5; b.m.rotation.y += dt * 0.01 * b.sp; }
     // Aire: velo grisáceo proporcional al respaldo fósil
     const sm = Math.round((w.smog || 0) * 50) / 50; if (sm !== this.smogShown && this.smogEl) { this.smogShown = sm; this.smogEl.style.opacity = (sm * 0.5).toFixed(3); }
     // Carpinchos

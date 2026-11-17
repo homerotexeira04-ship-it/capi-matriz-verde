@@ -66,7 +66,7 @@ export class Extras {
   // ---- Chispas de saber ----
   fact(title, text, t = 11) { $('factT').textContent = title; $('factX').textContent = text; $('fact').classList.add('on'); this.factT = t; }
   collect(s) {
-    const g = this.g; this.got.add(s.i); s.group.visible = false; const n = this.got.size;
+    const g = this.g; this.got.add(s.i); s.group.visible = false; g.stats.inc(g.stats.d, 'sparks'); const n = this.got.size;
     g.fx.sparks(s.x, s.y, s.z, 34, 0xffe066); g.audio.ok(); [84, 88, 91, 96].forEach((m, k) => g.audio.tone(440 * Math.pow(2, (m - 69) / 12), 0.14, 'triangle', 0.08, 0.08 + k * 0.07));
     const un = OUTFITS.find(o => o.need === n && o.need > 0);
     this.fact(`Chispa de saber ${n} de ${SPARKS.length}`, s.text + (un ? `  ·  ¡Nuevo atuendo para Capi: ${un.name}! Abrí el vestuario con la tecla V.` : ''), un ? 14 : 11);
@@ -126,7 +126,7 @@ export class Extras {
     const inp = $('dpName'); inp.value = ''; setTimeout(() => { try { inp.focus(); } catch (e) { /* sin foco */ } }, 50);
     $('dGo').onclick = () => {
       const name = inp.value.trim().replace(/\s+/g, ' ').slice(0, 40) || 'Visitante', m = this.g.missions;
-      $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = `${this.got.size} de ${SPARKS.length} chispas de saber`;
+      this.g.stats.finished(m.mode); $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = `${this.got.size} de ${SPARKS.length} chispas de saber`;
       $('dDate').textContent = new Date().toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' });
       const c = this.colors(); drawFace($('dCapi').getContext('2d'), 'capi', 1, false, c);
       try {   // código QR con la dirección pública del juego

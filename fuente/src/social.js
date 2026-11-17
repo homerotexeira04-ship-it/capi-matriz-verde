@@ -113,7 +113,7 @@ export class Social {
   step(i) {
     const g = this.g, who = this.active; this.prog[i] = true; this.refresh(); g.audio.ok();
     if (!this.prog.every(Boolean)) return;
-    this.done[who] = true; this.active = null; this.started = null; this.refresh();
+    this.done[who] = true; this.active = null; this.started = null; this.refresh(); g.stats.inc(g.stats.d, 'favors');
     g.audio.fanfare(); g.capi.celebrate(2.4); g.ui.toast('¡FAVOR CUMPLIDO!', `Nuevo atuendo para Capi: ${FAV[who].outfit}. Abrí el vestuario con V.`, 4.5);
     setTimeout(() => g.ui.dialog([L(who, FAV[who].done)]), 1600); g.missions.save();
   }
@@ -143,13 +143,13 @@ export class Social {
     $('arList').querySelectorAll('button').forEach(b => { b.classList.toggle('hidden', !g.mg.has(b.dataset.type)); });
   }
   playArcade(type, name) {
-    const g = this.g; $('arcade').classList.add('hidden'); g.extras.open = null; g.audio.start();
+    const g = this.g; $('arcade').classList.add('hidden'); g.extras.open = null; g.audio.start(); g.stats.inc(g.stats.d, 'feria');
     if (type === 'despacho' || type === 'torre') return this.enterScene(type, name, () => this.openArcade());
     g.mg.start(type, { title: name, from: 'SOLAR', to: 'BATERÍAS', arcade: true }, () => this.openArcade());
   }
   // Transición con pantalla propia y escena aparte
   enterScene(type, name, back) {
-    const g = this.g; $('fadeTxt').textContent = 'Entrando: ' + name + '…'; $('fade').classList.add('on'); g.extras.fading = true;
+    const g = this.g; g.stats.inc(g.stats.d.scenes, type); $('fadeTxt').textContent = 'Entrando: ' + name + '…'; $('fade').classList.add('on'); g.extras.fading = true;
     setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; g.audio.start();
       g.mg.start(type, { title: name }, ok => { if (back) return back(); if (ok && type === 'torre') { g.cam.inspect = new THREE.Vector3(60, 14, -12); g.cam.inspectT = 7; g.ui.note('Así se ve el diorama desde lo alto de la góndola.', 6); } }); }, 900);
   }

@@ -357,12 +357,12 @@ export class Minigames {
   has(type) { return !!GAMES[type]; }
   start(type, opts, cb) {
     const sz = GAMES[type].size || [W, H]; this.cv.width = sz[0]; this.cv.height = sz[1]; $('mg').classList.toggle('big', !!GAMES[type].size);
-    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0; this.type = type; this.eased = false; this.slow = Math.min(this.base || 1, this.struggle && this.struggle[type] ? 0.8 : 1);
+    this.active = new GAMES[type](this, opts || {}); this.cb = cb; this.end = 0; this.time = 0; this.type = type; this.startedAt = performance.now(); if (this.onStart) this.onStart(type); this.eased = false; this.slow = Math.min(this.base || 1, this.struggle && this.struggle[type] ? 0.8 : 1);
     $('mgTitle').textContent = this.active.title; this.setHint(this.active.hint); $('mg').classList.remove('hidden'); this.audio.click();
   }
   setHint(t) { $('mgHint').textContent = t; }
-  finish(ok, msg) { if (!this.active || this.active.done) return; this.active.done = true; this.msg = msg; this.end = 1.0; this.ok = ok; if (ok) this.audio.fanfare(); }
-  cancel() { if (!this.active) return; const cb = this.cb; this.active = null; $('mg').classList.add('hidden'); if (cb) cb(false); }
+  finish(ok, msg) { if (!this.active || this.active.done) return; if (this.onEnd) this.onEnd(ok); this.active.done = true; this.msg = msg; this.end = 1.0; this.ok = ok; if (ok) this.audio.fanfare(); }
+  cancel() { if (!this.active) return; if (!this.active.done && this.onEnd) this.onEnd(false); const cb = this.cb; this.active = null; $('mg').classList.add('hidden'); if (cb) cb(false); }
   key(code, down) { if (!this.active || this.active.done) return; if (this.active.key) this.active.key(code, down); }
   update(dt) {
     const a = this.active; if (!a) return;

@@ -104,12 +104,14 @@ export class Missions {
     if (instant) { G.hour = s.hour; G.windBase = s.wind; G.demandExtra = s.extra; G.cloud = s.cloud || 0; G.clockRate = s.rate; G.holdAt = s.hold; }
     else { this.lapse = { to: s.hour, rate: s.rate, hold: s.hold }; G.clockRate = 7; G.holdAt = s.hour; }
   }
-  start(mode, phase, instant = true) {
+  start(mode, phase, instant = true, hold = false) {
+    if (!hold && this.g.tut) this.g.tut.stop();
     const g = this.g; if (g.ui.dlg) { g.ui.dlg = null; document.getElementById('dialog').classList.add('hidden'); }
     this.mode = mode; this.seq = SEQ[mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } this.ev = null; this.evT = null; this.fossilT = 0; this.phase = phase; this.step = 0; this.active = false; this.flags = {}; this.pending = 0; this.m5 = null; this.ceremony = false; this.free = phase >= this.seq.length;
     this.preset(phase); this.scenario(this.key, instant); g.grid.step(0); g.grid.fossil = Math.max(0, g.grid.out.demand - g.grid.out.ren); g.grid.step(0);
     g.actors.gather(false);
     if (this.free) { g.ui.toast('MODO LIBRE', 'Sandbox climático desbloqueado: abrí el panel de red con Tab', 4); return; }
+    if (hold) return;
     this.begin();
   }
   begin() {
@@ -224,6 +226,7 @@ export class Missions {
     return { state: 'locked' };
   }
   interact(id) {
+    if (this.g.tut && this.g.tut.interact(id)) return;
     if (this.g.social && this.g.social.interact(id)) return;
     const g = this.g, G = g.grid, d = this.describe(id), [k, s] = id.split(':'), i = +s, U = g.ui, it = g.world.inter[id];
     const fxOk = () => { g.fx.sparks(it.x, it.y + 2, it.z, 26, 0x5ad1ff); g.audio.power(); g.capi.celebrate(1.2); };
@@ -362,7 +365,7 @@ export class Missions {
     // Estados de consolas
     const st = this.active ? this.steps() : [];
     let cur = st.findIndex(s => !s.done); if (cur < 0) cur = st.length;
-    const targets = this.active && st[cur] ? st[cur].targets : [];
+    const targets = this.active && st[cur] ? st[cur].targets : g.tut && g.tut.on ? g.tut.targets() : [];
     for (const it of g.world.interList) { const d = this.describe(it.id); it.state = d.state; it.label = d.label || ''; it.target = targets.includes(it.id); if (it.target && it.state === 'locked') it.state = 'ok'; }
     if (this.fw > 0) {
       this.fw -= dt;
@@ -380,6 +383,7 @@ export class Missions {
         { text: 'Racha actual: ' + mm(this.streak), state: 'next' }, { text: 'Mejor racha: ' + mm(this.best), state: 'next' }]);
       U.timer(null); return;
     }
+    if (g.tut && g.tut.on) { U.mission('Primeros pasos', `Tutorial · antes de la misión 1`, g.tut.items()); return; }
     U.mission(`Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
     if (!this.active) return;
     if (cur !== this.step) { if (cur > this.step && cur < st.length) g.audio.ok(); this.step = cur; }
@@ -401,7 +405,7 @@ export class Missions {
       U.timer(`Hora pico: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}  ·  margen fósil ${Math.max(0, m.grace).toFixed(0)} s`, G.out.pct < 99.9);
       if (m.grace <= 0) return this.failM5();
       if (m.t <= 0) {
-        this.flags.m5won = true; U.timer(null); U.toast(`¡100${N}% RENOVABLE!`, 'Pasó la hora pico sin un solo apagón', 4.5); g.audio.fanfare(); g.capi.celebrate(3); g.actors.celebrate = 10; this.fw = 60; this.fwNorth = false;
+        this.flags.m5won = true; g.stats.mission('pico'); U.timer(null); U.toast(`¡100${N}% RENOVABLE!`, 'Pasó la hora pico sin un solo apagón', 4.5); g.audio.fanfare(); g.capi.celebrate(3); g.actors.celebrate = 10; this.fw = 60; this.fwNorth = false;
         this.clearFaults(); G.energyRate = 1 / 20; G.gustiness = 0.1;
         this.ceremony = true; g.actors.gather(true);
         setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Vení a la Plaza Matriz: te armamos un escenario y te estamos esperando todos.')]), 4200);
@@ -411,7 +415,7 @@ export class Missions {
     if (cur >= st.length && st.length && !this.pending && K !== 'pico') {
       // Misión completa
       this.pending = 1; this.active = false; U.timer(null);
-      U.toast('¡MISIÓN COMPLETA!', this.title, 3.6); g.audio.fanfare(); g.capi.celebrate(2.6); g.actors.celebrate = 7;
+      g.stats.mission(K); U.toast('¡MISIÓN COMPLETA!', this.title, 3.6); g.audio.fanfare(); g.capi.celebrate(2.6); g.actors.celebrate = 7;
       if (K === 'tormenta') { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); g.vida.showRainbow(45); }   // escampa y sale el arcoíris
       const done = K, fs = Math.round(this.fossilT || 0), extra = K !== 'tormenta' ? null : L('valeria', (this.flags.first === 'dam' ? 'Cuidaste el agua primero, y el viento tardó un poco más en volver.' : 'Recuperaste potencia rápido, aunque el embalse siguió perdiendo agua un rato.') + (fs > 0 ? ` La ciudad pasó ${fs} segundos con respaldo fósil.` : ' Y la ciudad no necesitó respaldo fósil.'));
       setTimeout(() => {

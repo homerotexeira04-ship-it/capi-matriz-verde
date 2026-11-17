@@ -332,6 +332,7 @@ export class World {
     this.sun.color.set(a[3]).lerp(_c2.set(b[3]), k);
     const stm = this.storm || 0; s.background.lerp(_c2.set(0x566270), stm * 0.85); s.fog.color.lerp(_c2.set(0x66727f), stm * 0.85);
     const smg = this.smogOn ? (this.smog || 0) : 0; s.fog.color.lerp(_c2.set(0x9a8f7c), smg * 0.6); s.background.lerp(_c2.set(0x9a9488), smg * 0.5); s.fog.near = lerp(150, 70, smg); s.fog.far = lerp(620, 430, smg);
+    const mst = this.mist || 0; s.fog.color.lerp(_c2.set(0xdfe7ec), mst * 0.45); s.background.lerp(_c2.set(0xcfdbe4), mst * 0.25); s.fog.near = Math.min(s.fog.near, lerp(150, 85, mst)); s.fog.far = Math.min(s.fog.far, lerp(620, 470, mst));
     const sInt = lerp(a[4], b[4], k) * (1 - 0.82 * stm) * (1 - 0.22 * smg), hInt = lerp(a[5], b[5], k) * (1 - 0.42 * stm) + (this.flash || 0) * 4;
     this.hemi.intensity = hInt; this.hemi.color.copy(s.fog.color).lerp(_c2.set(0xffffff), 0.35);
     this.hemi.groundColor.set(0x6a8a55).lerp(_c2.set(0x1a2440), this.night);
@@ -479,6 +480,8 @@ export class World {
       this.boltT = (this.boltT == null ? 4 : this.boltT) - dt;
       if (this.storm > 0.6 && this.boltT <= 0) { this.boltT = 5 + Math.random() * 7; this.flash = 1; if (st.audio) setTimeout(() => st.audio.thunder(), 350); }
     }
+    // neblina de la mañana: aparece antes del amanecer y se levanta a media mañana
+    this.mist = smooth(4.6, 6.2, st.hour) * (1 - smooth(8.6, 10.4, st.hour)) * (1 - this.storm);
     this.setTime(st.hour, st.focus);
     const M = this.mats, n = this.night;
     // Parpadeo de barrios cuando cae la frecuencia

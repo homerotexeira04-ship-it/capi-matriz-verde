@@ -171,6 +171,30 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 .dFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:#5a6a86}
 #fade{position:fixed;inset:0;background:#050b18;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;z-index:9}
 #fade.on{opacity:1;pointer-events:auto}
+#tut{position:absolute;left:50%;bottom:132px;transform:translateX(-50%);width:min(560px,94vw);padding:10px 16px 10px;display:grid;gap:5px;text-align:center;border-color:var(--sun);transition:border-color .2s}
+#tut.ok{border-color:var(--leaf)} body.tut #mExtra{display:none} body.touchUsed #cJump{display:block} #tut .tKick{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);font-weight:900}
+#tutT{font-family:var(--display);font-size:24px;color:var(--sun);line-height:1.1} #tut.ok #tutT{color:var(--leaf)}
+#tutX{font-size:15.5px;line-height:1.4} #tutCaps{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;align-items:center;font-size:14px;color:var(--dim)} #tutCaps kbd{font-size:15px;padding:3px 9px}
+.tutFoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px} .tutFoot .btn{font-size:12.5px;padding:4px 10px}
+#tutDots{display:flex;gap:6px} #tutDots i{width:11px;height:11px;border-radius:50%;border:2px solid #6f84a8} #tutDots i.now{border-color:var(--sun);background:var(--sun)} #tutDots i.ok{border-color:var(--leaf);background:var(--leaf)}
+#pauseTag{display:none;position:fixed;top:118px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:999px;background:var(--sun);color:#1b1400;font-weight:900;font-size:14px;z-index:6;pointer-events:none} body.paused #pauseTag{display:block}
+.gBox{width:min(1080px,97vw)!important;justify-items:stretch;text-align:left} .gBox h2{text-align:center} .gSub{margin:-4px 0 0;text-align:center;font-size:13px;color:var(--dim)}
+.gCols{display:grid;grid-template-columns:1fr 1fr;gap:16px} .gBox section{margin-bottom:8px} .gBox h3{margin:4px 0 6px;font-size:14px;color:var(--sun);font-weight:900}
+.gRow{display:flex;flex-wrap:wrap;gap:6px} .gRow .btn{font-size:13px;padding:5px 9px} .gMis{font-size:12.5px!important} .gMis b{color:var(--sun);margin-right:3px}
+#gHour{width:100%} #gTiles{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:6px}
+.gTile{border:2px solid #2a4374;border-radius:10px;padding:6px 9px} .gTile em{display:block;font-style:normal;font-size:11.5px;color:var(--dim);font-weight:900} .gTile b{display:block;font-family:var(--display);font-weight:400;font-size:22px;color:var(--ink)} .gTile span{font-size:11.5px;color:var(--dim)}
+#gDays{width:100%;height:auto;display:block;border:2px solid #2a4374;border-radius:10px;margin-bottom:8px}
+.gTables{display:grid;gap:8px;margin-bottom:8px} .gTables table{width:100%;border-collapse:collapse;font-size:12.5px} .gTables th{text-align:left;color:var(--dim);font-size:11.5px;border-bottom:2px solid #2a4374;padding:3px 4px} .gTables td{padding:3px 4px;border-bottom:1px solid #1f3a66} .gTables td+td,.gTables th+th{text-align:right}
+#gText{width:100%;margin-top:6px;background:#07142b;color:var(--ink);border:2px solid #2a4374;border-radius:8px;font:12px/1.4 monospace;padding:6px}
+@media (max-width:820px){.gCols{grid-template-columns:1fr}}
+body.bigText #dText{font-size:21px;line-height:1.42} body.bigText #dName{font-size:23px}
+body.bigText #mTitle{font-size:21px} body.bigText #mList{font-size:16px} body.bigText #card{max-width:380px}
+body.bigText #note{font-size:18px} body.bigText #prompt{font-size:19px} body.bigText #toast p{font-size:21px}
+body.bigText #fact b{font-size:20px} body.bigText #fact span{font-size:17px} body.bigText #fact{width:min(640px,94vw)}
+body.bigText #tutT{font-size:28px} body.bigText #tutX{font-size:18.5px} body.bigText #tut{width:min(640px,96vw)}
+body.bigText #mgHint{font-size:17.5px} body.bigText .mgBox{width:min(760px,97vw)} body.bigText .mgBox h3{font-size:24px}
+body.bigText .oBox:not(.gBox){font-size:118%;width:min(620px,96vw)} body.bigText #chList .btn,body.bigText #tvList .btn{font-size:19px} body.bigText #chList .btn small{font-size:15px}
+body.bigText .tBox p{font-size:19px} body.bigText #help dd{font-size:17px}
 #photoHint{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);padding:6px 14px;border-radius:999px;background:rgba(12,26,52,.75);font-size:13px;font-weight:800;color:var(--ink);pointer-events:none;z-index:6} body.photo #photoHint{display:block}
 button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 #smog{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,rgba(132,118,92,.72) 0%,rgba(92,84,70,.95) 100%);transition:opacity .6s}
@@ -310,6 +334,7 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
     <dt><kbd>B</kbd></dt><dd>Álbum con los datos de las chispas de saber que encontraste.</dd>
     <dt><kbd>P</kbd></dt><dd>Modo foto: sin carteles y con la cámara libre.</dd>
     <dt><kbd>M</kbd></dt><dd>Silenciar el sonido.</dd>
+    <dt>Letra</dt><dd><button class="btn ghost bigToggle" type="button" aria-pressed="false">Letra grande: no</button></dd>
     <dt>Joystick</dt><dd>Palanca o cruceta para moverse y elegir en los menús. A: usar · B: saltar · X: panel · Y: vestuario · LB y RB: girar la cámara.</dd>
   </dl>
   <p>Cada central que reparás inyecta megavatios a la red. Si la generación renovable no alcanza la demanda, entra el respaldo térmico fósil y baja el porcentaje renovable. Los rombos rojos y los teros marcan los nodos averiados; la flecha amarilla, tu objetivo. Hay 10 chispas de saber escondidas por el mapa, y cuando la flota eléctrica tenga carga vas a poder viajar entre paradas de ómnibus.</p>
@@ -371,6 +396,28 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
 </div>
 
 <div id="attract"><div class="aBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div><div class="aName">CAPI<small>Guardián de la Matriz Verde</small></div><div class="aCta">Tocá la pantalla o una tecla para jugar</div></div>
+<div id="tut" class="pane hidden" aria-live="polite"><div class="tKick">Primeros pasos · <span id="tutN"></span></div><div id="tutT"></div><div id="tutX"></div><div id="tutCaps"></div><div class="tutFoot"><div id="tutDots"></div><button class="btn ghost" id="tSkip" type="button">Saltar tutorial <kbd>Esc</kbd></button></div></div>
+<div id="pauseTag">Pausa · modo guía</div>
+<div id="guide" class="ov hidden"><div class="oBox pane gBox">
+  <h2>Modo guía</h2>
+  <p class="gSub">Solo para el personal del museo. Se cierra con <kbd>Esc</kbd> o escribiendo la palabra de nuevo.</p>
+  <div class="gCols">
+    <div id="gActionsWrap"><div id="gActions"></div>
+      <section><h3>Hora del día: <span id="gHourV"></span></h3><input id="gHour" type="range" min="0" max="23.9" step="0.1" aria-label="Hora del día"></section>
+    </div>
+    <div class="gStats">
+      <h3>Estadísticas desde el <span id="gSince"></span></h3>
+      <div id="gTiles"></div>
+      <h3>Partidas nuevas por día · últimos 14 días</h3>
+      <canvas id="gDays" width="400" height="130"></canvas>
+      <div class="gTables"><table><thead><tr><th>Misión</th><th>Completada</th></tr></thead><tbody id="gMis"></tbody></table>
+      <table><thead><tr><th>Minijuego</th><th>Jugado</th><th>Completo</th><th>Tiempo medio</th></tr></thead><tbody id="gMg"></tbody></table></div>
+      <div class="gRow"><button class="btn ghost" id="gCopy" type="button">Copiar resumen</button><button class="btn ghost" id="gReset" type="button">Reiniciar estadísticas</button></div>
+      <textarea id="gText" class="hidden" rows="7" readonly aria-label="Resumen de estadísticas"></textarea>
+    </div>
+  </div>
+  <button class="btn" id="gClose" type="button">Cerrar <kbd>Esc</kbd></button>
+</div></div>
 <div id="photoHint">Modo foto · Q E: girar · W S: inclinar · A D: acercar y alejar · P: salir</div>
 <div id="fade"><span id="fadeTxt"></span></div>
 
@@ -402,7 +449,7 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
     <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
     <button class="btn" id="bLong" type="button" disabled>Historia larga<small>7 misiones · unos 20 minutos</small></button>
   </div>
-  <div class="tBtns2"><button class="btn ghost" id="bArc" type="button">Minijuegos</button><button class="btn ghost" id="bCred" type="button">Créditos</button></div>
+  <div class="tBtns2"><button class="btn ghost" id="bArc" type="button">Minijuegos</button><button class="btn ghost" id="bCred" type="button">Créditos</button><button class="btn ghost bigToggle" id="bBig" type="button" aria-pressed="false">Letra grande: no</button></div>
   <div id="load">Construyendo el diorama…</div>
 </div></div>
 

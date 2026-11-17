@@ -17,6 +17,8 @@ import { Extras } from './extras.js';
 import { Vida, buildSalto, CLEAR } from './vida.js';
 import { Social, buildSocial, CLEAR2 } from './social.js';
 import './arcade.js';
+import { Stats, Guide, Settings } from './guia.js';
+import { Tutorial } from './tutorial.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -25,6 +27,7 @@ const FOV = 40;
 const SHOTS = [
   { x: -44, z: 42, d: 40, yaw: 0.45, low: 0.45, h: 19.4, t: 10, capi: [-36.4, 47, -47, 37.6] },
   { x: 4, z: -58, d: 64, yaw: 0.15, low: 0.5, h: 10.5, t: 10, rainbow: true },
+  { x: -40, z: -16, d: 58, yaw: 0.25, low: 0.55, h: 6.7, t: 10 },
   { x: 62, z: -8, d: 60, yaw: 0.9, low: 0.55, h: 16, t: 9 },
   { x: 78, z: -73, d: 42, yaw: -0.25, low: 0.35, h: 11.5, t: 10 },
   { x: -30, z: 96, d: 58, yaw: 0.3, low: 0.6, h: 18.4, t: 10, capi: [-22.4, 73.4, -46, 74] },
@@ -57,7 +60,9 @@ class Game {
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this);
+    this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this);
+    this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
     this.ptr = new Map(); this.drag = null; this.autoQuality = true; this.quality = 0; this.ema = 0.016; this.qT = 0;
@@ -67,6 +72,7 @@ class Game {
     $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
     $('bCred').onclick = () => this.showCredits(null);
+    document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
     this.refreshTitle();
     this.last = performance.now();
     requestAnimationFrame(t => this.frame(t));
@@ -79,14 +85,19 @@ class Game {
     if (sv) { const n = sv.mode === 'corta' ? 5 : 7; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
     $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
   }
-  play(mode, phase, saved, level) {
+  play(mode, phase, saved, level, opt = {}) {
+    this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
     this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
     this.audio.start(); this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
-    this.missions.start(mode, phase, true);
+    const tut = !!opt.tutorial || (!saved && phase === 0 && !opt.guide);
+    if (!opt.guide) this.stats.startGame(mode, this.missions.level, !saved);
+    this.missions.start(mode, phase, true, tut);
+    if (tut) this.tut.start();
   }
+  setPaused(on) { this.paused = !!on; document.body.classList.toggle('paused', this.paused); }
   // Presentación final: Capi en primer plano sobre el escenario de la plaza
   startCine() {
     const c = this.capi; this.cine = true; this.ui.hide(); document.body.classList.add('cine');
@@ -157,6 +168,7 @@ class Game {
   }
   toTitle() {
     if (this.photo) this.togglePhoto();
+    this.tut.stop(); this.setPaused(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
     this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
@@ -165,7 +177,7 @@ class Game {
   get locked() { return this.mode !== 'play' || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading || !!this.photo; }
   togglePanel(on) { if (this.mode !== 'play' || this.mg.active || this.ui.dlg) return; this.panel = on == null ? !this.panel : on; if (this.panel) this.ui.openPanel(this.missions.free); else this.ui.closePanel(); this.audio.click(); }
   toggleHelp(on) { this.help = on; $('help').classList.toggle('hidden', !on); }
-  toggleMute() { this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
+  toggleMute() { this.muteAt = performance.now(); this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
   minigame(type, opts, onWin) { this.capi.goto = null; this.mg.start(type, opts, ok => { if (ok) onWin(); }); }
   inspect(id) {
     const z = id === 'terminal' ? { x: POS.terminal[0], z: POS.terminal[1] + 6 } : ZONES.find(q => q.id === id); if (!z) return;
@@ -191,6 +203,7 @@ class Game {
       if (this.mode === 'title') { if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
       if (c === 'KeyP' && !e.repeat && this.mode === 'play' && (this.photo || !this.locked)) { this.togglePhoto(); return; }
       if (this.photo) { if (c === 'Escape') this.togglePhoto(); else this.keys[c] = true; return; }
+      if (c === 'Escape' && this.tut.on && !this.extras.open && !this.mg.active && !this.ui.dlg) { this.tut.skip(); return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
       if (c === 'KeyM' && !e.repeat) this.toggleMute();
       if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV' || c === 'KeyB') this.extras.close(); else this.extras.key(c); } return; }
@@ -264,7 +277,8 @@ class Game {
 
   frame(now) {
     requestAnimationFrame(t => this.frame(t)); this.kiosk(now);
-    const real = (now - this.last) / 1000, dt = Math.min(0.05, Math.max(0.001, real)); this.last = now; this.time += dt;
+    const real = (now - this.last) / 1000, cdt = Math.min(0.05, Math.max(0.001, real)), dt = this.paused ? 1e-6 : cdt; this.last = now; this.time += dt;
+    if (this.mode === 'play' && !this.paused && real < 1) this.stats.play(real);
     // Calidad adaptativa: si el equipo no llega a ~30 FPS, baja resolución y sombras por pasos
     if (this.mode === 'play' && this.autoQuality && real < 0.5) {
       this.ema = lerp(this.ema, real, 0.05); this.qT += real;
@@ -278,16 +292,17 @@ class Game {
     const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
     // --- Entrada ---
     const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
-    if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * dt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * dt; }
+    if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * cdt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * cdt; }
     if (mx || mz) { cam.inspect = null; this.face = null; }
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
     this.attractStep(dt, Math.min(real, 1)); this.pad(dt);
-    if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * dt; if (k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * dt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + dt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - dt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * dt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * dt, 8, 195); }
+    if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * cdt; if (k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * cdt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + cdt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - cdt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * cdt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * cdt, 8, 195); }
     if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: !this.attract });
     // --- Simulación ---
     G.step(dt);
     if (play) this.missions.update(dt);
+    this.tut.update(dt);
     this.mg.update(dt);
     // Consola candidata
     this.cand = null;
@@ -295,18 +310,18 @@ class Game {
     this.ui.prompt(this.cand ? this.cand.label : null);
     this.ring.visible = this.ring.visible && !!c.goto; if (this.ring.visible) { this.ring.scale.setScalar(1 + 0.25 * Math.sin(this.time * 9)); }
     // --- Cámara: seguimiento con amortiguación, órbita y zoom ---
-    if (!play) { cam.yawT += dt * 0.06; }
-    cam.inspectT -= dt; if (cam.inspectT <= 0) cam.inspect = null;
+    if (!play) { cam.yawT += cdt * 0.06; }
+    cam.inspectT -= cdt; if (cam.inspectT <= 0) cam.inspect = null;
     if (this.cine) cam.yawT = this.cineYaw + Math.sin(this.time * 0.22) * 0.24;
-    cam.cineK = damp(cam.cineK || 0, this.cine ? 1 : 0, 2.2, dt);
-    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, dt); cam.dist = damp(cam.dist, this.cine ? 7.4 : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, dt);
+    cam.cineK = damp(cam.cineK || 0, this.cine ? 1 : 0, 2.2, cdt);
+    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, cdt); cam.dist = damp(cam.dist, this.cine ? 7.4 : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, cdt);
     const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + 1.95, c.pos.z) : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
-    cam.target.x = damp(cam.target.x, goal.x, cam.inspect ? 2.5 : 6, dt); cam.target.y = damp(cam.target.y, goal.y, 4, dt); cam.target.z = damp(cam.target.z, goal.z, cam.inspect ? 2.5 : 6, dt);
+    cam.target.x = damp(cam.target.x, goal.x, cam.inspect ? 2.5 : 6, cdt); cam.target.y = damp(cam.target.y, goal.y, 4, cdt); cam.target.z = damp(cam.target.z, goal.z, cam.inspect ? 2.5 : 6, cdt);
     const zt = clamp((cam.dist - 20) / 175, 0, 1), base = (40 + 5 * zt) * Math.PI / 180;
     // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
     const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
-    cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, dt); w.setCutaway(cam.cut, c.pos, cam.yaw);
-    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : 0, 3, dt);
+    cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, cdt); w.setCutaway(cam.cut, c.pos, cam.yaw);
+    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : 0, 3, cdt);
     const pitch = lerp(lerp(base, 0.16, cam.lowK), -0.09, cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
     this.camera.position.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(pitch) * cam.dist, cam.target.y + Math.sin(pitch) * cam.dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(pitch) * cam.dist);
     this.camera.lookAt(cam.target);

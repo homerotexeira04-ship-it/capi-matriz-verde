@@ -14,6 +14,10 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Personajes:** cada uno responde preguntas y Don Mateo, Lucía y Valeria piden favores cortos (arrear ovejas, avisar a pasajeros, leer medidores) que dan atuendos nuevos. Hay personajes en el naranjal, el muelle, las termas y un grupo escolar en la plaza. Los vecinos muestran globitos según cómo anda la red.
 - **Decisiones:** dos niveles al empezar (Explorador e Ingeniero), elegir si después del viento se sigue por el río o por el sol, qué atender primero en la sudestada y cómo enfrentar un año seco. En modo libre aparecen olas de calor y sequías con su propia decisión.
 - Álbum de chispas (tecla B), modo foto (tecla P) y soporte para joystick.
+- **Tutorial jugable** de cuatro pasos antes de la primera misión (caminar, mirar, saltar y hablar con la Ing. Valeria), con instrucciones para teclado, pantalla táctil o joystick. Si alguien se traba, aparece una ayuda extra y el tutorial sigue solo.
+- **Letra grande:** opción en la pantalla de inicio y en la ayuda, que queda guardada.
+- **Neblina sobre el río al amanecer**, que se levanta a media mañana.
+- **Modo guía** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Cómo abrirlo está en las instrucciones de la carpeta del kiosco.
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
 - El aire del diorama se ve gris mientras la red usa respaldo fósil y se limpia a medida que sube el porcentaje renovable.
 

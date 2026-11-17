@@ -190,6 +190,7 @@ export class Missions {
     if (id === 'npc:lucia' && this.g.vecinos && this.g.vecinos.luciaAway) return { state: 'hidden' };
     const sd = this.g.social && this.g.social.describe(id); if (sd) return sd;
     const ud = this.g.urbano && this.g.urbano.describe(id); if (ud) return ud;
+    const md = this.g.museo && this.g.museo.describe(id); if (md) return md;
     const G = this.g.grid, [k, s] = id.split(':'), i = +s, n = i + 1;
     if (k === 'npc') return { state: 'ok', label: 'Hablar con ' + { mateo: 'Don Mateo', valeria: 'la Ing. Valeria', lucia: 'Lucía' }[s] };
     if (k === 'sub') return { state: 'ok', label: 'Abrir el panel de red' };
@@ -231,6 +232,7 @@ export class Missions {
     if (this.g.tut && this.g.tut.interact(id)) return;
     if (this.g.social && this.g.social.interact(id)) return;
     if (this.g.urbano && this.g.urbano.interact(id)) return;
+    if (this.g.museo && this.g.museo.interact(id)) return;
     const g = this.g, G = g.grid, d = this.describe(id), [k, s] = id.split(':'), i = +s, U = g.ui, it = g.world.inter[id];
     const fxOk = () => { g.fx.sparks(it.x, it.y + 2, it.z, 26, 0x5ad1ff); g.audio.power(); g.capi.celebrate(1.2); };
     if (k === 'npc') return this.talk(s);

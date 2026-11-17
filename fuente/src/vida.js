@@ -5,9 +5,9 @@ import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
-const NAR = [64.5, -74], TER = [91.5, -73], TERMICA = [28, 54], FAM = [-34, -18.5];
+const NAR = [73, -76], TER = [91.5, -73], TERMICA = [28, 54], FAM = [-34, -18.5];
 // Claros donde no se plantan árboles del monte (naranjal, termas, central térmica)
-export const CLEAR = [[52, 77, -87, -61], [79, 104, -85, -61], [18, 38, 44, 64]];
+export const CLEAR = [[61, 86, -89, -62], [79, 104, -85, -61], [18, 38, 44, 64]];
 
 const slab = (w, cx, cz, sx, sz, color) => {
   let lo = 1e9, hi = -1e9;

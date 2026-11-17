@@ -618,5 +618,5 @@ export function buildFlora(w) {
   }
   for (let i = 0; i < 26; i++) { const a = R() * 6.283, x = -62 + Math.cos(a) * (34 + R() * 6) * 0.9, z = -78 + Math.sin(a) * 30; if (coastD(x, z) > 5 && resInside(x, z) < -7 && !(x > -90 && x < -34 && z > -106 && z < -58)) w.tree('native', x, z, 0.8); }
   // Piedras
-  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 20 && z > -10 && z < 80) && !(x > 0 && x < 47 && z > -35 && z < 12) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
+  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 20 && z > -10 && z < 80) && !(x > 0 && x < 47 && z > -35 && z < 12) && !(x > 26 && x < 65 && z > -100 && z < -50) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
 }

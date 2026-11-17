@@ -119,7 +119,9 @@ const TREE = {
   palm: { th: 6.2, tr: 0.26, tc: 0x8a6f4d, frond: 2.7, fc: 0x4f9a48 },
   butia: { th: 3.3, tr: 0.42, tc: 0x7b6a55, frond: 2.1, fc: 0x86a892 },
   naranjo: { th: 1.5, tr: 0.2, tc: 0x6b4a2f, crowns: [[1.05, 1.45, 1.2, 0x2f7d32]] },
-  bush: { th: 0, tr: 0, tc: 0, crowns: [[0.5, 0.9, 0.7, 0x58a548]] }
+  bush: { th: 0, tr: 0, tc: 0, crowns: [[0.5, 0.9, 0.7, 0x58a548]] },
+  cipres: { th: 0.9, tr: 0.16, tc: 0x5a4636, crowns: [[2.9, 0.62, 2.7, 0x2f5f3e], [4.6, 0.36, 1.2, 0x376b45]] },
+  pino: { th: 4.2, tr: 0.22, tc: 0x6b4a33, crowns: [[0.86, 1.25, 0.9, 0x2f5a3a], [1.08, 0.85, 0.75, 0x3b6b45]] }
 };
 
 export class World {

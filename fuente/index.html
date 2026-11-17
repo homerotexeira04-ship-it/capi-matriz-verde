@@ -151,6 +151,8 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #alList{display:grid;gap:7px;width:100%;text-align:left} .alItem{display:flex;gap:10px;padding:8px 10px;border:2px solid #2a4374;border-radius:10px;opacity:.6} .alItem.on{opacity:1;border-color:var(--sun)} .alItem b{font-family:var(--display);font-weight:400;font-size:20px;color:var(--sun);min-width:22px} .alItem em{display:block;font-style:normal;font-size:12px;color:var(--sun);font-weight:900} .alItem span{font-size:13.5px;line-height:1.35}
 #favLine{margin-top:5px;font-size:12.5px;color:#9be7ff;font-weight:900} #bAlb{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900} #bAlb:hover{border-color:var(--sun)}
 #album .oBox,#arcade .oBox{width:min(620px,96vw)}
+#domo .oBox{width:min(560px,96vw)} #domoCv{width:min(440px,84vw,62vh);height:auto;aspect-ratio:1;border-radius:50%;background:#050b18;box-shadow:0 0 0 6px #26262b,0 10px 30px rgba(0,0,0,.5)}
+#domo #domoTx{min-height:3.2em;font-size:16px;color:var(--cream);max-width:460px} body.bigText #domo #domoTx{font-size:19px}
 #mExtra{display:flex;flex-wrap:wrap;row-gap:5px;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
 #bWard{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900}
 #bWard:hover{border-color:var(--sun)}
@@ -380,7 +382,7 @@ input[type=text]{cursor:text}
     <dt>Letra</dt><dd><button class="btn ghost bigToggle" type="button" aria-pressed="false">Letra grande: no</button></dd>
     <dt>Joystick</dt><dd>Palanca o cruceta para moverse y elegir en los menús. A: usar · B: saltar · X: panel · Y: vestuario · LB y RB: girar la cámara.</dd>
   </dl>
-  <p>Cada central que reparás inyecta megavatios a la red. Si la generación renovable no alcanza la demanda, entra el respaldo térmico fósil y baja el porcentaje renovable. Los rombos rojos y los teros marcan los nodos averiados; la flecha amarilla, tu objetivo. Hay 10 chispas de saber escondidas por el mapa, y cuando la flota eléctrica tenga carga vas a poder viajar entre paradas de ómnibus.</p>
+  <p>Cada central que reparás inyecta megavatios a la red. Si la generación renovable no alcanza la demanda, entra el respaldo térmico fósil y baja el porcentaje renovable. Los rombos rojos y los teros marcan los nodos averiados; la flecha amarilla, tu objetivo. Hay 23 chispas de saber escondidas por el mapa (cuatro en Energimundo, junto a la represa), y cuando la flota eléctrica tenga carga vas a poder viajar entre paradas de ómnibus.</p>
   <div class="hFoot"><span class="hBtns"><button class="btn" id="hClose" type="button">Volver al juego</button> <button class="btn ghost" id="hTitle" type="button">Salir al título</button></span><span class="hBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><em>Un juego del museo Energimundo</em></span></div>
 </div></div>
 
@@ -415,6 +417,13 @@ input[type=text]{cursor:text}
   <p>¿A qué parada vas?</p>
   <div id="tvList"></div>
   <button class="btn" id="tvClose" type="button">Me quedo acá <kbd>Esc</kbd></button>
+</div></div>
+
+<div id="domo" class="ov hidden"><div class="oBox pane">
+  <h2>Función en el domo</h2>
+  <canvas id="domoCv" width="560" height="560" aria-label="Proyección en la cúpula del domo"></canvas>
+  <p id="domoTx" aria-live="polite"></p>
+  <button class="btn" id="domoClose" type="button">Salir del domo <kbd>Esc</kbd></button>
 </div></div>
 
 <div id="diploma" class="ov hidden">

@@ -45,7 +45,12 @@ const SPARKS = [
   [-68, -3.1, 0, 'la puerta de emergencias del hospital', 'Un hospital no se puede quedar sin luz: tiene generadores y baterías que arrancan solos si se corta la red. Por eso la ciudad pide energía aun de madrugada.'],
   [-36, 6, 0, 'el pasillo del mercado', 'Las frutas y verduras de la zona viajan pocos kilómetros hasta el mercado. Menos viaje es menos combustible gastado en camiones.'],
   [34, 98.6, 0, 'la escollera del faro', 'El puente sobre la represa de Salto Grande une Salto con Concordia desde 1982. Por arriba pasan autos y camiones, y tiene también vía de tren.'],
-  [-6, -8.4, 0, 'el borde de la cancha del barrio', 'Un motor eléctrico convierte en movimiento casi toda la energía que recibe; un motor a nafta pierde la mayor parte en calor. Por eso los autos eléctricos gastan mucha menos energía.']
+  [-6, -8.4, 0, 'el borde de la cancha del barrio', 'Un motor eléctrico convierte en movimiento casi toda la energía que recibe; un motor a nafta pierde la mayor parte en calor. Por eso los autos eléctricos gastan mucha menos energía.'],
+  // Energimundo
+  [50.8, -72, 0, 'la plaza del Cronomundo', 'El Cronomundo de Energimundo es un reloj de sol: la sombra marca la hora solar en números romanos, de 5 en 5 minutos, y sobre otra escala marca también la fecha.'],
+  [55.5, -57.6, 0, 'la vuelta del domo', 'Un domo geodésico es una cúpula armada con triángulos: reparte el peso por toda la estructura y cubre mucho espacio con poco material. El de Energimundo funciona como cine.'],
+  [57.6, -68.4, 0, 'las bicicletas del escenario', 'En el escenario a pedal de Energimundo el público pedalea bicicletas generadoras: con las piernas se produce la electricidad del espectáculo.'],
+  [49.2, -91.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.']
 ];
 
 export class Extras {
@@ -121,7 +126,7 @@ export class Extras {
     if (this.g.locked) return;
     this.open = 'travel'; this.from = from; $('travel').classList.remove('hidden'); this.g.audio.click();
     const box = $('tvList'); box.textContent = '';
-    POS.stops.forEach((s, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.disabled = i === from; b.innerHTML = `<kbd>${i + 1}</kbd> ${s[2]}` + (i === from ? ' · estás acá' : ''); b.onclick = () => this.travel(i); box.appendChild(b); });
+    POS.stops.forEach((s, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.disabled = i === from; b.innerHTML = `<kbd>${(i + 1) % 10}</kbd> ${s[2]}` + (i === from ? ' · estás acá' : ''); b.onclick = () => this.travel(i); box.appendChild(b); });
   }
   travel(i) {
     if (i === this.from || this.fading) return; const g = this.g, s = POS.stops[i];
@@ -141,7 +146,7 @@ export class Extras {
   }
   key(code) {
     if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
-    if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([1-9])$/.exec(code), n = m ? +m[1] - 1 : null; if (n != null && n < POS.stops.length) this.travel(n); }
+    if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([0-9])$/.exec(code), n = m ? (+m[1] + 9) % 10 : null; if (n != null && n < POS.stops.length) this.travel(n); }
   }
 
   // ---- Diploma final ----

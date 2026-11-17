@@ -23,6 +23,7 @@ import { Vecinos } from './vecinos.js';
 import { Fiestas } from './fiestas.js';
 import { buildBarrios, CLEAR3 } from './barrios.js';
 import { Urbano } from './urbano.js';
+import { buildMuseo, Museo, CLEAR4 } from './museo.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -41,7 +42,8 @@ const SHOTS = [
   { x: 26, z: -10, d: 44, yaw: 0.7, low: 0.45, h: 12.5, t: 9 },
   { x: -40, z: 38, d: 70, yaw: 2.6, low: 0.4, h: 17.2, t: 10 },
   { x: -62, z: -80, d: 50, yaw: 0.2, low: 0.4, h: 13, t: 9, capi: [-66.5, -66, -66.5, -78] },
-  { x: -30, z: 45, d: 96, yaw: -0.5, low: 0.3, h: 21.5, t: 10 }
+  { x: -30, z: 45, d: 96, yaw: -0.5, low: 0.3, h: 21.5, t: 10 },
+  { x: 48, z: -70, d: 44, yaw: 0.3, low: 0.45, h: 16.4, t: 10 }
 ];
 class Game {
   constructor() {
@@ -56,7 +58,7 @@ class Game {
 
   // Construcción del diorama por etapas, con barra de progreso en la pantalla de inicio
   async init(r) {
-    const steps = 9; let k = 0;
+    const steps = 10; let k = 0;
     const stage = async (txt) => { const el = $('load'); if (el) { el.textContent = txt; el.style.setProperty('--p', Math.round(k++ / steps * 100) + '%'); } await new Promise(res => requestAnimationFrame(() => setTimeout(res, 0))); };
     await stage('Levantando el relieve y el río…');
     // WorldBuilder
@@ -65,10 +67,11 @@ class Game {
     if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
     const ii = $('logoIso');
     if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-    w.clear = CLEAR.concat(CLEAR2, CLEAR3);
+    w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4);
     await stage('Trazando calles, rambla y puente…'); buildRoads(w); buildCity(w);
     await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
     await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w);
+    await stage('Armando Energimundo junto a la represa…'); buildMuseo(w);
     await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSalto(w); buildSocial(w);
     await stage('Uniendo las piezas de la maqueta…'); w.finalize();
     await stage('Calculando caminos para Capi…');
@@ -82,7 +85,7 @@ class Game {
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.museo = new Museo(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -210,7 +213,7 @@ class Game {
   toTitle() {
     if (this.photo) this.togglePhoto();
     this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
-    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice'].forEach(id => $(id).classList.add('hidden'));
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
     this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};
@@ -387,7 +390,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st);
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);

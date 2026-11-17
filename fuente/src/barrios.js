@@ -320,7 +320,7 @@ function orilla(w, R) {
   for (let i = 0; i < 70; i++) { const x = lerp(-156, 128, R()), z = 162 + R() * 15; if (farD(x, z) > 10 && Math.abs(x - O.x) > 6) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
 }
 // Bandera argentina en la otra orilla del río
-function argFlag(w, x, y, z, fw, fh, mast) {
+export function argFlag(w, x, y, z, fw, fh, mast) {
   const tex = canvasTex(360, 240, (g) => { g.fillStyle = '#74acdf'; g.fillRect(0, 0, 360, 240); g.fillStyle = '#ffffff'; g.fillRect(0, 80, 360, 80); g.fillStyle = '#f6b40e'; g.beginPath(); g.arc(180, 120, 22, 0, 7); g.fill(); g.strokeStyle = '#f6b40e'; g.lineWidth = 4; for (let k = 0; k < 16; k++) { const a = k * Math.PI / 8; g.beginPath(); g.moveTo(180 + Math.cos(a) * 24, 120 + Math.sin(a) * 24); g.lineTo(180 + Math.cos(a) * 34, 120 + Math.sin(a) * 34); g.stroke(); } });
   w.batch.cyl(x, y, z, 0.07, 0.11, mast, 0xe6e6e6, 8); w.addCircle(x, z, 0.25);
   const fg = new THREE.PlaneGeometry(fw, fh, 12, 5), m = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.9 }));

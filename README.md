@@ -8,7 +8,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 
 - **Historia corta:** 5 misiones, unos 10 minutos.
 - **Historia larga:** 7 misiones, unos 20 minutos. Suma la misión de ahorro (cambiar lamparitas por LED y cargar los ómnibus con sol), la sudestada y una decisión de año seco.
-- 11 minijuegos, 19 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante y un código QR para seguir jugando en casa.
+- 11 minijuegos, 23 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante y un código QR para seguir jugando en casa.
 - **Feria de minijuegos:** botón "Minijuegos" en la pantalla de inicio y puesto de feria en la rambla, para jugar cualquier minijuego suelto sin empezar una historia.
 - **Dos escenas grandes:** el Centro de Control, donde se maneja la red durante un día entero, y la subida por dentro de la torre de un aerogenerador. Se entra hablando con la Ing. Valeria y con Don Mateo, o desde la feria.
 - **Personajes:** cada uno responde preguntas y Don Mateo, Lucía y Valeria piden favores cortos (arrear ovejas, avisar a pasajeros, leer medidores) que dan atuendos nuevos. Hay personajes en el naranjal, el muelle, las termas y un grupo escolar en la plaza. Los vecinos muestran globitos según cómo anda la red.
@@ -35,6 +35,13 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
   - **Barrio Jardín:** casas con paneles solares mirando al norte, autos eléctricos enchufados y una huerta comunitaria.
   - **Vida urbana:** autos eléctricos que frenan en los semáforos y ante Capi, ciclistas por la bicisenda, chicos jugando al fútbol y vecinos en la huerta, el mercado y la feria.
   - Tres paradas de ómnibus nuevas: Barrio Norte, Puerto y Barrio Jardín.
+- **Energimundo junto a la represa,** armado a partir de fotos del lugar, en la margen oriental de la central:
+  - El edificio bajo con la franja roja, la caja de vidrio de la entrada con el isotipo y las seis luces de colores, el pórtico con el cartel, las letras gigantes sobre el pasto y las banderas de Uruguay y Argentina.
+  - **Cronomundo:** el reloj de sol de acero corten, con el eje paralelo al de la Tierra. Con la tecla E, Capi lee la hora solar que marca la sombra.
+  - **Domo geodésico:** con la tecla E se ve una función de cine de unos 30 segundos sobre el viaje de la energía, del Sol al viento, el agua y las plantas.
+  - **Escenario a pedal:** las bicicletas generadoras son un minijuego; si Capi pedalea bien, el escenario se prende con luces y música.
+  - Cafetería con mesas y sombrillas, estacionamiento, sendero con las seis estaciones de energía (solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica) y parada de ómnibus propia (tecla 0 en el menú de paradas).
+  - Cuatro chispas de saber en el predio y una toma del museo en la demostración de la pantalla de inicio.
 - **Carga por etapas:** al abrir el juego, una barra muestra cómo se arma la maqueta.
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
 - **Sonido en la pantalla de inicio:** una versión tranquila de la música y el ambiente del diorama (río, viento, pájaros como el benteveo y el tero, bicicletas, ómnibus eléctricos y grillos de noche). Durante la demostración el sonido sigue a la cámara: tambores en la plaza al atardecer, agua en la represa, viento en el parque eólico. En el kiosco arranca solo; en la web, con el primer clic o tecla, porque así lo exigen los navegadores. La tecla M lo silencia.

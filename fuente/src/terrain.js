@@ -22,16 +22,19 @@ export const POS = {
   boiler: [60, 63], chips: [48, 58], bioSub: [73, 56],
   bridge: { x: -46, z0: -42, z1: -12 },
   stops: [[-24, 71.8, 'Terminal de la Rambla'], [-44, 52.3, 'Plaza Matriz'], [30.2, -35.5, 'Central Hidroeléctrica'], [38.5, 13.5, 'Parque Eólico'], [-52, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
-    [-56, -3.2, 'Barrio Norte'], [10.2, 74.4, 'Puerto'], [12, 0.4, 'Barrio Jardín']],
+    [-56, -3.2, 'Barrio Norte'], [10.2, 74.4, 'Puerto'], [12, 0.4, 'Barrio Jardín'], [34.5, -57.6, 'Energimundo']],
   // Ciudad ampliada
   norte: { z: 6, xs: [-68, -52, -36, -20] }, hospital: [-68, 6], escuela: [-52, 6], mercado: [-36, 6],
   teatro: [-52, 20], catedral: [-36, 62], cancha: [-6, -15],
   puerto: [17, 78.4], muelle: { x: 17, z0: 81, z1: 107 }, faro: [34, 101], orilla: { x: 17, z0: 140, z1: 152 },
-  startCapi: [-31.2, 31.4]
+  startCapi: [-31.2, 31.4],
+  // Energimundo, en la margen oriental de la represa (armado a partir de fotos del lugar)
+  museo: { x0: 28, x1: 63, z0: -98, z1: -52 }, edificio: { x0: 39, x1: 56, z0: -84.5, z1: -77 },
+  crono: [47.5, -71], domo: [55.5, -62.5], portal: [46, -58.4], escenario: { x0: 59, x1: 62.2, z0: -76.5, z1: -69 }
 };
 
 // Zonas planas (sin ondulación) con borde difuminado: [x0, x1, z0, z1]
-const FLAT = [[-90, 20, -12, 90], [-92, -34, -106, -58], [40, 82, 50, 72], [42, 56, 2, 14], [-52, -40, -48, -8], [-34, 34, -62, -50], [27, 41, 19, 31], [2, 44, -32, 10], [-10, 42, 64, 84], [-18, 6, -24, -6]];
+const FLAT = [[-90, 20, -12, 90], [-92, -34, -106, -58], [40, 82, 50, 72], [42, 56, 2, 14], [-52, -40, -48, -8], [-34, 34, -62, -50], [27, 41, 19, 31], [2, 44, -32, 10], [-10, 42, 64, 84], [-18, 6, -24, -6], [29, 63, -98, -52]];
 function flatMask(x, z) {
   let m = 0;
   for (const r of FLAT) {
@@ -84,5 +87,6 @@ export const ZONES = [
   { id: 'norte', name: 'Barrio Norte y Costanera', x: -44, z: -3, color: '#f4a261', rect: [-86, 4, -24, 12] },
   { id: 'puerto', name: 'Puerto y Faro', x: 18, z: 88, color: '#5ad1ff', rect: [-8, 44, 70, 112] },
   { id: 'jardin', name: 'Barrio Jardín', x: 24, z: -10, color: '#b5e48c', rect: [4, 46, -34, 10] },
-  { id: 'orilla', name: 'La otra orilla', x: 17, z: 160, color: '#9be7ff', rect: [-160, 130, 128, 178] }
+  { id: 'orilla', name: 'La otra orilla', x: 17, z: 160, color: '#9be7ff', rect: [-160, 130, 128, 178] },
+  { id: 'museo', name: 'Energimundo', x: 47, z: -72, color: '#e6007e', rect: [29, 63, -98, -53] }
 ];

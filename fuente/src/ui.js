@@ -102,6 +102,7 @@ export class UI {
     for (const l of this.g.world.roads) { g.beginPath(); l.forEach((p, i) => i ? g.lineTo(X(p[0]), Z(p[1])) : g.moveTo(X(p[0]), Z(p[1]))); g.stroke(); }
     g.fillStyle = '#9a948a'; g.fillRect(X(-24), Z(-58), X(24) - X(-24), 6); g.fillRect(X(POS.bridge.x - 2), Z(POS.bridge.z0), 4, Z(POS.bridge.z1) - Z(POS.bridge.z0));
     g.fillRect(X(POS.muelle.x - 1.7), Z(POS.muelle.z0), 4, Z(POS.muelle.z1) - Z(POS.muelle.z0)); g.fillRect(X(POS.orilla.x - 1.7), Z(POS.orilla.z0), 4, Z(POS.orilla.z1) - Z(POS.orilla.z0)); g.fillRect(X(POS.faro[0] - 1.3), Z(82), 3, Z(101) - Z(82));
+    { const E = POS.edificio; g.fillStyle = '#b9b2a6'; g.fillRect(X(40), Z(-77), X(56) - X(40), Z(-66) - Z(-77)); g.fillStyle = '#8b2f2a'; g.fillRect(X(E.x0), Z(E.z0), X(E.x1) - X(E.x0), Z(E.z1) - Z(E.z0)); g.fillStyle = '#2d2d33'; g.beginPath(); g.arc(X(POS.domo[0]), Z(POS.domo[1]), 3.3 / W * S, 0, 7); g.fill(); }
     g.fillStyle = '#1f3f9a'; for (const [x, z] of POS.solar) g.fillRect(X(x - 6), Z(z - 5.5), 13, 12);
     g.fillStyle = '#fff'; for (const [x, z] of POS.windT) { g.beginPath(); g.arc(X(x), Z(z), 2.2, 0, 7); g.fill(); }
     this.map = c; this.mapScale = S / W;

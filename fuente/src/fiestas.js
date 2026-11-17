@@ -36,6 +36,8 @@ const LINES = {
     sofi: 'En las fiestas las termas se llenan de turistas: el agua calentita gusta hasta en verano.'
   }
 };
+// Recorrido de la visita guiada: escenario → lado este → fuente → vuelta (sin cruzar al grupo escolar del oeste)
+const TOUR = [[-44, 37.2, 7], [-37.2, 37.6, 0], [-37.2, 47.2, 0], [-44, 48.9, 7], [-37.2, 47.2, 0], [-37.2, 37.6, 0]];
 const SKINS = [0x9a6b4b, 0xc58b62, 0x6b4a33, 0xe0ac86, 0xf1c9a5, 0x8a5a3c];
 const HAIRS = [0x1a1412, 0x3b2a1e, 0x6b4a2a, 0xd8c08a, 0x2b2b2b];
 const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 });
@@ -44,13 +46,14 @@ export class Fiestas {
   constructor(game) { this.g = game; this.mode = null; this.sets = {}; this.seen = {}; this.soft = 0; this.t = 0; this.fwT = 2; this.cfT = 3; this.solids = []; }
 
   set(k) {
-    k = FIESTAS[k] ? k : null; this.mode = k; this.seen = {};
+    k = FIESTAS[k] ? k : null; this.mode = k; this.seen = {}; this.count = 0; this.bigFw = 0;
     if (k && !this.sets[k]) this.sets[k] = this.build(k);
     for (const [m, s] of Object.entries(this.sets)) s.root.visible = m === k;
     this.solids = k ? this.sets[k].solids : [];
     const tag = document.getElementById('festTag'); if (tag) { tag.textContent = k ? TAG[k] : ''; tag.classList.toggle('hidden', !k); }
     document.body.dataset.fest = k || '';
   }
+  present(who) { if (who === 'marta') { const h = this.g.grid.hour; return h >= 9 && h < 19.5; } return true; }
   line(who) { const k = this.mode; if (!k || this.seen[who]) return null; const l = LINES[k][who]; if (l) this.seen[who] = true; return l || null; }
 
   // ---------- Construcción ----------
@@ -102,6 +105,18 @@ export class Fiestas {
       P.members.push({ p: bearer, dx: 0, dz: 73.4, drum: false });
       for (let i = 0; i < 6; i++) { const p = makePerson({ skin: SKINS[i % SKINS.length], shirt: PAL.carnaval[i % 6], pants: 0xffffff, hair: HAIRS[i % HAIRS.length] }); p.group.add(tamboril(i)); P.members.push({ p, dx: 2.6 + Math.floor(i / 2) * 1.6, dz: i % 2 ? 73.9 : 72.9, drum: true, i }); }
       for (const mb of P.members) S.root.add(mb.p.group);
+      // Personajes típicos del candombe bailando en la plaza: Mama Vieja (se puede hablar con ella), Gramillero y Escobero
+      const mama = makePerson({ skin: 0x6b4a33, shirt: 0xffffff, pants: 0xffffff, hair: 0x1a1412 }); mama.group.add(skirt(0xffffff, 0xe6007e));
+      const scarf = new THREE.Mesh(new THREE.SphereGeometry(0.37, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xf4f1ea)); scarf.position.y = 0.08; mama.head.add(scarf);
+      mama.armR.add(held(parasol(), 0)); mama.armL.add(held(fan(), 0, -0.05));
+      const gram = makePerson({ skin: 0x5a3c2a, shirt: 0x26262b, pants: 0x26262b, hair: 0xe2e2e2 }); gram.head.add(topHat()); const beard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.14), mat(0xf2f2f2)); beard.position.set(0, -0.2, 0.3); gram.head.add(beard);
+      const cane = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 5), mat(0x5a3a22)); cane.position.set(0, -1.2, 0.05); gram.armR.add(cane);
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.14), mat(0x7a4b23)); bag.position.set(0, -0.92, 0.08); gram.armL.add(bag);
+      const esc = makePerson({ skin: 0x7a5238, shirt: 0xffffff, pants: 0xffffff, hair: 0x1a1412, hat: 'gorra', hatColor: 0xe6007e }); const broom = escoba(); esc.armR.add(broom);
+      S.cast = { kind: 'carnaval', list: [
+        { p: mama, key: 'mamavieja', x: -36.6, z: 40.6, ry: 0.4, dance: 'mama' },
+        { p: gram, x: -38.2, z: 41.7, ry: 0.6, dance: 'gram' },
+        { p: esc, x: -34.9, z: 41.9, ry: 0.1, dance: 'esc', broom }] };
     }
     if (k === 'patrimonio') {
       this.garlands(S, an.ring.concat(an.rambla), 'flags', PAL.patrimonio);
@@ -114,21 +129,58 @@ export class Fiestas {
       const guide = makePerson({ skin: SKINS[1], shirt: 0x2f7fc1, pants: 0x2b3a55, hair: HAIRS[1], hat: 'gorra', hatColor: 0xffffff });
       const fl = new THREE.Group(), stick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.6, 5), mat(0x3a3a3a)); stick.position.y = 0.8; fl.add(stick);
       const fm = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.36), new THREE.MeshStandardMaterial({ map: flagTex(), side: THREE.DoubleSide })); fm.position.set(0.28, 1.42, 0); fl.add(fm); fl.position.set(0, -0.8, 0.1); fl.rotation.x = Math.PI; guide.armR.add(fl); guide.armR.rotation.x = -2.5;
-      const T = S.tour = { guide, x: -51.8, z: 36.2, h: 0, i: 0, wait: 3, vis: [] };
+      const T = S.tour = { guide, x: TOUR[0][0], z: TOUR[0][1], h: 0, i: 0, wait: 3, vis: [] };
       S.root.add(guide.group);
       const OFF = [[-0.9, -1.6], [0.9, -1.7], [0, -2.6], [-1.6, -2.7], [1.6, -2.8], [-0.7, -3.7], [0.8, -3.8]];
-      OFF.forEach((o, i) => { const p = makePerson({ skin: SKINS[(i + 2) % SKINS.length], shirt: [0xd4483b, 0x57e389, 0xffc420, 0x9b6bd8, 0xff8fab, 0x5ad1ff, 0xf2efe8][i], pants: [0x2b3a55, 0x4a3b2a, 0x2b2b2b][i % 3], hair: HAIRS[(i + 1) % HAIRS.length], scale: i === 4 ? 0.78 : 1 }); p.group.position.set(-51.8 + o[0], 2.2, 36.2 + o[1]); S.root.add(p.group); T.vis.push({ p, o, x: -51.8 + o[0], z: 36.2 + o[1] }); });
+      OFF.forEach((o, i) => { const p = makePerson({ skin: SKINS[(i + 2) % SKINS.length], shirt: [0xd4483b, 0x57e389, 0xffc420, 0x9b6bd8, 0xff8fab, 0x5ad1ff, 0xf2efe8][i], pants: [0x2b3a55, 0x4a3b2a, 0x2b2b2b][i % 3], hair: HAIRS[(i + 1) % HAIRS.length], scale: i === 4 ? 0.78 : 1 }); p.group.position.set(TOUR[0][0] + o[0], 2.2, TOUR[0][1] + o[1]); S.root.add(p.group); T.vis.push({ p, o, x: TOUR[0][0] + o[0], z: TOUR[0][1] + o[1] }); });
     }
     if (k === 'fiestas') {
       this.garlands(S, an.ring.concat(an.cross, an.rambla), 'bulbs', PAL.fiestas);
-      const tree = arbolito(); tree.group.position.set(-50.6, 2.2, 47); S.root.add(tree.group); S.anim.push(tree.lights); S.solids.push({ x: -50.6, z: 47, r: 1.5 });
+      // Papá Noel junto al arbolito, con su bolsa de regalos y dos chicos haciendo cola
+      const noel = makePerson({ skin: 0xf1c9a5, shirt: 0xd42a2a, pants: 0xd42a2a, hair: 0xf4f4f4 }); santa(noel);
+      const kids = [0, 1].map(i => makePerson({ skin: SKINS[i * 3 % SKINS.length], shirt: [0x5ad1ff, 0xffd23f][i], pants: 0x23395d, hair: HAIRS[i], scale: 0.62 }));
+      S.cast = { kind: 'fiestas', list: [{ p: noel, key: 'papanoel', x: -34, z: 42.6, ry: -0.5, dance: 'noel' }, { p: kids[0], x: -33.0, z: 44.1, ry: Math.PI + 0.6, dance: 'kid' }, { p: kids[1], x: -32.3, z: 45.0, ry: Math.PI + 0.6, dance: 'kid' }] };
+      const tree = arbolito(); tree.group.position.set(-36.8, 2.2, 41); S.root.add(tree.group); S.anim.push(tree.lights); S.solids.push({ x: -36.8, z: 41, r: 1.5 });
     }
+    if (S.cast) for (const c of S.cast.list) { c.p.group.position.set(c.x, 2.2, c.z); c.p.group.rotation.y = c.ry; S.root.add(c.p.group); S.solids.push({ x: c.x, z: c.z, r: 0.55 }); }
     return S;
+  }
+  // Baile y gestos de los personajes de la fiesta; miran a Capi cuando se acerca o cuando hablan con él
+  animCast(C, dt, t, st) {
+    const cp = st.capi;
+    for (const c of C.list) {
+      const p = c.p, g = p.group, d = Math.hypot(cp.x - c.x, cp.z - c.z), talk = c.key && st.talking === c.key, face = c.key && (talk || d < 5);
+      let ry = c.ry, y = 2.2, rz = 0, rx = 0;
+      if (c.dance === 'mama') { ry += Math.sin(t * 1.6) * 0.6; rz = Math.sin(t * 3.2) * 0.07; y += Math.abs(Math.sin(t * 3.2)) * 0.04; p.armR.rotation.x = -2.3 + Math.sin(t * 1.6) * 0.2; p.armL.rotation.x = -1.1 + Math.sin(t * 3.2) * 0.45; }
+      if (c.dance === 'gram') { ry += Math.sin(t * 0.9) * 0.9; rx = 0.2; y += Math.abs(Math.sin(t * 4.1)) * 0.12; p.armR.rotation.x = -0.35 + Math.sin(t * 4.1) * 0.45; p.legL.rotation.x = Math.max(0, Math.sin(t * 4.1)) * 0.6; p.legR.rotation.x = Math.max(0, -Math.sin(t * 4.1)) * 0.6; }
+      if (c.dance === 'esc') { ry += t * 1.4; y += Math.abs(Math.sin(t * 5)) * 0.16; p.armR.rotation.x = -2.7; c.broom.rotation.y += dt * 9; p.armL.rotation.x = -0.8 + Math.sin(t * 5) * 0.5; }
+      if (c.dance === 'noel') { g.scale.y = 1 + Math.sin(t * 2.2) * 0.012; p.armL.rotation.x = d < 8 ? -2.8 + Math.sin(t * 8) * 0.3 : -0.2; }
+      if (c.dance === 'kid') { y += Math.abs(Math.sin(t * 3 + c.x)) * 0.05; p.armR.rotation.x = Math.sin(t * 2 + c.x) > 0.9 ? -2.6 : 0; }
+      if (face) { ry = Math.atan2(cp.x - c.x, cp.z - c.z); rz = 0; rx = 0; if (talk) p.armR.rotation.x = -1.2 + Math.sin(t * 7) * 0.35; }
+      g.position.set(c.x, y, c.z); g.rotation.set(rx, ry, rz);
+    }
+  }
+  // El momento fuerte de la fiesta, a pedido del modo guía
+  kick() {
+    const g = this.g, G = g.grid, k = this.mode, S = k && this.sets[k], c = g.capi.pos, play = g.mode === 'play'; if (!S) return;
+    if (k === 'carnaval') { G.hour = 19.5; S.parade.x = clamp(c.x + 9, -76, -16); this.cfT = 0.5; if (play) g.ui.note(c.z > 55 ? '¡Ahí vienen las llamadas por la rambla!' : '¡Arrancan las llamadas en la rambla! Bajá a verlas.', 6); }
+    if (k === 'patrimonio') { G.hour = 10.5; const T = S.tour; T.i = 0; T.wait = 2; T.x = TOUR[0][0]; T.z = TOUR[0][1]; T.vis.forEach(v => { v.x = T.x + v.o[0]; v.z = T.z + v.o[1]; }); if (play) g.ui.note('Arranca la visita guiada del Día del Patrimonio en la Plaza Matriz.', 6); }
+    if (k === 'fiestas') { G.hour = 23.9; this.count = 10.999; this.countN = 11; }
+  }
+  countdown(dt, st) {
+    if (!(this.count > 0)) return; const g = this.g, play = g.mode === 'play';
+    this.count -= dt; g.grid.hour = 23.97; const n = Math.ceil(this.count);
+    if (n < this.countN && n > 0) { this.countN = n; if (play) g.ui.toast(String(n), 'Cuenta regresiva para el Año Nuevo', 1.05); g.audio && g.audio.tone(660 + (10 - n) * 30, 0.12, 'triangle', 0.08); }
+    if (this.count <= 0) {
+      this.count = 0; g.grid.hour = 0.02; this.bigFw = 22; this.fwT = 0;
+      if (play) { g.ui.toast('¡FELIZ AÑO NUEVO!', 'Que el año que viene sea 100 % renovable', 5); g.confetti && g.confetti(90); const cp = g.capi.pos; st.fx.confetti(cp.x, cp.y + 3, cp.z, 120); g.capi.celebrate && g.capi.celebrate(3); }
+      g.audio && g.audio.fanfare();
+    }
   }
 
   // ---------- Cada cuadro ----------
   update(dt, st) {
-    this.soft = 0; const k = this.mode; if (!k) return;
+    this.soft = 0; const k = this.mode; if (!k) return; if (this.bigFw > 0) this.bigFw -= dt;
     const S = this.sets[k], g = this.g, t = (this.t += dt), h = st.hour, night = st.night;
     const L = g.mode === 'play' ? st.capi : st.focus;
     const w = g.world; if (w.dynCircles) for (const s of this.solids) w.dynCircles.push(s);
@@ -149,25 +201,29 @@ export class Fiestas {
         if (this.soft > 0.2 && (this.cfT -= dt) <= 0) { this.cfT = 5 + Math.random() * 5; st.fx && st.fx.confetti && st.fx.confetti(P.x + 4, 5.2, 73.4, 36); }
       }
     }
-    if (k === 'patrimonio') this.tour(S.tour, dt, t, h);
-    if (k === 'fiestas' && (h >= 20.5 || h < 1.5) && !g.cine && (this.fwT -= dt) <= 0) {
-      this.fwT = 2.2 + Math.random() * 3.2; const x = -72 + Math.random() * 62, z = -6 + Math.random() * 26;   // al norte, detrás de la ciudad vista desde la cámara
+    if (k === 'patrimonio') this.tour(S.tour, dt, t, h, st);
+    if (S.cast) this.animCast(S.cast, dt, t, st);
+    this.countdown(dt, st);
+    if (k === 'fiestas' && (h >= 20.5 || h < 1.5 || this.bigFw > 0) && !g.cine && (this.fwT -= dt) <= 0) {
+      this.fwT = this.bigFw > 0 ? 0.25 + Math.random() * 0.35 : 2.2 + Math.random() * 3.2; const x = -72 + Math.random() * 62, z = -6 + Math.random() * 26;   // al norte, detrás de la ciudad vista desde la cámara
       st.fx.firework(x, 24 + Math.random() * 16, z, PAL.fiestas[Math.floor(Math.random() * PAL.fiestas.length)]);
       if (Math.hypot(L.x - x, L.z - z) < 110 && g.audio) g.audio.boom();
     }
   }
-  tour(T, dt, t, h) {
+  tour(T, dt, t, h, st) {
     const on = h >= 9 && h < 19.5, all = [T.guide].concat(T.vis.map(v => v.p)); all.forEach(p => { p.group.visible = on; }); if (!on) return;
-    const PATH = [[-51.8, 36.2, 6], [-51.8, 47.8, 0], [-44, 49, 7], [-36.2, 47.8, 0], [-36.2, 36.2, 0], [-44, 37.2, 7]];
-    let moving = false;
+    let moving = false; const cp = st.capi, dC = Math.hypot(cp.x - T.x, cp.z - T.z);
+    if (dC < 4 || st.talking === 'marta') T.wait = Math.max(T.wait, 1.2);   // espera a Capi
     if (T.wait > 0) T.wait -= dt;
     else {
-      const [tx, tz] = PATH[(T.i + 1) % PATH.length], dx = tx - T.x, dz = tz - T.z, d = Math.hypot(dx, dz);
-      if (d < 0.15) { T.i = (T.i + 1) % PATH.length; T.wait = PATH[T.i][2]; }
+      const [tx, tz] = TOUR[(T.i + 1) % TOUR.length], dx = tx - T.x, dz = tz - T.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) { T.i = (T.i + 1) % TOUR.length; T.wait = TOUR[T.i][2]; }
       else { const s = Math.min(d, 0.75 * dt); T.x += dx / d * s; T.z += dz / d * s; T.h = Math.atan2(dx, dz); moving = true; }
     }
     const G = T.guide, ph = t * 6;
-    G.group.position.set(T.x, 2.2, T.z); G.group.rotation.y = moving ? T.h : T.h + Math.PI;
+    G.group.position.set(T.x, 2.2, T.z); G.group.rotation.y = moving ? T.h : dC < 6 ? Math.atan2(cp.x - T.x, cp.z - T.z) : T.h + Math.PI;
+    const it = this.g.world.inter['npc:marta']; if (it) { it.x = T.x; it.z = T.z; it.group.position.x = T.x; it.group.position.z = T.z; }
+    if (this.g.world.dynCircles) this.g.world.dynCircles.push({ x: T.x, z: T.z, r: 0.55 });
     G.legL.rotation.x = moving ? Math.sin(ph) * 0.5 : 0; G.legR.rotation.x = moving ? -Math.sin(ph) * 0.5 : 0; G.armL.rotation.x = moving ? 0 : -0.4 + Math.sin(t * 2) * 0.3;
     const c = Math.cos(T.h), s = Math.sin(T.h);
     T.vis.forEach((v, i) => {
@@ -199,6 +255,24 @@ function estandarte(cA, cB, s) {
   });
   const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.97), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.85 })); flag.position.set(0, 3.3, 0.04); g.add(flag);
   g.scale.setScalar(s); return g;
+}
+function held(obj, dy = 0, dz = 0.05) { const g = new THREE.Group(); g.add(obj); g.position.set(0, -0.78 + dy, dz); g.rotation.x = Math.PI; return g; }   // objeto en la mano, saliendo hacia afuera del brazo
+function skirt(col, band) { const g = new THREE.Group(), s = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.68, 1.05, 12), mat(col)); s.position.y = 0.53; g.add(s); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.685, 0.14, 12), mat(band)); b.position.y = 0.12; g.add(b); return g; }
+function parasol() { const g = new THREE.Group(), st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.2, 5), mat(0x3a3a3a)); st.position.y = 0.5; g.add(st); const c = new THREE.Mesh(new THREE.ConeGeometry(0.72, 0.34, 10, 1, true), new THREE.MeshStandardMaterial({ color: 0xe6007e, side: THREE.DoubleSide, roughness: 0.8 })); c.position.y = 1.0; g.add(c); return g; }
+function fan() { const m = new THREE.Mesh(new THREE.CircleGeometry(0.26, 10, 0, Math.PI), new THREE.MeshStandardMaterial({ color: 0xffd23f, side: THREE.DoubleSide })); m.position.y = 0.12; return m; }
+function topHat() { const g = new THREE.Group(), k = mat(0x18181b), c = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.29, 0.5, 10), k); c.position.y = 0.48; g.add(c); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.04, 12), k); b.position.y = 0.24; g.add(b); const r = new THREE.Mesh(new THREE.CylinderGeometry(0.295, 0.295, 0.07, 10), mat(0xe6007e)); r.position.y = 0.3; g.add(r); return g; }
+function escoba() { const g = new THREE.Group(), st = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.7, 5), mat(0xc9a36b)); g.add(st); const br = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.5, 8), mat(0xd9b45a)); br.position.y = -1.05; br.rotation.x = Math.PI; g.add(br); g.position.set(0, -0.8, 0.12); g.rotation.z = Math.PI / 2; return g; }
+function santa(p) {   // traje rojo con ribetes blancos, barba, gorro y bolsa de regalos
+  const W = mat(0xf7f7f7), Rd = mat(0xd42a2a);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), Rd); belly.scale.set(1, 0.9, 0.85); belly.position.set(0, 1.18, 0.12); p.group.add(belly);
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.12, 0.62), mat(0x1c1c1e)); belt.position.set(0, 1.0, 0.06); p.group.add(belt);
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 0.04), mat(0xffd23f)); buckle.position.set(0, 1.0, 0.39); p.group.add(buckle);
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.05), W); trim.position.set(0, 1.25, 0.49); p.group.add(trim);
+  const beard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), W); beard.scale.set(1.05, 1.1, 0.6); beard.position.set(0, -0.22, 0.24); p.head.add(beard);
+  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.33, 0.62, 10), Rd); hat.position.set(0.04, 0.5, -0.02); hat.rotation.z = -0.25; p.head.add(hat);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.12, 12), W); brim.position.y = 0.22; p.head.add(brim);
+  const pom = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), W); pom.position.set(0.2, 0.8, -0.02); p.head.add(pom);
+  const sack = new THREE.Mesh(new THREE.IcosahedronGeometry(0.46, 1), mat(0x8a5a2b)); sack.scale.set(1, 1.15, 0.9); sack.position.set(-0.75, 0.5, -0.25); p.group.add(sack);
 }
 function tamboril(i) {
   const dr = new THREE.Group(), r = 0.26 - (i % 3) * 0.025, band = [0xffc420, 0xe6007e, 0x2ed3c6, 0x6a2c91][i % 4];

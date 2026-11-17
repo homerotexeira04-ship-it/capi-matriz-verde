@@ -100,8 +100,9 @@ export class Guide {
       this.btn('', () => { if (g.clockStopped != null) { G.clockRate = g.clockStopped; g.clockStopped = null; } else { g.clockStopped = G.clockRate; G.clockRate = 0; } }, 'gClock'));
     sec('Red eléctrica', this.btn('Provocar una avería', () => { if (g.mode === 'play') M.randomFault(); }), this.btn('Reparar todo', () => M.clearFaults()), this.btn('', () => g.setPaused(!g.paused), 'gPause'));
     sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}));
-    const S = window.__capiSettings, mark = () => box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-    sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['patrimonio', 'Día del Patrimonio'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }));
+    const S = window.__capiSettings, mark = () => { box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); const kb = box.querySelector('.gKick'); if (kb) { kb.disabled = !S.fest; kb.title = { carnaval: 'Pone el atardecer y trae las llamadas a la rambla', patrimonio: 'Pone la mañana y arranca la visita guiada en la plaza', fiestas: 'Cuenta regresiva y fuegos de Año Nuevo' }[S.fest] || 'Primero elegí una fiesta'; } };
+    const kick = this.btn('¡Empezar la fiesta ahora!', () => { this.close(); g.fiestas.kick(); }, 'gKick');
+    sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['patrimonio', 'Día del Patrimonio'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }), kick);
     mark();
     window.__capiSettings.apply();
   }

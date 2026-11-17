@@ -11,7 +11,9 @@ const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 21.5, x1: 29.5, z0: 37.5, z1: 44.5, g0: 24, g1: 27 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-60, 74.5, 'la rambla oeste', 0.15], [8, 74.5, 'la rambla este', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-58, 78.2, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2] };
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-58, 78.2, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5] };
+// Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
+const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas' };
 const PAS = [2, 3, 4];
 export const CLEAR2 = [[20, 31.5, 36, 46.5]];
 
@@ -22,9 +24,21 @@ const WHO = {
   rosa: { hi: '¡Bienvenido al naranjal! Salto es tierra de citrus, y esta cosecha viene dulce.', q: [['¿Por qué hay tantos naranjales en Salto?', 'Por el clima templado y la tierra del litoral: acá las naranjas y las mandarinas se dan muy bien.'], ['¿Las naranjas tienen que ver con la energía?', '¡Claro! El riego y el empaque usan electricidad. Y el árbol hace lo suyo con la energía más vieja de todas: la del sol.']] },
   beto: { hi: 'Acá ando, esperando el pique. El río enseña a tener paciencia.', q: [['¿Qué se pesca por acá?', 'Bogas, bagres y, con suerte, algún dorado, que es el más peleador del río.'], ['¿La represa le cambia la vida al río?', 'Sí: aguas arriba se arma un lago y el agua corre distinto. Por eso las represas tienen que cuidar el caudal y a los peces.']] },
   sofi: { hi: '¡Pasá! El agua de las termas sale calentita todo el año.', q: [['¿Por qué el agua sale caliente?', 'Viene de muy hondo, del Acuífero Guaraní: ahí abajo las rocas la calientan antes de que suba.'], ['¿Eso también es energía renovable?', 'Es calor de la Tierra y se llama geotermia. Acá lo usamos para bañarnos, no para generar electricidad.']] },
-  guia: { hi: '¡Hola, Capi! Estoy con un grupo de la escuela recorriendo la ciudad. Chicos, saluden al ingeniero.', q: [['¿Qué se aprende en Energimundo?', 'De dónde viene la energía, cómo llega hasta tu casa y cómo usarla mejor. Y se aprende jugando, como ahora.'], ['¿Qué puedo hacer yo por la energía?', 'Apagar lo que no usás, preferir lámparas LED y contarle a tu familia lo que aprendiste hoy.']] }
+  guia: { hi: '¡Hola, Capi! Estoy con un grupo de la escuela recorriendo la ciudad. Chicos, saluden al ingeniero.', q: [['¿Qué se aprende en Energimundo?', 'De dónde viene la energía, cómo llega hasta tu casa y cómo usarla mejor. Y se aprende jugando, como ahora.'], ['¿Qué puedo hacer yo por la energía?', 'Apagar lo que no usás, preferir lámparas LED y contarle a tu familia lo que aprendiste hoy.']] },
+  mamavieja: { hi: '¡Buenas, Capi! ¿Bailamos? La cuerda de tambores ya viene por la rambla.', q: [
+    ['¿Quién sos?', 'Soy la Mama Vieja, uno de los personajes típicos del candombe. Bailo con el Gramillero y el Escobero delante de los tambores.'],
+    ['¿Qué tambores lleva una cuerda?', 'Tres: el chico, que marca el ritmo más agudo; el repique, que se anima a improvisar; y el piano, el más grave, que es la base.'],
+    ['¿Y qué tiene que ver con la energía?', 'Las noches de Carnaval la ciudad trasnocha: luces, escenarios y sonido. La red tiene que cubrir esa demanda cuando ya no hay sol, con agua, viento, biomasa y baterías.']] },
+  marta: { hi: '¡Bienvenido a la visita del Día del Patrimonio! Sumate al grupo, Capi.', q: [
+    ['¿Qué es el Día del Patrimonio?', 'Una fiesta de todo el país: un fin de semana al año, museos, edificios y lugares históricos abren sus puertas para que la gente conozca su historia.'],
+    ['¿La energía también es patrimonio?', '¡Claro! Las represas, las usinas antiguas y hasta los molinos de agua de las estancias cuentan cómo el país fue consiguiendo su energía.'],
+    ['¿Qué se puede visitar en Salto?', 'Muchísimo: el Teatro Larrañaga, que se inauguró en 1882, la Casa de Horacio Quiroga, el Museo del Hombre y la Tecnología y, por supuesto, Energimundo.']] },
+  papanoel: { hi: '¡Jo, jo, jo! Hola, Capi. Con este calor, el traje rojo pesa más que la bolsa de regalos.', q: [
+    ['¿Cómo repartís tantos regalos?', 'Este año me muevo en los ómnibus eléctricos de Lucía: me dejan en cada parada sin echar ni un poquito de humo.'],
+    ['¿Las luces de Navidad gastan mucho?', 'Si son LED, muy poco: alumbran lo mismo que las lamparitas viejas con mucha menos electricidad. Y conviene apagarlas al irse a dormir.'],
+    ['¿Qué pedís para el año que viene?', '¡Una red cien por ciento renovable todos los días! Y un ventilador para el trineo, que en diciembre acá hace un calor bárbaro.']] }
 };
-export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo' };
+export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Homero, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Central Hidroeléctrica, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
@@ -123,6 +137,7 @@ export class Social {
   describe(id) {
     const [k, s] = id.split(':'), i = +s;
     if (k === 'feria') return { state: 'ok', label: 'Jugar en la feria' };
+    if (k === 'npc' && FEST_NPC[s] && !(this.g.fiestas && this.g.fiestas.mode === FEST_NPC[s] && this.g.fiestas.present(s))) return { state: 'hidden' };
     if (k === 'npc' && WHO[s] && SOCIAL_NAMES[s]) return { state: 'ok', label: 'Hablar con ' + SOCIAL_NAMES[s].split(',')[0] };
     if (k === 'met') return this.active === 'valeria' && !this.prog[i] ? { state: 'need', label: 'Leer el medidor de ' + METERS[i][2] } : { state: 'locked' };
     if (k === 'pas') return this.active === 'lucia' && !this.prog[i] ? { state: 'need', label: 'Avisarle que ya pasa el ómnibus' } : { state: 'locked' };

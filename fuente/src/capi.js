@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { clamp, lerp, damp, angDiff, rng } from './util.js';
 import { B, POS, CITY_Y } from './terrain.js';
-import { canvasTex } from './world.js';
+import { canvasTex, Batch } from './world.js';
 
 const S = { IDLE: 'idle', RUN: 'run', JUMP: 'jump', SWIM: 'swim', INTERACT: 'interact', CELEBRATE: 'celebrate' };
 
@@ -31,10 +31,10 @@ export class Capi {
     // Torso, chaleco técnico y cinturón (coordenadas relativas al centro del torso)
     add(new THREE.SphereGeometry(0.62, 16, 12), mFur, 0, 0.02, 0, rig).scale.set(1, 1.12, 0.92);
     add(new THREE.SphereGeometry(0.5, 12, 10), mBelly, 0, -0.08, 0.3, rig).scale.set(0.82, 0.95, 0.5);
-    add(new THREE.CylinderGeometry(0.645, 0.7, 0.74, 16, 1, true), mVest, 0, 0.14, 0, rig).scale.z = 0.94;
-    for (const y of [-0.08, 0.3]) { const b = add(new THREE.TorusGeometry(0.69, 0.045, 6, 20), mBand, 0, y, 0, rig); b.rotation.x = Math.PI / 2; b.scale.y = 0.94; }
+    this.vestM = add(new THREE.CylinderGeometry(0.645, 0.7, 0.74, 16, 1, true), mVest, 0, 0.14, 0, rig); this.vestM.scale.z = 0.94; this.bands = [];
+    for (const y of [-0.08, 0.3]) { const b = add(new THREE.TorusGeometry(0.69, 0.045, 6, 20), mBand, 0, y, 0, rig); b.rotation.x = Math.PI / 2; b.scale.y = 0.94; this.bands.push(b); }
     const emb = canvasTex(64, 64, (g) => { g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(32, 32, 30, 0, 7); g.fill(); g.fillStyle = '#12325a'; g.beginPath(); g.moveTo(37, 6); g.lineTo(16, 36); g.lineTo(30, 36); g.lineTo(25, 58); g.lineTo(48, 26); g.lineTo(34, 26); g.closePath(); g.fill(); });
-    const em = add(new THREE.CircleGeometry(0.15, 12), new THREE.MeshStandardMaterial({ map: emb, roughness: 0.6 }), -0.3, 0.3, 0.6, rig); em.rotation.y = -0.5;
+    const em = add(new THREE.CircleGeometry(0.15, 12), new THREE.MeshStandardMaterial({ map: emb, roughness: 0.6 }), -0.3, 0.3, 0.6, rig); em.rotation.y = -0.5; this.emblem = em; this.emb = emb;
     const belt = add(new THREE.TorusGeometry(0.66, 0.05, 6, 18), mDark, 0, -0.34, 0, rig); belt.rotation.x = Math.PI / 2;
     add(new THREE.BoxGeometry(0.14, 0.12, 0.08), mYellow, 0, -0.34, 0.63, rig);
     this.beltWrench = add(new THREE.BoxGeometry(0.07, 0.42, 0.07), mSteel, 0.62, -0.52, 0.12, rig);
@@ -74,7 +74,7 @@ export class Capi {
     for (const sx of [-1, 1]) {
       const eg = new THREE.Group(); eg.position.set(sx * 0.47, 0.44, -0.1); head.add(eg); this.ears.push(eg);
       add(new THREE.SphereGeometry(0.14, 8, 8), mFurD, 0, 0.06, 0, eg).scale.set(0.7, 1, 0.9); add(new THREE.SphereGeometry(0.08, 6, 6), M(0xd99a84), sx * 0.04, 0.06, 0.05, eg).scale.set(0.5, 0.9, 0.6);
-      const rim = add(new THREE.TorusGeometry(0.15, 0.035, 5, 10), mYellow, sx * 0.44, 0.42, -0.1, head); rim.rotation.y = Math.PI / 2; rim.rotation.x = sx * 0.4;
+      const rim = add(new THREE.TorusGeometry(0.15, 0.035, 5, 10), mYellow, sx * 0.44, 0.42, -0.1, head); rim.rotation.y = Math.PI / 2; rim.rotation.x = sx * 0.4; (this.rims = this.rims || []).push(rim);
     }
     // Casco con dos aberturas para las orejas
     const helm = new THREE.Group(); helm.position.set(0, 0.2, -0.04); helm.rotation.x = -0.3; head.add(helm); this.helm = helm;   // echado hacia atrás para que se vean los ojos
@@ -83,11 +83,137 @@ export class Capi {
     add(new THREE.BoxGeometry(0.12, 0.07, 0.9), mYellow, 0, 0.45, 0, helm);
     this.lamp = add(new THREE.BoxGeometry(0.16, 0.1, 0.06), new THREE.MeshStandardMaterial({ color: 0xe8fbff, emissive: 0x9ff0ff, emissiveIntensity: 0.6 }), 0, 0.2, 0.57, helm);
     this.wrench.visible = false; this.tablet.visible = false;
+    this.helmetParts = [...helm.children];
+    this.buildKits(M);
     // Capa 1 + estarcido: permite dibujar la silueta de Capi cuando queda detrás de un edificio
     root.traverse(o => { if (o.isMesh) { o.layers.enable(1); o.renderOrder = 3; const m = o.material; m.stencilWrite = true; m.stencilRef = 1; m.stencilFunc = THREE.AlwaysStencilFunc; m.stencilZPass = THREE.ReplaceStencilOp; } });
     root.position.copy(this.pos); scene.add(root);
     this.buildProps(scene, add, M);
     this.buildAccessories(add, M);
+  }
+  // Atuendos del vestuario: cada uno trae piezas propias, no sólo colores
+  buildKits(M) {
+    const VCm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, flatShading: true });
+    const K = this.kits = {}, P = { rig: this.rig, head: this.head, helm: this.helm, armL: this.armL, armR: this.armR, legL: this.legL, legR: this.legR };
+    const kit = (name, flags = {}) => { const k = K[name] = Object.assign({ parts: [], b: {} }, flags); return k; };
+    const bat = (k, part) => k.b[part] || (k.b[part] = new Batch());
+    const mesh = (k, part, geo, mat, x, y, z, rx = 0, ry = 0, rz = 0, hat = false) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; m.userData.hat = hat; P[part].add(m); k.parts.push(m); return m; };
+    const done = (k, hatParts = []) => { for (const part in k.b) { const m = k.b[part].mesh(VCm); if (!m) continue; m.castShadow = true; m.userData.hat = hatParts.includes(part); P[part].add(m); k.parts.push(m); } delete k.b; };
+    const glass = (c, o = 0.55) => new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: o, roughness: 0.1, metalness: 0.3 });
+    const lenses = (k, frame, lens, round) => {   // anteojos sobre los ojos de costado del carpincho
+      const b = bat(k, 'head');
+      for (const sx of [-1, 1]) { mesh(k, 'head', new THREE.CylinderGeometry(round ? 0.12 : 0.13, round ? 0.12 : 0.13, 0.03, round ? 14 : 6), lens, sx * 0.4, 0.05, 0.47, Math.PI / 2, 0, sx * 0.62).rotation.order = 'YXZ';
+        b.add(new THREE.TorusGeometry(0.125, 0.022, 4, round ? 14 : 6), frame, sx * 0.4, 0.05, 0.47, 1, 1, 1, 0, sx * 0.62, 0, 0); b.box(sx * 0.5, 0.1, 0.12, 0.03, 0.03, 0.5, frame, sx * 0.3); }
+      b.box(0, 0.13, 0.62, 0.42, 0.035, 0.035, frame);
+    };
+    // ---- Clásico: walkie-talkie y bolsillo ----
+    let k = kit('clasico'), b = bat(k, 'rig');
+    b.box(0.34, 0.24, 0.6, 0.13, 0.22, 0.07, 0x2b2d33, 0.5); b.box(0.36, 0.42, 0.6, 0.02, 0.2, 0.02, 0x1c1c1e, 0.5); b.box(0.33, 0.28, 0.645, 0.07, 0.05, 0.01, 0x7dffb0, 0.5);
+    b.box(0.08, -0.05, 0.66, 0.2, 0.16, 0.03, 0x37474f); b.box(0.08, 0.02, 0.675, 0.21, 0.04, 0.02, 0x263238);
+    done(k);
+    // ---- Eólico: arnés de altura, mosquetones, antiparras y molinito en el casco ----
+    k = kit('eolico'); b = bat(k, 'rig'); const or = 0xff7a1a, steel = 0xc9d1d9;
+    b.add(new THREE.TorusGeometry(0.7, 0.05, 6, 22), or, 0, -0.22, 0, 1, 1, 0.94, Math.PI / 2, 0, 0, 0);
+    for (const sx of [-1, 1]) { b.box(sx * 0.22, 0.14, 0.6, 0.09, 0.78, 0.035, or, sx * 0.25, -0.2); b.box(sx * 0.3, 0.14, -0.5, 0.09, 0.7, 0.035, or, sx * -0.3, 0.2); b.add(new THREE.TorusGeometry(0.075, 0.02, 4, 10), steel, sx * 0.44, -0.33, 0.48, 1, 1, 1, 0, sx * 0.6, 0, 0); }
+    b.box(0, 0.2, 0.64, 0.5, 0.07, 0.035, or); b.box(0, 0.2, 0.67, 0.1, 0.09, 0.03, steel);
+    b.add(new THREE.TorusGeometry(0.17, 0.035, 5, 12), 0xf4f1ea, 0.6, -0.36, -0.2, 1, 1, 1, 0, Math.PI / 2, 0, 0);
+    for (const leg of ['legL', 'legR']) bat(k, leg).add(new THREE.TorusGeometry(0.21, 0.04, 5, 14), or, 0, -0.05, 0, 1, 1, 1, Math.PI / 2, 0, 0, 0);
+    const hb = bat(k, 'helm');
+    for (const sx of [-1, 0, 1]) hb.box(sx * 0.22, 0.38 - Math.abs(sx) * 0.05, 0.2, 0.06, 0.03, 0.22, 0x37474f);
+    hb.add(new THREE.TorusGeometry(0.6, 0.03, 4, 24), 0x1c1c1e, 0, 0.12, 0.02, 1, 1, 1.04, Math.PI / 2, 0, 0, 0);
+    for (const sx of [-1, 1]) mesh(k, 'helm', new THREE.CylinderGeometry(0.11, 0.11, 0.06, 12), glass(0x2ed3c6, 0.7), sx * 0.15, 0.16, 0.6, Math.PI / 2 - 0.3, 0, 0);
+    hb.box(0, 0.16, 0.6, 0.1, 0.04, 0.04, 0x1c1c1e);
+    hb.cyl(0, 0.48, -0.18, 0.018, 0.03, 0.55, 0xf4f4f4, 6); hb.box(0, 1.03, -0.16, 0.08, 0.08, 0.18, 0xf4f4f4);
+    const rotor = this.kitRotor = new THREE.Group(); rotor.position.set(0, 1.03, -0.05); this.helm.add(rotor); k.parts.push(rotor);
+    const blade = new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.5 });
+    for (let i = 0; i < 3; i++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.34, 0.014), blade); bl.geometry.translate(0, 0.17, 0); bl.rotation.z = i * Math.PI * 2 / 3; bl.castShadow = true; rotor.add(bl); }
+    rotor.add(new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), blade));
+    done(k);
+    // ---- Hidro: chaleco salvavidas inflable, cuello, silbato, gota y botas de goma ----
+    k = kit('hidro', { noBands: true }); b = bat(k, 'rig'); const navy = 0x1d3a6e, lifeO = 0xff8a1a;
+    for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * Math.PI * 2; if (Math.abs(Math.sin(a)) > 0.9 && Math.cos(a) < 0) continue; b.add(new THREE.CapsuleGeometry(0.11, 0.42, 3, 8), 0x2a5fb0, Math.sin(a) * 0.69, 0.13, Math.cos(a) * 0.65, 1, 1, 0.75, 0, a, 0, 0.02); }
+    b.add(new THREE.TorusGeometry(0.42, 0.12, 8, 18, Math.PI * 1.6), lifeO, 0, 0.55, 0.02, 1, 1, 1, Math.PI / 2, 0, Math.PI * 0.7, 0);
+    for (const y of [0.0, 0.26]) b.add(new THREE.TorusGeometry(0.71, 0.03, 4, 22), 0xe8f0f0, 0, y, 0, 1, 1, 0.94, Math.PI / 2, 0, 0, 0);
+    b.box(0.2, 0.36, 0.64, 0.06, 0.05, 0.12, lifeO); b.add(new THREE.TorusGeometry(0.16, 0.012, 3, 10), 0x1c1c1e, 0.1, 0.42, 0.6, 1, 1, 1, 0.4, 0.3, 0, 0);
+    b.sph(-0.3, 0.3, 0.64, 0.08, 0x5ad1ff, 1.2, 1); b.add(new THREE.ConeGeometry(0.075, 0.12, 8), 0x5ad1ff, -0.3, 0.4, 0.64);
+    for (const leg of ['legL', 'legR']) { const lb = bat(k, leg); lb.cyl(0, -0.4, 0, 0.21, 0.2, 0.34, navy, 10); lb.add(new THREE.SphereGeometry(0.23, 10, 6), navy, 0, -0.45, 0.08, 1, 0.55, 1.55, 0, 0, 0, 0); lb.add(new THREE.SphereGeometry(0.235, 10, 4, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), 0xffc420, 0, -0.45, 0.08, 1, 0.55, 1.55, 0, 0, 0, 0); lb.add(new THREE.TorusGeometry(0.21, 0.025, 4, 12), 0xffc420, 0, -0.24, 0, 1, 1, 1, Math.PI / 2, 0, 0, 0); }
+    bat(k, 'helm').sph(0, 0.26, 0.55, 0.07, 0x5ad1ff, 1.2, 1);
+    done(k);
+    // ---- Solar: lentes de sol, cubrenuca, panelito en el casco y un sol en el pecho ----
+    k = kit('solar'); b = bat(k, 'rig');
+    lenses(k, 0xff8a2a, new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.15, metalness: 0.5 }), true);
+    b.add(new THREE.CircleGeometry(0.1, 12), 0xffc420, 0.28, 0.26, 0.625, 1, 1, 1, 0, 0.45, 0, 0);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; b.box(0.28 + Math.cos(a) * 0.15 * Math.cos(0.45), 0.26 + Math.sin(a) * 0.15, 0.625 - Math.cos(a) * 0.15 * Math.sin(0.45), 0.05, 0.02, 0.012, 0xff8a2a, 0.45, 0, a); }
+    const hs = bat(k, 'helm');
+    hs.add(new THREE.CylinderGeometry(0.62, 0.66, 0.34, 14, 1, true, Math.PI * 0.62, Math.PI * 0.76), 0xfff1c4, 0, -0.12, -0.02, 1, 1, 1, 0, 0, 0, 0);
+    hs.box(0, 0.5, -0.08, 0.08, 0.12, 0.08, 0x3d4650); hs.box(0, 0.6, -0.06, 0.56, 0.04, 0.4, 0x1f3c88, 0, -0.25);
+    for (const dx of [-0.14, 0, 0.14]) hs.box(dx, 0.625, -0.06, 0.012, 0.012, 0.38, 0x8fb5ff, 0, -0.25); hs.box(0, 0.625, -0.06, 0.54, 0.012, 0.012, 0x8fb5ff, 0, -0.25);
+    const ps = bat(k, 'rig'); ps.box(0, 0.6, -0.66, 0.6, 0.04, 0.34, 0x1f3c88, 0, -0.35); ps.box(0, 0.55, -0.62, 0.06, 0.1, 0.06, 0x3d4650);
+    done(k);
+    // ---- Biomasa: casco forestal con orejeras y visera de malla, guantes de cuero y leña en la mochila ----
+    k = kit('biomasa'); const hf = bat(k, 'helm'), red = 0xd62828, dark = 0x2f3337;
+    for (const sx of [-1, 1]) { hf.cyl(sx * 0.62, -0.05, 0.06, 0.16, 0.16, 0.12, red, 12, 0, 0, Math.PI / 2); hf.box(sx * 0.6, 0.12, 0.06, 0.06, 0.3, 0.06, dark); }
+    hf.box(0, 0.3, 0.64, 0.78, 0.03, 0.03, dark, 0, -0.9); hf.box(0, 0.1, 0.5, 0.78, 0.03, 0.03, dark, 0, -0.9);
+    for (let i = -3; i <= 3; i++) hf.box(i * 0.11, 0.2, 0.57, 0.012, 0.012, 0.3, 0x6b7076, 0, -0.9);
+    for (const sx of [-1, 1]) hf.box(sx * 0.4, 0.2, 0.57, 0.03, 0.03, 0.3, dark, 0, -0.9);
+    b = bat(k, 'rig'); b.add(new THREE.SphereGeometry(0.1, 8, 6), 0x4c9a3f, 0.28, 0.26, 0.63, 1.5, 0.75, 0.3, 0, 0.45, 0.6, 0); b.box(0.24, 0.2, 0.64, 0.015, 0.12, 0.015, 0x2f7d32, 0.45, 0, 0.6);
+    for (let i = 0; i < 3; i++) { b.cyl(-0.18 + i * 0.18, 0.62, -0.68, 0.07, 0.08, 0.6, 0x8a5a33, 8, 0, 0, Math.PI / 2 + (i - 1) * 0.08); }
+    b.sph(0.32, 0.72, -0.68, 0.12, 0x4c9a3f, 1, 0);
+    for (const arm of ['armL', 'armR']) { const ab = bat(k, arm); ab.sph(0, -0.556, 0, 0.17, 0x8a6a3a, 1, 1); ab.add(new THREE.TorusGeometry(0.15, 0.04, 4, 12), 0xff8a1a, 0, -0.45, 0, 1, 1, 1, Math.PI / 2, 0, 0, 0); }
+    done(k);
+    // ---- Guardián: capa, hombreras, visera luminosa y emblema grande ----
+    k = kit('guardian', { noEmblem: true }); b = bat(k, 'rig');
+    for (const sx of [-1, 1]) { b.add(new THREE.SphereGeometry(0.24, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x6a2c91, sx * 0.6, 0.44, 0.04, 1.1, 0.7, 1, 0, 0, -sx * 0.5, 0); b.add(new THREE.TorusGeometry(0.24, 0.03, 4, 14), 0xffd23f, sx * 0.6, 0.44, 0.04, 1.1, 1, 1, Math.PI / 2, 0, -sx * 0.5, 0); }
+    b.add(new THREE.TorusGeometry(0.27, 0.035, 5, 18), 0xffd23f, 0, 0.2, 0.64, 1, 1, 1, 0, 0, 0, 0);
+    mesh(k, 'rig', new THREE.CircleGeometry(0.25, 18), new THREE.MeshStandardMaterial({ map: this.emb, emissive: 0xffffff, emissiveMap: this.emb, emissiveIntensity: 0.45, roughness: 0.5 }), 0, 0.2, 0.655);
+    this.visorMat = new THREE.MeshStandardMaterial({ color: 0x2ed3c6, emissive: 0x2ed3c6, emissiveIntensity: 1.2, transparent: true, opacity: 0.8 });
+    mesh(k, 'helm', new THREE.CylinderGeometry(0.635, 0.635, 0.12, 16, 1, true, -Math.PI * 0.32, Math.PI * 0.64), this.visorMat, 0, 0.13, 0.02);
+    const capeG = new THREE.PlaneGeometry(1.45, 1.55, 6, 8); capeG.translate(0, -0.775, 0);
+    { const a = capeG.attributes.position; for (let i = 0; i < a.count; i++) { const u = -a.getY(i) / 1.55; a.setX(i, a.getX(i) * (0.6 + 0.4 * u)); } }   // angosta en los hombros, ancha abajo
+    const capeM = new THREE.MeshStandardMaterial({ color: 0xe6007e, roughness: 0.7, side: THREE.DoubleSide });
+    const cape = mesh(k, 'rig', capeG, capeM, 0, 0.55, -0.9, 0.12, 0, 0); this.cape = { m: cape, base: capeG.attributes.position.array.slice() };
+    const hem = mesh(k, 'rig', new THREE.BoxGeometry(1.46, 0.08, 0.03), new THREE.MeshStandardMaterial({ color: 0x2ed3c6, emissive: 0x2ed3c6, emissiveIntensity: 0.4 }), 0, -1.55, 0, 0, 0, 0); cape.attach(hem); hem.position.set(0, -1.55, 0.01); hem.rotation.set(0, 0, 0);
+    bat(k, 'rig').add(new THREE.TorusGeometry(0.12, 0.03, 4, 10), 0xffd23f, 0, 0.55, -0.86, 1, 1, 1, 0, 0, 0, 0);
+    done(k);
+    // ---- Gaucho: boina, poncho a rayas con flecos y rastra de monedas ----
+    k = kit('gaucho', { noHelmet: true, noVest: true });
+    mesh(k, 'head', new THREE.SphereGeometry(0.6, 16, 8), new THREE.MeshStandardMaterial({ color: 0x1e1e22, roughness: 0.95 }), 0.04, 0.42, -0.04, 0, 0, 0.14, true).scale.set(1.08, 0.3, 1.08);
+    bat(k, 'head').cyl(0.08, 0.58, -0.04, 0.02, 0.03, 0.08, 0x1e1e22, 5);
+    const stripes = canvasTex(32, 128, (g) => { g.fillStyle = '#9b2226'; g.fillRect(0, 0, 32, 128); for (const [y, h, c] of [[104, 6, '#f2e4c4'], [111, 4, '#1c1c1e'], [117, 6, '#f2e4c4'], [70, 3, '#1c1c1e'], [44, 3, '#1c1c1e']]) { g.fillStyle = c; g.fillRect(0, y, 32, h); } });
+    // poncho que cae desde el cuello sobre el cuerpo redondo (ochavado para que no lo atraviese)
+    const poncho = mesh(k, 'rig', new THREE.CylinderGeometry(0.52, 1.02, 0.78, 8, 1, true), new THREE.MeshStandardMaterial({ map: stripes, roughness: 0.95, side: THREE.DoubleSide }), 0, 0.12, 0, 0, Math.PI / 8, 0); poncho.scale.set(1, 1, 0.95);
+    b = bat(k, 'rig'); const yb = 0.12 - 0.39;
+    b.add(new THREE.TorusGeometry(0.5, 0.05, 5, 16), 0x5a1416, 0, 0.5, 0, 1, 1, 0.95, Math.PI / 2, 0, 0, 0);
+    for (let e = 0; e < 8; e++) { const a0 = Math.PI / 8 + e * Math.PI / 4, a1 = a0 + Math.PI / 4; for (let i = 0; i < 6; i++) { const u = (i + 0.5) / 6, a = a0 + (a1 - a0) * u, r = 1.02 * Math.cos(Math.PI / 8) / Math.cos(a - (a0 + a1) / 2); b.box(Math.sin(a) * r, yb - 0.07, Math.cos(a) * r * 0.95, 0.025, 0.14, 0.025, 0xf2e4c4); } }
+    b.add(new THREE.TorusGeometry(0.64, 0.075, 6, 20), 0x1c1c1e, 0, -0.25, 0, 1, 1, 0.94, Math.PI / 2, 0, 0, 0);
+    for (let i = -2; i <= 2; i++) b.cyl(i * 0.12, -0.25, 0.62 - Math.abs(i) * 0.04, 0.05, 0.05, 0.025, 0xd8dde3, 12, Math.PI / 2, 0, 0);
+    b.box(0, -0.25, 0.63, 0.5, 0.02, 0.02, 0xb8bec4);
+    done(k, ['head']);
+    // ---- Chofer: gorra de chofer, cuello de camisa, corbata, bolsillos y charreteras ----
+    k = kit('chofer', { noHelmet: true, noBands: true, noEmblem: true }); const hc = bat(k, 'head'), cap = 0x1f2f4f;
+    hc.cyl(0, 0.44, -0.04, 0.6, 0.5, 0.28, cap, 16, -0.12, 0, 0); hc.cyl(0, 0.585, -0.06, 0.61, 0.61, 0.04, cap, 16, -0.12, 0, 0);
+    hc.add(new THREE.TorusGeometry(0.51, 0.04, 4, 20), 0x2a9d8f, 0, 0.36, -0.03, 1, 1, 1, Math.PI / 2 - 0.12, 0, 0, 0);
+    hc.add(new THREE.CylinderGeometry(0.4, 0.42, 0.03, 14, 1, false, -Math.PI / 2, Math.PI), 0x111111, 0, 0.33, 0.36, 1, 1, 0.75, 0.35, 0, 0, 0);
+    hc.box(0, 0.47, 0.5, 0.14, 0.1, 0.03, 0xffd23f, 0, -0.12);
+    b = bat(k, 'rig');
+    for (const sx of [-1, 1]) { b.add(new THREE.ConeGeometry(0.13, 0.24, 3), 0xffffff, sx * 0.12, 0.5, 0.52, 1, 1, 0.3, Math.PI, sx * 0.4, sx * 0.5, 0); b.box(sx * 0.28, 0.22, 0.6, 0.18, 0.16, 0.04, 0x3d8fc6, sx * 0.4); b.box(sx * 0.28, 0.29, 0.61, 0.19, 0.04, 0.03, 0x2f7fb5, sx * 0.4); b.box(sx * 0.58, 0.46, 0.04, 0.26, 0.05, 0.3, cap, 0, 0, -sx * 0.5); b.box(sx * 0.66, 0.43, 0.04, 0.03, 0.055, 0.3, 0xffd23f, 0, 0, -sx * 0.5); }
+    b.box(0, 0.47, 0.6, 0.1, 0.09, 0.05, cap); b.add(new THREE.ConeGeometry(0.07, 0.44, 4), cap, 0, 0.22, 0.66, 1, 1, 0.3, Math.PI, Math.PI / 4, 0, 0);
+    b.box(-0.28, 0.32, 0.64, 0.12, 0.04, 0.02, 0xffd23f, -0.4);
+    for (let i = 0; i < 3; i++) b.sph(0.02, 0.05 - i * 0.12, 0.66, 0.025, 0xf4f4f4, 1, 0);
+    done(k, ['head']);
+    // ---- Control: auriculares con micrófono, lentes y credencial con cinta ----
+    k = kit('control'); const hd = bat(k, 'head'), gray = 0x3a3f4a;
+    hd.add(new THREE.TorusGeometry(0.68, 0.035, 5, 20, Math.PI), gray, 0, 0.06, -0.06, 1, 1.05, 1, 0, 0, 0, 0);
+    for (const sx of [-1, 1]) { hd.cyl(sx * 0.66, 0.04, -0.06, 0.15, 0.15, 0.1, gray, 12, 0, 0, Math.PI / 2); hd.cyl(sx * 0.71, 0.04, -0.06, 0.11, 0.11, 0.02, 0x9b7fd0, 12, 0, 0, Math.PI / 2); }
+    hd.box(-0.5, -0.14, 0.32, 0.03, 0.03, 0.55, gray, 0.6, 0.25); hd.sph(-0.3, -0.24, 0.56, 0.05, 0x1c1c1e, 1, 0);
+    lenses(k, 0x23395d, glass(0xcfeaff, 0.35), false);
+    b = bat(k, 'rig');
+    for (const sx of [-1, 1]) b.box(sx * 0.12, 0.3, 0.63, 0.035, 0.42, 0.015, 0x9b7fd0, 0, -0.15, sx * 0.4);
+    b.box(0, 0.02, 0.665, 0.2, 0.26, 0.02, 0xf4f4f4, 0, -0.12); b.box(0, 0.12, 0.672, 0.2, 0.05, 0.02, 0x6a2c91, 0, -0.12); b.box(-0.04, 0.0, 0.676, 0.07, 0.08, 0.01, 0xa56f3e, 0, -0.12); b.box(0.05, -0.02, 0.676, 0.06, 0.015, 0.01, 0x3a3f4a, 0, -0.12);
+    for (let i = 0; i < 3; i++) b.cyl(0.26 + i * 0.05, 0.36, 0.58, 0.012, 0.012, 0.16, [0xe5484d, 0x1d6fb8, 0x1c1c1e][i], 5);
+    done(k);
+    for (const key in K) for (const m of K[key].parts) m.visible = false;
+    this.kitKey = 'clasico'; this.applyKit();
   }
   // Accesorios de fiesta (vestuario): antifaz, escarapela, gorro navideño, pañuelo criollo y farol
   buildAccessories(add, M) {
@@ -114,7 +240,7 @@ export class Capi {
     this.farolGlass = add(new THREE.BoxGeometry(0.15, 0.24, 0.15), new THREE.MeshStandardMaterial({ color: 0xfff1b8, emissive: 0xffc420, emissiveIntensity: 1.4 }), 0, -0.2, 0, fa);
     for (const k in A) A[k].visible = false;
   }
-  setAccessory(k) { for (const key in this.accs) this.accs[key].visible = key === k; }
+  setAccessory(k) { for (const key in this.accs) this.accs[key].visible = key === k; this.accKey = k; this.applyKit(); }
   // Objetos de los festejos de cada misión
   buildProps(scene, add, M) {
     const P = this.props = {}, dark = M(0x15151f, { metalness: 0.5, roughness: 0.2 });
@@ -155,7 +281,15 @@ export class Capi {
     const n = Math.round(clamp(level, 0, 1) * 5);
     this.leds.forEach((l, i) => { l.material.emissive.set(good ? 0x4dffa0 : level < 0.4 ? 0xff7a4d : 0xffc93c); l.material.emissiveIntensity = i < n ? 2.2 : 0.05; });
   }
-  setOutfit(o) { this.mats.helmet.color.set(o.helmet); this.mats.vest.color.set(o.vest); this.mats.band.color.set(o.band); this.mats.band.emissive.set(o.band).multiplyScalar(0.7); }
+  setOutfit(o) { this.mats.helmet.color.set(o.helmet); this.mats.vest.color.set(o.vest); this.mats.band.color.set(o.band); this.mats.band.emissive.set(o.band).multiplyScalar(0.7); this.kitKey = o.kit || 'clasico'; this.applyKit(); }
+  // Muestra las piezas propias del atuendo y esconde lo que tapan (casco, chaleco, bandas)
+  applyKit() {
+    const K = this.kits; if (!K) return; const k = K[this.kitKey] || K.clasico, hat = this.accKey === 'gorro';
+    for (const key in K) for (const m of K[key].parts) m.visible = key === this.kitKey && !(hat && m.userData.hat);
+    const helmetOff = k.noHelmet && !hat;
+    for (const m of this.helmetParts) m.visible = !helmetOff; for (const r of this.rims) r.visible = !helmetOff;
+    this.vestM.visible = !k.noVest; for (const b of this.bands) b.visible = !k.noVest && !k.noBands; this.emblem.visible = !k.noVest && !k.noEmblem;
+  }
   celebrate(t = 2.4) { this.cele = t; this.celeProp = null; this.celeKind = ((this.celeKind || 0) + 1) % 4; this.celeT = 0; }
   work(t = 1.2) { this.busy = t; }
   // Navegación automática hacia un punto: usa la grilla A* si está disponible
@@ -323,5 +457,14 @@ export class Capi {
     this.ears[0].rotation.z = 0.25 + ew; this.ears[1].rotation.z = -0.25 - ew;
     this.blink -= dt; const bl = this.blink < 0.12 ? 0.12 : 1; if (this.blink < 0) this.blink = 2 + Math.random() * 3;
     this.eyes[0].scale.y = bl; this.eyes[1].scale.y = bl;
+    // atuendos con partes móviles: el molinito del casco y la capa del Guardián
+    const spd = Math.hypot(this.vel.x, this.vel.z);
+    if (this.kitKey === 'eolico' && this.kitRotor) this.kitRotor.rotation.z -= dt * (5 + spd * 2.5);
+    if (this.kitKey === 'guardian' && this.cape) {
+      const c = this.cape, a = c.m.geometry.attributes.position, fl = Math.min(1, spd / 7);
+      c.m.rotation.x = damp(c.m.rotation.x, 0.12 + fl * 0.75 + (this.vy > 1 ? 0.3 : 0), 6, dt);
+      for (let i = 0; i < a.count; i++) { const y = c.base[i * 3 + 1], x = c.base[i * 3], u = -y / 1.55; a.setZ(i, -Math.sin(u * 4 - t * (4 + fl * 6) + x * 1.5) * 0.09 * u * (0.6 + fl)); }
+      a.needsUpdate = true;
+    }
   }
 }

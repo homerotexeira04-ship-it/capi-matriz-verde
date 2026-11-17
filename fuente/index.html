@@ -168,6 +168,8 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 .wItem.on{border-color:var(--sun)} .wItem:disabled{opacity:.5;cursor:not-allowed}
 .wItem b{font-family:var(--display);font-weight:400;font-size:16px} .wItem em{font-style:normal;font-size:12px;color:var(--dim)}
 .sw{display:flex;gap:3px} .sw i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink)}
+.wFace{width:56px;height:56px;image-rendering:pixelated;border-radius:10px;border:2px solid #2a4374} .wItem small{font-size:11.5px;line-height:1.25;color:var(--ink);opacity:.85;text-align:center}
+.wItem:disabled .wFace{filter:grayscale(.7) brightness(.8)}
 #chList{display:grid;gap:8px;width:100%} #chList .btn{text-align:left;font-size:16px} #chList .btn small{display:block;margin:2px 0 0 30px;font-size:13px;font-weight:700;opacity:.8} #chText{max-width:440px}
 .dQr{display:flex;align-items:center;gap:10px;text-align:left} .dQr canvas{width:104px;height:104px;border:2px solid #1b2b4a;border-radius:6px;image-rendering:pixelated;flex:none}
 #tvList{display:grid;gap:7px;width:100%} #tvList .btn{text-align:left;font-size:16px} #tvList .btn:disabled{opacity:.5;cursor:default}

@@ -13,15 +13,15 @@ const $ = id => document.getElementById(id);
 const N = ' ';
 
 export const OUTFITS = [
-  { name: 'Clásico', need: 0, helmet: 0xffc420, vest: 0x4fc3f7, band: 0xf1ff6b },
-  { name: 'Eólico', need: 2, helmet: 0xf4f4f4, vest: 0x7fd8c2, band: 0xffffff },
-  { name: 'Hidro', need: 4, helmet: 0x4fc3f7, vest: 0x2a5fb0, band: 0xbfe9fb },
-  { name: 'Solar', need: 6, helmet: 0xff8a2a, vest: 0xffd23f, band: 0xfff3b0 },
-  { name: 'Biomasa', need: 8, helmet: 0x57b85a, vest: 0x9a6a3f, band: 0xd9f29b },
-  { name: 'Guardián', need: 10, helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6 },
-  { name: 'Gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0 },
-  { name: 'Chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff },
-  { name: 'Control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0 }
+  { name: 'Clásico', kit: 'clasico', need: 0, helmet: 0xffc420, vest: 0x4fc3f7, band: 0xf1ff6b, desc: 'Casco, chaleco reflectivo y walkie-talkie' },
+  { name: 'Eólico', kit: 'eolico', need: 2, helmet: 0xf4f4f4, vest: 0x7fd8c2, band: 0xffffff, desc: 'Arnés de altura, antiparras y un molinito en el casco' },
+  { name: 'Hidro', kit: 'hidro', need: 4, helmet: 0x4fc3f7, vest: 0x2a5fb0, band: 0xbfe9fb, desc: 'Chaleco salvavidas, silbato y botas de goma' },
+  { name: 'Solar', kit: 'solar', need: 6, helmet: 0xff8a2a, vest: 0xffd23f, band: 0xfff3b0, desc: 'Lentes de sol, cubrenuca y panelito en el casco' },
+  { name: 'Biomasa', kit: 'biomasa', need: 8, helmet: 0x57b85a, vest: 0x9a6a3f, band: 0xd9f29b, desc: 'Casco forestal con orejeras, guantes y leña' },
+  { name: 'Guardián', kit: 'guardian', need: 10, helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6, desc: 'Capa, hombreras y visera que brilla' },
+  { name: 'Gaucho', kit: 'gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0, desc: 'Boina, poncho a rayas con flecos y rastra' },
+  { name: 'Chofer', kit: 'chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff, desc: 'Gorra de chofer, camisa, corbata y charreteras' },
+  { name: 'Control', kit: 'control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0, desc: 'Auriculares con micrófono, lentes y credencial' }
 ];
 
 // [x, z, altura extra, pista del lugar, dato]
@@ -76,7 +76,7 @@ export class Extras {
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
   setAcc(k) { this.accOn = k && this.acc.has(k) ? k : null; this.g.capi.setAccessory(this.accOn); }
   giveAcc(k) { this.acc.add(k); this.setAcc(k); }
-  colors() { const o = OUTFITS[this.outfit], h = c => '#' + c.toString(16).padStart(6, '0'); return { helmet: h(o.helmet), vest: h(o.vest), band: h(o.band) }; }
+  colors(i = this.outfit) { const o = OUTFITS[i], h = c => '#' + c.toString(16).padStart(6, '0'); return { helmet: h(o.helmet), vest: h(o.vest), band: h(o.band), kit: o.kit }; }
   close() { if (this.open === 'diploma' || this.open === 'choice') return; if (this.open) $(this.open).classList.add('hidden'); this.open = null; }
 
   // ---- Chispas de saber ----
@@ -101,7 +101,8 @@ export class Extras {
     const box = $('wList'), h = c => '#' + c.toString(16).padStart(6, '0'); box.textContent = '';
     OUTFITS.forEach((o, i) => {
       const ok = o.favor ? !!this.g.social.done[o.favor] : this.got.size >= o.need, b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
-      b.innerHTML = `<span class="sw"><i style="background:${h(o.helmet)}"></i><i style="background:${h(o.vest)}"></i><i style="background:${h(o.band)}"></i></span><b>${o.name}</b><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas`}</em>`;
+      b.innerHTML = `<canvas class="wFace" width="24" height="24" aria-hidden="true"></canvas><b>${o.name}</b><small>${o.desc}</small><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas`}</em>`;
+      drawFace(b.querySelector('canvas').getContext('2d'), 'capi', 1, false, this.colors(i));
       b.onclick = () => { this.setOutfit(i); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
       box.appendChild(b);
     });

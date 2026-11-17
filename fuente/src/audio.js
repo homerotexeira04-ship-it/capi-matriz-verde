@@ -63,6 +63,8 @@ export class AudioSynth {
   gate() { this.noise(0.6, 0.07, 'bandpass', 220, 3); this.tone(90, 0.6, 'sawtooth', 0.05, 0, 70); }
   tero(v = 1) { for (let k = 0; k < 2; k++) { this.tone(2300, 0.08, 'sine', 0.07 * v, k * 0.28, 1750); this.tone(2500, 0.13, 'sine', 0.07 * v, k * 0.28 + 0.09, 1500); } }
   fanfare() { [72, 76, 79, 84].forEach((m, i) => this.tone(mtof(m), 0.2, 'square', 0.08, i * 0.11)); [72, 76, 79, 84].forEach(m => this.tone(mtof(m), 0.9, 'triangle', 0.07, 0.46)); this.tone(mtof(96), 0.5, 'sine', 0.05, 0.5); }
+  honk() { this.tone(392, 0.16, 'square', 0.045); this.tone(494, 0.16, 'square', 0.035); this.tone(392, 0.2, 'square', 0.045, 0.22); this.tone(494, 0.2, 'square', 0.035, 0.22); }
+  bark(v = 1) { for (const d of [0, 0.17]) { this.tone(540, 0.08, 'sawtooth', 0.05 * v, d, 360); this.noise(0.08, 0.07 * v, 'bandpass', 1200, 2, d); } }
   boom() { this.noise(0.5, 0.2, 'lowpass', 500, 0.5); this.noise(0.3, 0.06, 'highpass', 2500, 0.5, 0.05); }
   thunder() { this.noise(1.6, 0.34, 'lowpass', 170, 0.4); this.noise(0.25, 0.2, 'bandpass', 900, 0.5); this.tone(52, 1.4, 'sine', 0.2, 0.05, 34); }
   alarm() { this.tone(660, 0.16, 'sine', 0.06); this.tone(520, 0.2, 'sine', 0.06, 0.18); }
@@ -92,6 +94,7 @@ export class AudioSynth {
       if (layer >= 1) { if (CLAVE[st]) this.drum('clave', t, 1); if (st % 4 !== 0) this.drum('chico', t, st % 4 === 1 ? 1 : 0.55); }
       if (layer >= 2) { if (PIANO[st]) this.drum('piano', t, 1); if (st % 2 === 0) this.tone(mtof(ch.n[(st / 2) % 4] + 12), sd * 1.6, 'triangle', 0.045, w, null, this.music); if (bar % 4 === 3 && st >= 10) this.drum('repique', t, 0.6 + (st - 10) * 0.08); }
       if (layer >= 3) for (const [ls, m, l] of LEAD[bar]) if (ls === st) { this.tone(mtof(m), sd * l, 'square', 0.04, w, null, this.music, 0.02); this.tone(mtof(m) * 1.003, sd * l, 'sine', 0.05, w, null, this.music, 0.03); }
+      if (this.llamada) { if (CLAVE[st]) this.drum('clave', t, 1.3); this.drum('chico', t, st % 2 ? 1.3 : 0.7); if (PIANO[st] || st === 8 || st === 14) this.drum('piano', t, 1.6); if ([3, 6, 7, 11, 13, 14, 15].includes(st)) this.drum('repique', t, 1.2); }
       this.step16++; this.next += sd;
     }
   }

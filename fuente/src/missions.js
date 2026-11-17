@@ -187,6 +187,7 @@ export class Missions {
 
   // ---- Estados de consolas e interacción ----
   describe(id) {
+    if (id === 'npc:lucia' && this.g.vecinos && this.g.vecinos.luciaAway) return { state: 'hidden' };
     const sd = this.g.social && this.g.social.describe(id); if (sd) return sd;
     const G = this.g.grid, [k, s] = id.split(':'), i = +s, n = i + 1;
     if (k === 'npc') return { state: 'ok', label: 'Hablar con ' + { mateo: 'Don Mateo', valeria: 'la Ing. Valeria', lucia: 'Lucía' }[s] };
@@ -355,7 +356,7 @@ export class Missions {
     g.startCine();
     g.ui.dialog(this.lines(SPEECH), () => {
       g.capi.celebrate(3); g.audio.fanfare(); g.actors.celebrate = 600;
-      g.extras.showDiploma(() => g.showCredits(() => { g.endCine(); this.fwNorth = false; this.fw = 12; g.actors.celebrate = 10; this.phase = this.seq.length; this.save(); this.start(this.mode, this.phase, false); g.actors.gather(true); }));
+      g.dance(11, () => g.extras.showDiploma(() => g.showCredits(() => { g.endCine(); this.fwNorth = false; this.fw = 12; g.actors.celebrate = 10; this.phase = this.seq.length; this.save(); this.start(this.mode, this.phase, false); g.actors.gather(true); })));
     });
   }
 
@@ -372,6 +373,8 @@ export class Missions {
       if (Math.random() < 2.2 * dt) { const n = this.fwNorth; g.fx.firework(n ? -58 + Math.random() * 28 : -60 + Math.random() * 60, n ? 13 + Math.random() * 10 : 22 + Math.random() * 16, n ? 8 + Math.random() * 16 : 84 + Math.random() * 14, [0x57e389, 0x5ad1ff, 0xffd23f, 0xff8fab, 0xffffff][Math.floor(Math.random() * 5)]); g.audio.boom(); }
     }
     if (this.free) {
+      if (G.out.pct < 97) this.flags.low = true;
+      if (!this.flags.full && this.flags.low && G.out.pct >= 99.9) { this.flags.full = true; g.celebrate100(); }
       this.streak = G.out.pct >= 100 ? this.streak + dt : 0; this.best = Math.max(this.best, this.streak);
       this.evT = (this.evT == null ? 75 : this.evT) - dt;
       if (this.ev) { this.ev.t -= dt; if (this.ev.t <= 0) { this.ev.undo(); this.ev = null; U.note('Pasó el evento: la red vuelve a la normalidad.', 4); } }
@@ -386,6 +389,8 @@ export class Missions {
     if (g.tut && g.tut.on) { U.mission('Primeros pasos', `Tutorial · antes de la misión 1`, g.tut.items()); return; }
     U.mission(`Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
     if (!this.active) return;
+    if (G.out.pct < 97) this.flags.low = true;
+    if (!this.flags.full && this.flags.low && G.out.pct >= 99.9 && !this.lapse) { this.flags.full = true; g.celebrate100(); }
     if (cur !== this.step) { if (cur > this.step && cur < st.length) g.audio.ok(); this.step = cur; }
     const K = this.key;
     // Reglas especiales
@@ -415,7 +420,7 @@ export class Missions {
     if (cur >= st.length && st.length && !this.pending && K !== 'pico') {
       // Misión completa
       this.pending = 1; this.active = false; U.timer(null);
-      g.stats.mission(K); U.toast('¡MISIÓN COMPLETA!', this.title, 3.6); g.audio.fanfare(); g.capi.celebrate(2.6); g.actors.celebrate = 7;
+      g.stats.mission(K); U.toast('¡MISIÓN COMPLETA!', this.title, 3.6); g.audio.fanfare(); g.capi.celebrateFor(K, 3.6); g.actors.celebrate = 7;
       if (K === 'tormenta') { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); g.vida.showRainbow(45); }   // escampa y sale el arcoíris
       const done = K, fs = Math.round(this.fossilT || 0), extra = K !== 'tormenta' ? null : L('valeria', (this.flags.first === 'dam' ? 'Cuidaste el agua primero, y el viento tardó un poco más en volver.' : 'Recuperaste potencia rápido, aunque el embalse siguió perdiendo agua un rato.') + (fs > 0 ? ` La ciudad pasó ${fs} segundos con respaldo fósil.` : ' Y la ciudad no necesitó respaldo fósil.'));
       setTimeout(() => {

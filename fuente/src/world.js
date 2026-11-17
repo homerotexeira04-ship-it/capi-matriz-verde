@@ -501,7 +501,7 @@ export class World {
       c.material.color.copy(this.cloudMat.color); c.material.opacity = lerp(c.material.opacity, lerp(0.12, 0.94, smooth(16, 42, d)), Math.min(1, dt * 4));
       c.position.x += (1.2 + st.grid.wind * 4) * dt * Math.cos(st.grid.windDir); c.position.z += (1.2 + st.grid.wind * 4) * dt * Math.sin(st.grid.windDir) * 0.4; if (c.position.x > B.maxX + 30) c.position.x = B.minX - 30; if (c.position.z > B.maxZ + 20) c.position.z = B.minZ - 20; }
     for (const it of this.interList) {
-      const g = it.group; g.visible = it.state !== 'locked' && it.state !== 'hidden';
+      const g = it.group; g.visible = it.state !== 'locked' && it.state !== 'hidden' && !st.cine;
       if (!g.visible) continue;
       const need = it.state === 'need';
       it.gem.material.color.set(need ? 0xff4d4d : it.state === 'off' ? 0x9aa7bd : 0x57e389);

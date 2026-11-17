@@ -20,6 +20,8 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Modo guía** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Cómo abrirlo está en las instrucciones de la carpeta del kiosco.
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
 - El aire del diorama se ve gris mientras la red usa respaldo fósil y se limpia a medida que sube el porcentaje renovable.
+- **Festejos de Capi:** cada misión cierra con un festejo propio (cometa, chapuzón, lentes de sol, bandera a cuadros, lamparita LED o paraguas). La primera vez que la red llega al 100 % renovable caen papelitos con los colores de Energimundo, y la ceremonia final termina con una cuerda de tambores y todo el elenco bailando candombe en el escenario.
+- **Una ciudad con vida:** los vecinos siguen la hora del día (mate en los bancos al mediodía, corredores y ciclistas en la rambla, fútbol en la playa, casi nadie en la calle de noche), abren el paraguas con la tormenta, festejan cuando vuelve la luz al barrio y saludan a Capi. La Ing. Valeria y Don Mateo se mueven por su lugar de trabajo, Lucía sale a manejar un ómnibus, los teros defienden su nido a los gritos y Pampa, el perro de Don Mateo, acompaña a Capi un rato.
 
 ## Controles
 
@@ -63,5 +65,5 @@ El resultado queda en `fuente/web/`. Para publicar una versión nueva, copiá `i
 - Salto, Uruguay · 2026
 - Gráficos 3D con [Three.js](https://threejs.org/) (licencia MIT).
 - Tipografías Lilita One y Nunito (SIL Open Font License).
-- Elenco: Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía y el grupo escolar con su guía.
+- Elenco: Capi, la Ing. Valeria, Don Mateo, Lucía, Doña Rosa, Beto, Sofía, el grupo escolar con su guía, los vecinos de la ciudad, la cuerda de tambores y Pampa.
 - Datos de generación eléctrica: Ministerio de Industria, Energía y Minería del Uruguay.

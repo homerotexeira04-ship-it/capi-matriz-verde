@@ -43,7 +43,7 @@ kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border
 .clock b{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:1px}
 #vHz{font-size:13px;color:var(--leaf)} #vHz.low{color:var(--ember)}
 #phase{width:34px;height:34px}
-#card{position:absolute;top:10px;left:10px;display:flex;gap:10px;padding:8px 12px 10px 8px;max-width:330px}
+#card{position:absolute;top:10px;left:10px;display:flex;gap:10px;padding:8px 12px 10px 8px;max-width:330px;min-width:min(300px,calc(100vw - 24px))} #sparkCount{white-space:nowrap}
 #capiFace,#dFace{image-rendering:pixelated;border-radius:12px;border:3px solid var(--ink);background:#274a7a;flex:none}
 #capiFace{width:64px;height:64px}
 #mTitle{font-family:var(--display);font-weight:400;font-size:18px;color:var(--sun);line-height:1.1;text-wrap:balance}
@@ -113,7 +113,7 @@ kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border
 .sl input{width:100%;accent-color:var(--sun)}
 
 /* ---------- Título y ayuda ---------- */
-#title{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at center,rgba(8,20,44,.62) 0%,rgba(8,20,44,.35) 45%,rgba(8,20,44,.1) 100%)}
+#title{position:fixed;inset:0;display:grid;place-items:center;padding:16px;overflow-y:auto;background:radial-gradient(ellipse at center,rgba(8,20,44,.62) 0%,rgba(8,20,44,.35) 45%,rgba(8,20,44,.1) 100%)}
 .tBox{text-align:center;max-width:720px}
 .tBox .eyebrow{font-size:14px;letter-spacing:3px;color:var(--ink);text-shadow:0 2px 0 #071226}
 .tBox h1{margin:4px 0 0;font-family:var(--display);font-weight:400;font-size:clamp(54px,11vw,120px);line-height:.9;color:var(--sun);-webkit-text-stroke:3px #3a2500;text-shadow:0 7px 0 #3a2500,0 14px 28px rgba(0,0,0,.5);letter-spacing:2px}
@@ -137,7 +137,7 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #alList{display:grid;gap:7px;width:100%;text-align:left} .alItem{display:flex;gap:10px;padding:8px 10px;border:2px solid #2a4374;border-radius:10px;opacity:.6} .alItem.on{opacity:1;border-color:var(--sun)} .alItem b{font-family:var(--display);font-weight:400;font-size:20px;color:var(--sun);min-width:22px} .alItem em{display:block;font-style:normal;font-size:12px;color:var(--sun);font-weight:900} .alItem span{font-size:13.5px;line-height:1.35}
 #favLine{margin-top:5px;font-size:12.5px;color:#9be7ff;font-weight:900} #bAlb{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900} #bAlb:hover{border-color:var(--sun)}
 #album .oBox,#arcade .oBox{width:min(620px,96vw)}
-#mExtra{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
+#mExtra{display:flex;flex-wrap:wrap;row-gap:5px;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
 #bWard{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900}
 #bWard:hover{border-color:var(--sun)}
 #fact{position:absolute;top:172px;left:50%;transform:translateX(-50%);width:min(560px,92vw);padding:10px 16px;display:grid;gap:3px;opacity:0;transition:opacity .25s;pointer-events:none!important;border-color:var(--sun)}
@@ -177,6 +177,8 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #tutX{font-size:15.5px;line-height:1.4} #tutCaps{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;align-items:center;font-size:14px;color:var(--dim)} #tutCaps kbd{font-size:15px;padding:3px 9px}
 .tutFoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px} .tutFoot .btn{font-size:12.5px;padding:4px 10px}
 #tutDots{display:flex;gap:6px} #tutDots i{width:11px;height:11px;border-radius:50%;border:2px solid #6f84a8} #tutDots i.now{border-color:var(--sun);background:var(--sun)} #tutDots i.ok{border-color:var(--leaf);background:var(--leaf)}
+#confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:8} #confetti i{position:absolute;top:-16px;width:9px;height:14px;border-radius:2px;animation:conf linear forwards}
+@keyframes conf{to{transform:translate(var(--x),105vh) rotate(var(--r))}}
 #pauseTag{display:none;position:fixed;top:118px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:999px;background:var(--sun);color:#1b1400;font-weight:900;font-size:14px;z-index:6;pointer-events:none} body.paused #pauseTag{display:block}
 .gBox{width:min(1080px,97vw)!important;justify-items:stretch;text-align:left} .gBox h2{text-align:center} .gSub{margin:-4px 0 0;text-align:center;font-size:13px;color:var(--dim)}
 .gCols{display:grid;grid-template-columns:1fr 1fr;gap:16px} .gBox section{margin-bottom:8px} .gBox h3{margin:4px 0 6px;font-size:14px;color:var(--sun);font-weight:900}
@@ -241,6 +243,8 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
   #tr .btn{font-size:12px;padding:5px 8px} #logoIso{width:32px} .tBrand img{height:34px}
 }
 @media (max-width:560px){ #fact{left:8px;transform:none;bottom:150px;width:calc(100vw - 104px);padding:8px 12px} #fact span{font-size:13px;line-height:1.35} #tele{transform:translateX(-50%) scale(.62)} #card{top:84px;transform:scale(.78)} #tr{top:auto;bottom:160px;right:8px;flex-direction:column} #dFace{width:64px;height:64px} #dText{font-size:15px} }
+@media (max-height:520px){ .tBrand{margin-bottom:4px;padding:5px 14px 5px 10px} .tBrand img{height:28px} .tBox .eyebrow{font-size:11px} .tBox h1{font-size:clamp(40px,14vh,64px);-webkit-text-stroke:2px #3a2500;text-shadow:0 4px 0 #3a2500} .tBox h2{margin-top:4px;font-size:20px} .tBox p{margin-top:6px;font-size:13.5px;line-height:1.35} .tBtns{margin-top:10px} .tBtns .btn{font-size:18px;padding:6px 16px} .tBtns2{margin-top:8px} .tBtns2 .btn{font-size:13px;padding:5px 10px} }
+@media (max-width:560px){ #zone{bottom:345px;max-width:200px;font-size:15px} }
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
@@ -397,6 +401,7 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
 
 <div id="attract"><div class="aBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div><div class="aName">CAPI<small>Guardián de la Matriz Verde</small></div><div class="aCta">Tocá la pantalla o una tecla para jugar</div></div>
 <div id="tut" class="pane hidden" aria-live="polite"><div class="tKick">Primeros pasos · <span id="tutN"></span></div><div id="tutT"></div><div id="tutX"></div><div id="tutCaps"></div><div class="tutFoot"><div id="tutDots"></div><button class="btn ghost" id="tSkip" type="button">Saltar tutorial <kbd>Esc</kbd></button></div></div>
+<div id="confetti" aria-hidden="true"></div>
 <div id="pauseTag">Pausa · modo guía</div>
 <div id="guide" class="ov hidden"><div class="oBox pane gBox">
   <h2>Modo guía</h2>

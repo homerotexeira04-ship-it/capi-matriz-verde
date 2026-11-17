@@ -139,7 +139,7 @@ export class Actors {
       g.position.y = (n.baseY != null ? n.baseY : n.home.y) + (party ? Math.abs(Math.sin(t * 7 + n.phase)) * 0.35 : Math.sin(t * 2 + n.phase) * 0.015);
       w.dynCircles.push({ x: g.position.x, z: g.position.z, r: 0.6 });
     }
-    this.citizens.forEach((c, ci) => {
+    if (!this.vec) this.citizens.forEach((c, ci) => {
       const g = c.group; let moving = !party;
       if (this.gathered) {   // público a los lados del escenario
         const k = Math.floor(ci / 2), ax = (ci % 2 ? -39.2 : -54.6) + (k % 3) * 2.6, az = 36.9 + Math.floor(k / 3) * 1.9;

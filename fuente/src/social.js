@@ -16,7 +16,7 @@ const PAS = [2, 3, 4];
 export const CLEAR2 = [[20, 31.5, 36, 46.5]];
 
 const WHO = {
-  mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.']] },
+  mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.'], ['¿Cómo se llama el perro?', 'Pampa. Si te sigue es porque le caíste bien. Cuando se cansa, vuelve solo al fogón.']] },
   lucia: { q: [['¿Por qué ómnibus eléctricos?', 'No echan humo en la calle, hacen mucho menos ruido y andan con electricidad hecha acá, no con combustible traído de afuera.'], ['¿Cuándo conviene cargarlos?', 'Cuando sobra energía: al mediodía con mucho sol o de madrugada, cuando la ciudad duerme y gasta poco.']] },
   valeria: { q: [['¿Qué es eso de los 50 Hz?', 'Es el pulso de la red. Si se genera menos de lo que se consume, baja; si sobra, sube. Mi trabajo es mantenerlo clavado en 50.'], ['¿Para qué está el respaldo fósil?', 'Para los ratos en que lo renovable no alcanza. Cuanto mejor combinamos agua, viento, sol y biomasa, menos hay que prenderlo.']] },
   rosa: { hi: '¡Bienvenido al naranjal! Salto es tierra de citrus, y esta cosecha viene dulce.', q: [['¿Por qué hay tantos naranjales en Salto?', 'Por el clima templado y la tierra del litoral: acá las naranjas y las mandarinas se dan muy bien.'], ['¿Las naranjas tienen que ver con la energía?', '¡Claro! El riego y el empaque usan electricidad. Y el árbol hace lo suyo con la energía más vieja de todas: la del sol.']] },
@@ -191,7 +191,7 @@ export class Social {
     for (const e of this.emo) { if (e.t > 0) { e.t -= dt; const p = e.c.group.position, k = Math.min(1, (2.6 - e.t) * 6) * Math.min(1, e.t * 4); e.s.position.set(p.x, p.y + 3.1 + Math.sin(t * 3) * 0.08, p.z); e.s.scale.setScalar(1.25 * k); e.s.visible = k > 0.02 && play && !st.cine; if (e.t <= 0) { e.s.visible = false; e.c = null; } } }
     this.emoT -= dt;
     if (this.emoT <= 0 && play && !st.cine && cit.length) {
-      this.emoT = 1.4 + Math.random() * 1.6; const free = this.emo.find(e => e.t <= 0), near = cit.filter(c => Math.hypot(c.group.position.x - cp.x, c.group.position.z - cp.z) < 32 && !this.emo.some(e => e.c === c));
+      this.emoT = 1.4 + Math.random() * 1.6; const free = this.emo.find(e => e.t <= 0), near = cit.filter(c => c.group.visible && Math.hypot(c.group.position.x - cp.x, c.group.position.z - cp.z) < 32 && !this.emo.some(e => e.c === c));
       if (free && near.length) { const c = near[Math.floor(Math.random() * near.length)], d = Math.hypot(c.group.position.x - cp.x, c.group.position.z - cp.z);
         const icon = o.unmet > 1 || st.grid.freq < 49.4 ? 'bad' : (w.smog || 0) > 0.45 ? 'smog' : d < 5 ? 'hi' : o.pct >= 99.9 ? (Math.random() < 0.5 ? 'ok' : 'fun') : null;
         if (icon) { free.c = c; free.t = 2.6; free.s.material.map = this.icons[icon]; } }

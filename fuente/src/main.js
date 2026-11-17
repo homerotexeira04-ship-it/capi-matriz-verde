@@ -19,6 +19,7 @@ import { Social, buildSocial, CLEAR2 } from './social.js';
 import './arcade.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
+import { Vecinos } from './vecinos.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -61,7 +62,7 @@ class Game {
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -96,6 +97,23 @@ class Game {
     if (!opt.guide) this.stats.startGame(mode, this.missions.level, !saved);
     this.missions.start(mode, phase, true, tut);
     if (tut) this.tut.start();
+  }
+  // confeti en pantalla con los colores de Energimundo
+  confetti(n = 70) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = $('confetti'), C = ['#e6007e', '#6a2c91', '#2ed3c6', '#ffc420', '#ffffff'];
+    for (let i = 0; i < n; i++) { const s = document.createElement('i'); s.style.left = (Math.random() * 100) + '%'; s.style.background = C[i % 5]; s.style.animationDuration = (2.2 + Math.random() * 1.6) + 's'; s.style.animationDelay = (Math.random() * 0.5) + 's'; s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg'); s.style.setProperty('--x', (Math.random() * 160 - 80) + 'px'); box.appendChild(s); setTimeout(() => s.remove(), 4500); }
+  }
+  // la red llegó al 100 % renovable por primera vez en la misión
+  celebrate100() {
+    const c = this.capi.pos; this.fx.confetti(c.x, c.y + 2, c.z); this.confetti(); this.vecinos.cheer(3.5); this.audio.ok(); setTimeout(() => this.audio.ok(), 180);
+    this.ui.note(`¡La red llegó al 100 % renovable!`, 3);
+  }
+  // baile final: cuerda de tambores de candombe, todos bailan
+  dance(t, done) {
+    this.audio.llamada = true; this.cineWide = true; this.capi.dancing = true; this.actors.dancing = true; this.vecinos.drums(true); this.missions.fw = Math.max(this.missions.fw || 0, t); this.confetti(90);
+    this.ui.toast('¡QUE SUENE EL CANDOMBE!', 'Una cuerda de tambores toma la plaza', 3.5);
+    setTimeout(() => { this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); if (this.mode === 'play' && this.cine) done(); }, t * 1000);
   }
   setPaused(on) { this.paused = !!on; document.body.classList.toggle('paused', this.paused); }
   // Presentación final: Capi en primer plano sobre el escenario de la plaza
@@ -168,7 +186,7 @@ class Game {
   }
   toTitle() {
     if (this.photo) this.togglePhoto();
-    this.tut.stop(); this.setPaused(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
+    this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
     this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
@@ -306,7 +324,7 @@ class Game {
     this.mg.update(dt);
     // Consola candidata
     this.cand = null;
-    if (play && !this.locked) { let bd = 1e9; for (const it of w.interList) { if (it.state === 'locked') continue; const d = Math.hypot(it.x - c.pos.x, it.z - c.pos.z); if (d < it.r && d < bd && Math.abs(it.y - c.pos.y) < 4.5) { bd = d; this.cand = it; } } }
+    if (play && !this.locked) { let bd = 1e9; for (const it of w.interList) { if (it.state === 'locked' || it.state === 'hidden') continue; const d = Math.hypot(it.x - c.pos.x, it.z - c.pos.z); if (d < it.r && d < bd && Math.abs(it.y - c.pos.y) < 4.5) { bd = d; this.cand = it; } } }
     this.ui.prompt(this.cand ? this.cand.label : null);
     this.ring.visible = this.ring.visible && !!c.goto; if (this.ring.visible) { this.ring.scale.setScalar(1 + 0.25 * Math.sin(this.time * 9)); }
     // --- Cámara: seguimiento con amortiguación, órbita y zoom ---
@@ -314,15 +332,16 @@ class Game {
     cam.inspectT -= cdt; if (cam.inspectT <= 0) cam.inspect = null;
     if (this.cine) cam.yawT = this.cineYaw + Math.sin(this.time * 0.22) * 0.24;
     cam.cineK = damp(cam.cineK || 0, this.cine ? 1 : 0, 2.2, cdt);
-    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, cdt); cam.dist = damp(cam.dist, this.cine ? 7.4 : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, cdt);
-    const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + 1.95, c.pos.z) : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
+    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, cdt); cam.dist = damp(cam.dist, this.cine ? (this.cineWide ? 20 : 7.4) : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, cdt);
+    const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + (this.cineWide ? 0.6 : 1.95), c.pos.z + (this.cineWide ? 4.2 : 0)) : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
     cam.target.x = damp(cam.target.x, goal.x, cam.inspect ? 2.5 : 6, cdt); cam.target.y = damp(cam.target.y, goal.y, 4, cdt); cam.target.z = damp(cam.target.z, goal.z, cam.inspect ? 2.5 : 6, cdt);
     const zt = clamp((cam.dist - 20) / 175, 0, 1), base = (40 + 5 * zt) * Math.PI / 180;
     // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
     const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
     cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, cdt); w.setCutaway(cam.cut, c.pos, cam.yaw);
     cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : 0, 3, cdt);
-    const pitch = lerp(lerp(base, 0.16, cam.lowK), -0.09, cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
+    cam.wideK = damp(cam.wideK || 0, this.cineWide ? 1 : 0, 2, cdt);
+    const pitch = lerp(lerp(base, 0.16, cam.lowK), lerp(-0.09, 0.58, cam.wideK), cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
     this.camera.position.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(pitch) * cam.dist, cam.target.y + Math.sin(pitch) * cam.dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(pitch) * cam.dist);
     this.camera.lookAt(cam.target);
     // --- Mundo ---
@@ -332,7 +351,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st);
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);

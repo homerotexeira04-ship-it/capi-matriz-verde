@@ -86,6 +86,42 @@ export class Capi {
     // Capa 1 + estarcido: permite dibujar la silueta de Capi cuando queda detrás de un edificio
     root.traverse(o => { if (o.isMesh) { o.layers.enable(1); o.renderOrder = 3; const m = o.material; m.stencilWrite = true; m.stencilRef = 1; m.stencilFunc = THREE.AlwaysStencilFunc; m.stencilZPass = THREE.ReplaceStencilOp; } });
     root.position.copy(this.pos); scene.add(root);
+    this.buildProps(scene, add, M);
+  }
+  // Objetos de los festejos de cada misión
+  buildProps(scene, add, M) {
+    const P = this.props = {}, dark = M(0x15151f, { metalness: 0.5, roughness: 0.2 });
+    // lentes de sol (Cosecha de Sol)
+    const sh = P.shades = new THREE.Group(); this.head.add(sh);
+    for (const sx of [-1, 1]) { const l = add(new THREE.BoxGeometry(0.3, 0.2, 0.05), dark, sx * 0.4, 0.05, 0.47, sh); l.rotation.y = sx * 0.62; const tm = add(new THREE.BoxGeometry(0.03, 0.03, 0.42), dark, sx * 0.53, 0.12, 0.22, sh); tm.rotation.y = sx * 0.15; }
+    add(new THREE.BoxGeometry(0.62, 0.05, 0.05), M(0xe6007e), 0, 0.24, 0.52, sh);
+    // bandera a cuadros de largada (Circuito Verde Urbano)
+    const fl = P.flag = new THREE.Group(); fl.position.set(0, -0.6, 0.08); this.armR.add(fl);
+    add(new THREE.CylinderGeometry(0.025, 0.025, 1.1, 5), M(0xdddddd), 0, -0.35, 0, fl);
+    const ck = document.createElement('canvas'); ck.width = 64; ck.height = 44; const cx = ck.getContext('2d'); for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) { cx.fillStyle = (x + y) % 2 ? '#111' : '#fff'; cx.fillRect(x * 11, y * 11, 11, 11); }
+    const ct = new THREE.CanvasTexture(ck); ct.colorSpace = THREE.SRGBColorSpace; ct.magFilter = THREE.NearestFilter;
+    this.flagCloth = add(new THREE.PlaneGeometry(0.62, 0.42), new THREE.MeshStandardMaterial({ map: ct, side: THREE.DoubleSide, roughness: 0.9 }), 0, -0.75, 0.32, fl); this.flagCloth.rotation.y = Math.PI / 2;
+    // lamparita LED (Ciudad que Ahorra)
+    const bu = P.bulb = new THREE.Group(); bu.position.set(0, -0.7, 0); this.armR.add(bu);
+    add(new THREE.SphereGeometry(0.17, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6c8, emissiveIntensity: 2.2 }), 0, -0.24, 0, bu); add(new THREE.CylinderGeometry(0.08, 0.09, 0.14, 8), M(0xb6bec7, { metalness: 0.6 }), 0, -0.05, 0, bu);
+    // paraguas (Sudestada)
+    const um = P.umbrella = new THREE.Group(); um.position.set(0, -0.6, 0); this.armR.add(um);
+    add(new THREE.CylinderGeometry(0.025, 0.025, 1.3, 5), M(0x3a3230), 0, -0.55, 0, um);
+    this.umbTop = add(new THREE.ConeGeometry(0.85, 0.38, 8, 1, true), new THREE.MeshStandardMaterial({ color: 0xe6007e, side: THREE.DoubleSide, flatShading: true, roughness: 0.7 }), 0, -1.25, 0, um); this.umbTop.rotation.x = Math.PI;
+    // cometa (Vientos en la Cuchilla): vive en el mundo, atada a la mano de Capi
+    const kt = P.kite = new THREE.Group(); scene.add(kt);
+    const tri = (pts, col) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.computeVertexNormals(); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide })); kt.add(m); };
+    tri([0, 1.1, 0, 0.75, 0, 0, 0, 0, 0], 0xffc420); tri([0, 1.1, 0, -0.75, 0, 0, 0, 0, 0], 0xe6007e); tri([0, -0.9, 0, 0.75, 0, 0, 0, 0, 0], 0x6a2c91); tri([0, -0.9, 0, -0.75, 0, 0, 0, 0, 0], 0x2ed3c6);
+    this.kiteTail = []; for (let i = 0; i < 5; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.1, 0.02), new THREE.MeshBasicMaterial({ color: [0xffc420, 0xe6007e, 0x2ed3c6, 0x6a2c91, 0xffffff][i] })); scene.add(b); this.kiteTail.push(b); }
+    this.kiteLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })); this.kiteLine.frustumCulled = false; scene.add(this.kiteLine);
+    for (const k in P) P[k].visible = false; this.kiteTail.forEach(b => { b.visible = false; }); this.kiteLine.visible = false;
+  }
+  // festejo propio de cada misión
+  celebrateFor(key, t = 3.6) {
+    const prop = { viento: 'kite', rio: 'splash', sol: 'shades', urbano: 'flag', ahorro: 'bulb', tormenta: 'umbrella' }[key] || null;
+    this.cele = t; this.celeT = 0; this.celeProp = prop; if (!prop) this.celeKind = ((this.celeKind || 0) + 1) % 4;
+    if (prop === 'flag') { this.audio.honk(); setTimeout(() => this.audio.honk(), 700); }
+    if (prop === 'splash') this.audio.splash(1.4);
   }
 
   setLed(level, good) {
@@ -93,7 +129,7 @@ export class Capi {
     this.leds.forEach((l, i) => { l.material.emissive.set(good ? 0x4dffa0 : level < 0.4 ? 0xff7a4d : 0xffc93c); l.material.emissiveIntensity = i < n ? 2.2 : 0.05; });
   }
   setOutfit(o) { this.mats.helmet.color.set(o.helmet); this.mats.vest.color.set(o.vest); this.mats.band.color.set(o.band); this.mats.band.emissive.set(o.band).multiplyScalar(0.7); }
-  celebrate(t = 2.4) { this.cele = t; this.celeKind = ((this.celeKind || 0) + 1) % 4; this.celeT = 0; }
+  celebrate(t = 2.4) { this.cele = t; this.celeProp = null; this.celeKind = ((this.celeKind || 0) + 1) % 4; this.celeT = 0; }
   work(t = 1.2) { this.busy = t; }
   // Navegación automática hacia un punto: usa la grilla A* si está disponible
   navigate(x, z, r = 0.6, done = null) {
@@ -210,8 +246,14 @@ export class Capi {
       armR = -1.45 + Math.sin(t * 16) * 0.3; armL = -1.0; headX = 0.12 + Math.sin(t * 5) * 0.08; tilt = 0.08;
       if (Math.random() < 14 * dt) { const hx = Math.sin(this.heading), hz = Math.cos(this.heading); this.fx.sparks(this.pos.x + hx * 0.9, this.pos.y + 1.5, this.pos.z + hz * 0.9, 2, 0xffd23f); }
     } else if (st === S.CELEBRATE) {
-      const ck = this.celeKind || 0, ct = this.celeT = (this.celeT || 0) + dt;
-      if (ck === 1) {          // giro con los dos brazos arriba
+      const ck = this.celeKind || 0, ct = this.celeT = (this.celeT || 0) + dt, pr = this.celeProp;
+      if (pr === 'kite') { armR = -2.3 + Math.sin(t * 3) * 0.15; armRz = -0.2; armL = -0.5; headX = -0.45; lift = Math.abs(Math.sin(ct * 3)) * 0.08; }
+      else if (pr === 'splash') { const u = (ct * 1.1) % 1; lift = Math.sin(u * Math.PI) * 1.6; flip = u * Math.PI * 2; armL = armR = -2.6; legL = legR = -0.6; if (Math.random() < 9 * dt) this.fx.splash(this.pos.x + (Math.random() - 0.5) * 2.4, this.pos.y + 0.1, this.pos.z + (Math.random() - 0.5) * 2.4, 8); }
+      else if (pr === 'shades') { armR = -2.1; armRz = -0.9; armL = -0.2; armLz = 0.7; headX = -0.1; roll = Math.sin(ct * 2.4) * 0.08; lift = Math.abs(Math.sin(ct * 4.8)) * 0.12; if (Math.random() < 6 * dt) this.fx.glow.emit(this.pos.x + (Math.random() - 0.5) * 1.6, this.pos.y + 2 + Math.random(), this.pos.z + (Math.random() - 0.5) * 1.6, 0, 1, 0, 0.6, 0.35, 0.05, 0xffe066, 1, 0, 1); }
+      else if (pr === 'flag') { armR = -2.7 + Math.sin(ct * 9) * 0.35; armRz = -0.3; armL = -0.4; lift = Math.abs(Math.sin(ct * 6)) * 0.3; headX = -0.2; }
+      else if (pr === 'bulb') { armR = -3.05; armRz = -0.1; armL = -0.6; armLz = 0.4; headX = -0.4; lift = Math.abs(Math.sin(ct * 3)) * 0.15; }
+      else if (pr === 'umbrella') { armR = -2.55; armRz = -0.15; armL = -0.4; spin = ct * 2.2; lift = Math.abs(Math.sin(ct * 4.4)) * 0.18; }
+      else if (ck === 1) {          // giro con los dos brazos arriba
         lift = Math.abs(Math.sin(ct * 6)) * 0.45; armL = armR = -2.8; armLz = 0.35; armRz = -0.35; spin = ct * 9; headX = -0.2;
       } else if (ck === 2) {   // bailecito: brazos alternados y balanceo
         const s2 = Math.sin(ct * 9); armL = -1.6 - s2 * 1.1; armR = -1.6 + s2 * 1.1; armLz = 0.5; armRz = -0.5; roll = s2 * 0.2; lift = Math.abs(s2) * 0.25; legL = s2 * 0.4; legR = -s2 * 0.4; headX = -0.1;
@@ -220,11 +262,27 @@ export class Capi {
       } else {                 // salto con el puño en alto
         lift = Math.abs(Math.sin(t * 7.5)) * 0.7; armR = -2.9; armRz = -0.25; armL = -0.4; legL = 0.3; legR = -0.3; headX = -0.25; sy = 1 + Math.sin(t * 15) * 0.04;
       }
+    } else if (this.dancing) {   // baile de candombe en la ceremonia final
+      const s2 = Math.sin(t * 6.1), s3 = Math.sin(t * 3.05); armL = -1.2 - s2 * 0.9; armR = -1.2 + s2 * 0.9; armLz = 0.6; armRz = -0.6; roll = s3 * 0.22; lift = Math.abs(s2) * 0.22; legL = s3 * 0.5; legR = -s3 * 0.5; headX = -0.15 + Math.sin(t * 12.2) * 0.06; spin = Math.sin(t * 1.5) * 0.5;
     } else if (this.talking) {   // discurso: gesticula con los brazos y asiente
       armR = -1.25 + Math.sin(t * 4.6) * 0.55; armRz = -0.35; armL = -0.45 + Math.sin(t * 2.9 + 1) * 0.3; armLz = 0.3; headX = Math.sin(t * 6.5) * 0.07 - 0.05; roll = Math.sin(t * 1.7) * 0.04; sy = 1 + Math.sin(t * 9) * 0.012;
     } else {
       sy = 1 + Math.sin(t * 2.2) * 0.018; headX = Math.sin(t * 0.7) * 0.04;
       this.sniff -= dt; if (this.sniff < 0.6) headX = -0.16 + Math.sin(t * 22) * 0.05; if (this.sniff < 0) this.sniff = 3 + Math.random() * 4;
+    }
+    if (this.flinch > 0 && (st === S.IDLE || st === S.RUN)) { this.flinch -= dt; armL = armR = -2.8; armLz = 0.45; armRz = -0.45; headX = 0.25; }   // se cubre de los teros
+    // objetos de festejo
+    const PR = st === S.CELEBRATE ? this.celeProp : null;
+    for (const k in this.props) this.props[k].visible = PR === k;
+    this.kiteTail.forEach(b => { b.visible = PR === 'kite'; }); this.kiteLine.visible = PR === 'kite';
+    if (PR === 'flag') this.flagCloth.rotation.y = Math.PI / 2 + Math.sin(t * 11) * 0.35;
+    if (PR === 'umbrella') this.umbTop.rotation.y += dt * 3;
+    if (PR === 'bulb') { const p = this.pos; this.fx.glow.sprite(p.x, p.y + 3.4, p.z, 2.6, 0xfff2a8, 0.7 + 0.2 * Math.sin(t * 9)); }
+    if (PR === 'kite') {
+      const p = this.pos, k = this.props.kite, hx = Math.sin(this.heading), hz = Math.cos(this.heading), kx = p.x - hx * 4 + Math.sin(t * 0.9) * 1.2, ky = p.y + 7.5 + Math.sin(t * 1.7) * 0.7, kz = p.z - hz * 4 + Math.cos(t * 0.7) * 1.2;
+      k.position.set(kx, ky, kz); k.rotation.set(0.25 * Math.sin(t * 2.1), this.heading, 0.35 * Math.sin(t * 1.3));
+      this.kiteTail.forEach((b, i) => { b.position.set(kx + Math.sin(t * 3 + i) * 0.25, ky - 1.2 - i * 0.42, kz + Math.cos(t * 2.5 + i) * 0.2); b.rotation.z = Math.sin(t * 5 + i) * 0.6; });
+      const a = this.kiteLine.geometry.attributes.position; a.setXYZ(0, p.x + hz * 0.7, p.y + 2.6, p.z - hx * 0.7); a.setXYZ(1, kx, ky - 0.9, kz); a.needsUpdate = true;
     }
     const r = 16;
     j.legL = damp(j.legL, legL, r, dt); j.legR = damp(j.legR, legR, r, dt); j.armL = damp(j.armL, armL, r, dt); j.armR = damp(j.armR, armR, r, dt);

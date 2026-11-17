@@ -88,6 +88,10 @@ export class FX {
   splash(x, y, z, n = 14) {
     for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = 1 + Math.random() * 2.5; this.soft.emit(x, y, z, Math.cos(a) * s, 2.5 + Math.random() * 3, Math.sin(a) * s, 0.6 + Math.random() * 0.3, 0.3, 0.12, 0xffffff, 0.95, 11, 0.5); }
   }
+  confetti(x, y, z, n = 110) {   // colores de Energimundo
+    const C = [0xe6007e, 0x6a2c91, 0x2ed3c6, 0xffc420, 0xffffff];
+    for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = 1.5 + Math.random() * 3.5; this.soft.emit(x, y, z, Math.cos(a) * s, 6 + Math.random() * 6, Math.sin(a) * s, 2.2 + Math.random() * 1.2, 0.3, 0.26, C[i % 5], 1, 6, 1.6); }
+  }
   firework(x, y, z, hex) {
     for (let i = 0; i < 70; i++) {
       const a = Math.random() * 6.283, e = Math.acos(2 * Math.random() - 1), s = 9 + Math.random() * 5;

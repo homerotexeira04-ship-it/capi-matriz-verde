@@ -20,6 +20,7 @@ import './arcade.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
+import { Fiestas } from './fiestas.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -62,7 +63,7 @@ class Game {
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -92,7 +93,7 @@ class Game {
     this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
     this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
-    this.audio.start(); this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
+    this.audio.start(); this.fiestas.seen = {}; this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
     const tut = !!opt.tutorial || (!saved && phase === 0 && !opt.guide);
@@ -365,7 +366,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st);
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
@@ -377,7 +378,7 @@ class Game {
       amb = { water: lerp(water, 0.45, wide), city: lerp(city, 0.4, wide), field: lerp(field, 0.3, wide), green: clamp(1 - city * 0.7, 0.3, 1), plaza: nf(-44, 38, 24) * (1 - wide), night, hour: G.hour };
       windNear = Math.max(0.08, 0.6 * lerp(Math.max(field, nf(70, -12, 75) * 0.6), 0.3, wide)); waterNear = amb.water * 0.45;
     }
-    this.audio.update(dt, { pct, title: !play, amb, wind: G.wind, windNear, waterNear, humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
+    this.audio.update(dt, { pct, title: !play, amb, festSoft: this.fiestas.soft, carnaval: this.fiestas.mode === 'carnaval', wind: G.wind, windNear, waterNear, humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
     if ((this.curT = (this.curT || 0) - dt) <= 0) { this.curT = 0.08; this.cursor(); }
     if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });
     const r = this.renderer;

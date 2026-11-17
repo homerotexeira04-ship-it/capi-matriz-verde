@@ -12,6 +12,8 @@ const BUCKETS = ['menos de 2 min', '2 a 5 min', '5 a 10 min', '10 a 20 min', 'm�
 export const Settings = {
   d: (() => { try { return JSON.parse(localStorage.getItem(AKEY) || '{}') || {}; } catch (e) { return {}; } })(),
   get big() { return !!this.d.big; },
+  get fest() { return this.d.fest || null; },
+  setFest(k) { this.d.fest = k || null; try { localStorage.setItem(AKEY, JSON.stringify(this.d)); } catch (e) { /* sin almacenamiento */ } if (this.onFest) this.onFest(this.fest); },
   setBig(on) { this.d.big = !!on; try { localStorage.setItem(AKEY, JSON.stringify(this.d)); } catch (e) { /* sin almacenamiento */ } this.apply(); },
   apply() { document.body.classList.toggle('bigText', this.big); document.querySelectorAll('.bigToggle').forEach(b => { b.textContent = 'Letra grande: ' + (this.big ? 'sí' : 'no'); b.setAttribute('aria-pressed', this.big ? 'true' : 'false'); }); }
 };
@@ -98,6 +100,9 @@ export class Guide {
       this.btn('', () => { if (g.clockStopped != null) { G.clockRate = g.clockStopped; g.clockStopped = null; } else { g.clockStopped = G.clockRate; G.clockRate = 0; } }, 'gClock'));
     sec('Red eléctrica', this.btn('Provocar una avería', () => { if (g.mode === 'play') M.randomFault(); }), this.btn('Reparar todo', () => M.clearFaults()), this.btn('', () => g.setPaused(!g.paused), 'gPause'));
     sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}));
+    const S = window.__capiSettings, mark = () => box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['patrimonio', 'Día del Patrimonio'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }));
+    mark();
     window.__capiSettings.apply();
   }
   render() {

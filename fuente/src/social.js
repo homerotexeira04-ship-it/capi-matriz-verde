@@ -101,6 +101,7 @@ export class Social {
     if (f && !this.done[who] && (who !== 'lucia' || g.grid.buses)) { fi = opts.length; opts.push(this.active === who ? ['¿Cómo era el favor?', ''] : ['¿Necesitás una mano con algo?', 'Un favor corto, con premio']); }
     const m = g.missions, busy = m.m5 && !m.flags.m5won, sc = busy ? null : SCENES[who]; let si = -1; if (sc) { si = opts.length; opts.push([sc[1], sc[2]]); }
     opts.push(['Nada más, ¡gracias!', '']);
+    const fl = g.fiestas && g.fiestas.line(who); if (fl) line = fl;
     g.extras.choose(NAMES[who], line || Wd.hi, opts, i => {
       if (i < Wd.q.length) return g.ui.dialog([L(who, Wd.q[i][1])]);
       if (i === si) return this.enterScene(sc[0], sc[3]);

@@ -245,6 +245,10 @@ body.cine #dialog{z-index:5;bottom:calc(8vh + 10px)}
 @media (max-width:560px){ #fact{left:8px;transform:none;bottom:150px;width:calc(100vw - 104px);padding:8px 12px} #fact span{font-size:13px;line-height:1.35} #tele{transform:translateX(-50%) scale(.62)} #card{top:84px;transform:scale(.78)} #tr{top:auto;bottom:160px;right:8px;flex-direction:column} #dFace{width:64px;height:64px} #dText{font-size:15px} }
 @media (max-height:520px){ .tBrand{margin-bottom:4px;padding:5px 14px 5px 10px} .tBrand img{height:28px} .tBox .eyebrow{font-size:11px} .tBox h1{font-size:clamp(40px,14vh,64px);-webkit-text-stroke:2px #3a2500;text-shadow:0 4px 0 #3a2500} .tBox h2{margin-top:4px;font-size:20px} .tBox p{margin-top:6px;font-size:13.5px;line-height:1.35} .tBtns{margin-top:10px} .tBtns .btn{font-size:18px;padding:6px 16px} .tBtns2{margin-top:8px} .tBtns2 .btn{font-size:13px;padding:5px 10px} }
 @media (max-width:560px){ #zone{bottom:345px;max-width:200px;font-size:15px} }
+#festTag{display:inline-block;margin:8px auto 0;padding:3px 16px;border-radius:999px;background:#e6007e;color:#fff;border:3px solid #fff7e6;font-family:var(--display);font-size:18px;letter-spacing:1px;box-shadow:0 4px 0 #071226}
+body[data-fest=patrimonio] #festTag{background:#2f7fc1} body[data-fest=fiestas] #festTag{background:#1f7a3a}
+#guide .gSel{background:var(--sun);color:#3a2500;border-color:#3a2500}
+@media (max-height:520px){#festTag{margin-top:4px;font-size:14px;padding:2px 12px}}
 /* Cursor propio: flecha casco con el rayo de Energimundo */
 html,body{cursor:url(__CUR_flecha_32__) 2 2,auto;cursor:-webkit-image-set(url(__CUR_flecha_32__) 1x,url(__CUR_flecha_64__) 2x) 2 2,auto}
 button:not(:disabled),#prompt,#dialog,#mgCv,#pCv,#fact.on,body[data-cur=use] #gl{cursor:url(__CUR_usar_32__) 2 2,pointer;cursor:-webkit-image-set(url(__CUR_usar_32__) 1x,url(__CUR_usar_64__) 2x) 2 2,pointer}
@@ -456,6 +460,7 @@ input[type=text]{cursor:text}
 <div id="title"><div class="tBox">
   <div class="tBrand"><img id="logoLargo" src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div>
   <div class="eyebrow">URUGUAY · 64 BITS · DIORAMA 3D</div>
+  <div id="festTag" class="hidden"></div>
   <h1>CAPI</h1>
   <h2>Guardián de la Matriz Verde</h2>
   <p>Sos Capi, carpincho e ingeniero jefe de energía limpia. Recorré el diorama, repará las centrales y llevá la red al 100&nbsp;% renovable antes de la hora pico.</p>

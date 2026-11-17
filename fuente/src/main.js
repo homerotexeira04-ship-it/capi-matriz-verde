@@ -9,7 +9,7 @@ import { FX } from './fx.js';
 import { Capi } from './capi.js';
 import { Actors } from './actors.js';
 import { AudioSynth } from './audio.js';
-import { UI } from './ui.js';
+import { UI, drawFace } from './ui.js';
 import { Minigames } from './minigames.js';
 import { Missions } from './missions.js';
 import { NavGrid } from './nav.js';
@@ -330,6 +330,7 @@ class Game {
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
     this.attractStep(dt, Math.min(real, 1)); this.pad(dt);
+    if (this.mode === 'title' && !this.attract) { const fc = this.tFaceCtx || (this.tFaceCtx = $('tFace') && $('tFace').getContext('2d')); if (fc) drawFace(fc, 'capi', now / 1000, (now / 1000) % 7 > 6.4, this.extras.colors()); }
     if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * cdt; if (k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * cdt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + cdt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - cdt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * cdt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * cdt, 8, 195); }
     if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: !this.attract });
     // --- Simulación ---

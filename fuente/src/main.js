@@ -24,20 +24,21 @@ import { Fiestas } from './fiestas.js';
 import { buildBarrios, CLEAR3 } from './barrios.js';
 import { Urbano } from './urbano.js';
 import { buildMuseo, Museo, CLEAR4 } from './museo.js';
+import { Escuela } from './escuela.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
 
 // Tomas de la demostración: x, z, distancia, giro, cámara baja (0-1), hora, duración y recorrido de Capi
 const SHOTS = [
-  { x: -44, z: 42, d: 40, yaw: 0.45, low: 0.45, h: 19.4, t: 10, capi: [-36.4, 47, -47, 37.6] },
+  { x: -44, z: 40, d: 50, yaw: -0.55, low: 0.12, h: 19.4, t: 10, capi: [-36.4, 47, -47, 37.6] },
   { x: 4, z: -58, d: 64, yaw: 0.15, low: 0.5, h: 10.5, t: 10, rainbow: true },
   { x: -42, z: -4, d: 54, yaw: 2.75, low: 0.5, h: 6.7, t: 10 },
-  { x: -50, z: 10, d: 46, yaw: 0.6, low: 0.45, h: 10.5, t: 10, capi: [-49, -4.5, -30, -4.5] },
+  { x: -46, z: 2, d: 40, yaw: 2.35, low: 0.4, h: 10.5, t: 10, capi: [-49, -4.5, -30, -4.5] },
   { x: 62, z: -8, d: 60, yaw: 0.9, low: 0.55, h: 16, t: 9 },
   { x: 78, z: -73, d: 42, yaw: -0.25, low: 0.35, h: 11.5, t: 10 },
   { x: -30, z: 96, d: 58, yaw: 0.3, low: 0.6, h: 18.4, t: 10, capi: [-22.4, 73.4, -46, 74] },
-  { x: -34, z: -18, d: 19, yaw: 0.6, low: 0.25, h: 9, t: 9 },
+  { x: -34, z: -19, d: 20, yaw: 2.6, low: 0.3, h: 9, t: 9 },
   { x: 20, z: 96, d: 62, yaw: 0.35, low: 0.5, h: 20.2, t: 10 },
   { x: 26, z: -10, d: 44, yaw: 0.7, low: 0.45, h: 12.5, t: 9 },
   { x: -40, z: 38, d: 70, yaw: 2.6, low: 0.4, h: 17.2, t: 10 },
@@ -85,7 +86,7 @@ class Game {
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.museo = new Museo(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -97,6 +98,7 @@ class Game {
     const level = mode => this.extras.choose('¿Cómo querés jugar?', 'Podés cambiar de idea la próxima vez.', [['Explorador', 'Más tranquilo: los minijuegos van más despacio y hay más margen'], ['Ingeniero', 'El desafío completo']], i => this.play(mode, 0, null, i ? 'ingeniero' : 'explorador'));
     $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
+    $('bSchool').onclick = () => this.escuela.open();
     $('bCred').onclick = () => this.showCredits(null);
     document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
     await stage('¡Listo!');
@@ -107,7 +109,7 @@ class Game {
 
   refreshTitle() {
     const sv = this.saved = this.missions.load(), c = $('bCont');
-    $('bShort').disabled = false; $('bLong').disabled = false;
+    $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false;
     c.classList.toggle('hidden', !sv || (sv.phase === 0));
     if (sv) { const n = sv.mode === 'corta' ? 5 : 7; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
     $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
@@ -119,8 +121,9 @@ class Game {
     this.audio.start(); this.fiestas.seen = {}; this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
-    const tut = !!opt.tutorial || (!saved && phase === 0 && !opt.guide);
-    if (!opt.guide) this.stats.startGame(mode, this.missions.level, !saved);
+    this.missions.school = opt.school || null; this.escuela.cur = opt.school || null; ['escuela', 'eWin'].forEach(id => $(id).classList.add('hidden')); this.escuela.winOpen = false; if (this.extras.open === 'escuela' || this.extras.open === 'eWin') this.extras.open = null;
+    const tut = !opt.school && (!!opt.tutorial || (!saved && phase === 0 && !opt.guide));
+    if (!opt.guide) this.stats.startGame(opt.school ? 'escuela' : mode, this.missions.level, !saved);
     this.missions.start(mode, phase, true, tut);
     if (tut) this.tut.start();
   }
@@ -213,7 +216,7 @@ class Game {
   toTitle() {
     if (this.photo) this.togglePhoto();
     this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
-    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo'].forEach(id => $(id).classList.add('hidden'));
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo', 'escuela', 'eWin'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
     this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};
@@ -349,7 +352,8 @@ class Game {
     // --- Entrada ---
     const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * cdt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * cdt; }
-    if (mx || mz) { cam.inspect = null; this.face = null; }
+    if (mx || mz) { cam.inspect = null; this.face = null; cam.lowT = 0; }
+    if (cam.lowT > 0) cam.lowT -= cdt;   // plano bajo por un rato (por ejemplo, para mirar una fiesta)
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
     this.attractStep(dt, Math.min(real, 1)); this.pad(dt);
@@ -378,7 +382,7 @@ class Game {
     // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
     const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
     cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, cdt); w.setCutaway(cam.cut, c.pos, cam.yaw);
-    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : 0, 3, cdt);
+    cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : cam.lowT > 0 ? (cam.lowF || 0) : 0, cam.lowT > 0 ? 1.5 : 3, cdt);
     cam.wideK = damp(cam.wideK || 0, this.cineWide ? 1 : 0, 2, cdt);
     const pitch = lerp(lerp(base, 0.16, cam.lowK), lerp(-0.09, 0.58, cam.wideK), cam.cineK);   // en la presentación la cámara baja y mira a Capi de frente
     this.camera.position.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(pitch) * cam.dist, cam.target.y + Math.sin(pitch) * cam.dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(pitch) * cam.dist);
@@ -390,7 +394,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st);
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);

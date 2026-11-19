@@ -82,7 +82,7 @@ export class Missions {
   lines(arr) { return arr.filter(l => !l.x || (!this.short && !(l.x === 3 && this.swap))); }
   load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
   forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
-  save() { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { if (this.school) return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
   reached(k) { const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
@@ -107,10 +107,10 @@ export class Missions {
   start(mode, phase, instant = true, hold = false) {
     if (!hold && this.g.tut) this.g.tut.stop();
     const g = this.g; if (g.ui.dlg) { g.ui.dlg = null; document.getElementById('dialog').classList.add('hidden'); }
-    this.mode = mode; this.seq = SEQ[mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } this.ev = null; this.evT = null; this.fossilT = 0; this.phase = phase; this.step = 0; this.active = false; this.flags = {}; this.pending = 0; this.m5 = null; this.ceremony = false; this.free = phase >= this.seq.length;
+    this.schoolDone = false; this.mode = mode; this.seq = SEQ[mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } this.ev = null; this.evT = null; this.fossilT = 0; this.phase = phase; this.step = 0; this.active = false; this.flags = {}; this.pending = 0; this.m5 = null; this.ceremony = false; this.free = phase >= this.seq.length;
     this.preset(phase); this.scenario(this.key, instant); g.grid.step(0); g.grid.fossil = Math.max(0, g.grid.out.demand - g.grid.out.ren); g.grid.step(0);
     g.actors.gather(false);
-    if (this.free) { g.ui.toast('MODO LIBRE', 'Sandbox climático desbloqueado: abrí el panel de red con Tab', 4); return; }
+    if (this.free) { if (!this.quietFree) g.ui.toast('MODO LIBRE', 'Sandbox climático desbloqueado: abrí el panel de red con Tab', 4); this.quietFree = false; return; }
     if (hold) return;
     this.begin();
   }
@@ -391,7 +391,8 @@ export class Missions {
       U.timer(null); return;
     }
     if (g.tut && g.tut.on) { U.mission('Primeros pasos', `Tutorial · antes de la misión 1`, g.tut.items()); return; }
-    U.mission(`Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
+    const SC = this.school && g.escuela ? g.escuela.info(this.school) : null;
+    U.mission(SC ? `Modo escuela · ${SC.name}` : `Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : this.schoolDone ? '¡Misión completa!' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
     if (!this.active) return;
     if (G.out.pct < 97) this.flags.low = true;
     if (!this.flags.full && this.flags.low && G.out.pct >= 99.9 && !this.lapse) { this.flags.full = true; g.celebrate100(); }
@@ -416,6 +417,7 @@ export class Missions {
       if (m.t <= 0) {
         this.flags.m5won = true; g.stats.mission('pico'); U.timer(null); U.toast(`¡100${N}% RENOVABLE!`, 'Pasó la hora pico sin un solo apagón', 4.5); g.audio.fanfare(); g.capi.celebrate(3); g.actors.celebrate = 10; this.fw = 60; this.fwNorth = false;
         this.clearFaults(); G.energyRate = 1 / 20; G.gustiness = 0.1;
+        if (this.school) { this.schoolDone = true; setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Así se maneja una red 100 % renovable.')], () => g.escuela.complete('pico')), 4200); return; }
         this.ceremony = true; g.actors.gather(true);
         setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Vení a la Plaza Matriz: te armamos un escenario y te estamos esperando todos.')]), 4200);
       }
@@ -428,6 +430,7 @@ export class Missions {
       if (K === 'tormenta') { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); g.vida.showRainbow(45); }   // escampa y sale el arcoíris
       const done = K, fs = Math.round(this.fossilT || 0), extra = K !== 'tormenta' ? null : L('valeria', (this.flags.first === 'dam' ? 'Cuidaste el agua primero, y el viento tardó un poco más en volver.' : 'Recuperaste potencia rápido, aunque el embalse siguió perdiendo agua un rato.') + (fs > 0 ? ` La ciudad pasó ${fs} segundos con respaldo fósil.` : ' Y la ciudad no necesitó respaldo fósil.'));
       setTimeout(() => {
+        if (this.school) { this.schoolDone = true; const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); const fin = () => { this.pending = 0; g.escuela.complete(done); }; return out.length ? U.dialog(out, fin) : fin(); }
         const next = () => { this.pending = 0; this.flags = {}; this.phase++; this.save(); this.step = 0; this.preset(this.phase); this.scenario(this.key, false); this.begin(); };
         const go = done !== 'viento' ? next : () => g.extras.choose('¿Por dónde seguimos?', 'Valeria: “Tenemos dos frentes abiertos. Elegí vos el orden: igual vamos a ir a los dos.”', [['A la Central Hidroeléctrica', 'El río: energía de base, firme y regulable'], ['Al Parque Solar', 'El sol del mediodía, guardado en baterías']], i => { this.swap = i === 1; this.seq = SEQ[this.mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } next(); });
         const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); if (out.length) U.dialog(out, go); else go();

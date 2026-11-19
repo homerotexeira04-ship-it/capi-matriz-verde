@@ -146,11 +146,13 @@ export class Fiestas {
     if (k === 'carnaval') {
       this.garlands(S, an.ring.concat(an.cross, an.rambla), 'flags', PAL.carnaval);
       for (const [x, cA, cB] of [[-52.2, '#6a2c91', '#ffc420'], [-35.8, '#e6007e', '#ffffff']]) { const e = estandarte(cA, cB, 1); e.position.set(x, 2.2, 36.6); S.root.add(e); S.solids.push({ x, z: 36.6, r: 0.3 }); }
-      // Llamadas por la rambla al caer la tarde: estandarte adelante y la cuerda de tambores atrás
-      const P = S.parade = { x: -12, members: [] };
+      // Llamadas por la rambla al caer la tarde: estandarte adelante, dos bailarinas y la cuerda de tambores en filas de a dos.
+      // Dan la vuelta en el tramo abierto de la rambla (del lado este las tapaban las letras y el cartel) y nunca desaparecen.
+      const P = S.parade = { s: LL_START, members: [] };
       const bearer = makePerson({ skin: SKINS[2], shirt: 0xffc420, pants: 0x6a2c91, hair: HAIRS[0] }); const st = estandarte('#2ed3c6', '#ffc420', 0.62); st.position.set(0.55, 0.9, 0.1); st.rotation.y = Math.PI / 2; bearer.group.add(st); bearer.armR.rotation.x = -0.9;
-      P.members.push({ p: bearer, dx: 0, dz: 73.4, drum: false });
-      for (let i = 0; i < 6; i++) { const p = makePerson({ skin: SKINS[i % SKINS.length], shirt: PAL.carnaval[i % 6], pants: 0xffffff, hair: HAIRS[i % HAIRS.length] }); p.group.add(tamboril(i)); P.members.push({ p, dx: 2.6 + Math.floor(i / 2) * 1.6, dz: i % 2 ? 73.9 : 72.9, drum: true, i }); }
+      P.members.push({ p: bearer, back: 0, lat: 0, drum: false });
+      for (let i = 0; i < 2; i++) { const c = [0xe6007e, 0x2ed3c6][i], d = makePerson({ skin: SKINS[i ? 5 : 1], shirt: c, pants: c, hair: HAIRS[i] }); d.group.add(skirt(c, 0xffc420)); d.armR.add(held(fan(), 0)); P.members.push({ p: d, back: 1.35, lat: i ? 0.55 : -0.55, dancer: true, i }); }
+      for (let i = 0; i < 8; i++) { const p = makePerson({ skin: SKINS[i % SKINS.length], shirt: PAL.carnaval[i % 6], pants: 0xffffff, hair: HAIRS[i % HAIRS.length] }); p.group.add(tamboril(i)); P.members.push({ p, back: 2.9 + Math.floor(i / 2) * 1.25, lat: i % 2 ? 0.48 : -0.48, drum: true, i }); }
       for (const mb of P.members) S.root.add(mb.p.group);
       // Personajes típicos del candombe bailando en la plaza: Mama Vieja (se puede hablar con ella), Gramillero y Escobero
       const mama = makePerson({ skin: 0x6b4a33, shirt: 0xffffff, pants: 0xffffff, hair: 0x1a1412 }); mama.group.add(skirt(0xffffff, 0xe6007e));
@@ -302,12 +304,24 @@ export class Fiestas {
   // El momento fuerte de la fiesta, a pedido del modo guía
   kick() {
     const g = this.g, G = g.grid, k = this.mode, S = k && this.sets[k], c = g.capi.pos, play = g.mode === 'play'; if (!S) return;
-    if (k === 'carnaval') { G.hour = 19.5; S.parade.x = clamp(c.x + 9, -76, -16); this.cfT = 0.5; if (play) g.ui.note(c.z > 55 ? '¡Ahí vienen las llamadas por la rambla!' : '¡Arrancan las llamadas en la rambla! Bajá a verlas.', 6); }
-    if (k === 'patrimonio') { G.hour = 10.5; const T = S.tour; T.i = 0; T.wait = 2; T.x = TOUR[0][0]; T.z = TOUR[0][1]; T.vis.forEach(v => { v.x = T.x + v.o[0]; v.z = T.z + v.o[1]; }); if (play) g.ui.note('Arranca la visita guiada del Día del Patrimonio en la Plaza Matriz.', 6); }
-    if (k === 'fiestas') { G.hour = 23.9; this.count = 10.999; this.countN = 11; }
-    if (k === 'criolla') { G.hour = 15.5; this.trotT = 14; if (play) g.ui.note('¡Arranca el desfile de tropillas en el ruedo de la cuchilla, al lado del rancho de Don Mateo!', 6); }
-    if (k === 'museos') { G.hour = 21; this.show = 40; if (play) g.ui.note('¡Empieza Museos en la Noche! Hay una proyección en la torre y una bicicleta generadora en la plaza.', 6); }
+    if (k === 'carnaval') { G.hour = 19.5; S.parade.s = LL_START; this.cfT = 0.5; if (play) this.bring(-55, 71.3, 0, 0.18, 'Capi baja a la rambla para ver las llamadas…', '¡Ahí vienen las llamadas por la rambla! Mirá la cuerda de tambores.', 28, 0.3); }
+    if (k === 'patrimonio') { G.hour = 10.5; const T = S.tour; T.i = 0; T.wait = 2; T.x = TOUR[0][0]; T.z = TOUR[0][1]; T.vis.forEach(v => { v.x = T.x + v.o[0]; v.z = T.z + v.o[1]; }); if (play) this.bring(-38.4, 36.2, -0.6, 0.55, 'Capi va a la Plaza Matriz…', 'Arranca la visita guiada del Día del Patrimonio en la Plaza Matriz.', 26, 0.3); }
+    if (k === 'fiestas') { G.hour = 23.9; this.count = 10.999; this.countN = 11; if (play) this.bring(-40.5, 46.5, Math.PI, 0.1, 'Capi va a la plaza a esperar el Año Nuevo…', '¡Se viene el Año Nuevo! Mirá los fuegos sobre el Barrio Norte.', 34, 0.5); }
+    if (k === 'criolla') { G.hour = 15.5; this.trotT = 14; if (play) this.bring(61, 12.6, 2.3, -2.45, 'Capi sube a la cuchilla para la Semana Criolla…', '¡Arranca el desfile de tropillas en el ruedo de la cuchilla, al lado del rancho de Don Mateo!'); }
+    if (k === 'museos') { G.hour = 21; this.show = 40; if (play) this.bring(-39.6, 46.2, Math.PI, 0.12, 'Capi va a la plaza para Museos en la Noche…', '¡Empieza Museos en la Noche! Mirá la proyección en la torre; la bicicleta generadora está acá al lado.', 34, 0.45); }
   }
+  // Lleva a Capi al lugar de la fiesta (con un fundido, como el ómnibus) si está lejos; si ya está cerca, solo avisa
+  bring(x, z, heading, yaw, fadeTxt, note, dist = 30, low = 0.35) {
+    const g = this.g, c = g.capi.pos, ex = g.extras, frame = () => { g.capi.heading = heading; g.cam.yaw = g.cam.yawT = yaw; g.cam.distT = dist; g.cam.lowF = low; g.cam.lowT = 14; g.cam.inspect = null; };
+    if (ex.fading) return; if (Math.hypot(c.x - x, c.z - z) < 4) { frame(); return g.ui.note(note, 6); }
+    ex.fading = true; const f = document.getElementById('fade'); f.classList.add('on'); document.getElementById('fadeTxt').textContent = fadeTxt;
+    setTimeout(() => {
+      g.capi.teleport(x, z); frame(); g.cam.target.set(x, g.capi.pos.y + 1.5, z);
+      setTimeout(() => { f.classList.remove('on'); ex.fading = false; g.ui.note(note, 6); }, 450);
+    }, 650);
+  }
+  // punto de la fiesta para el minimapa (las llamadas se mueven)
+  mark() { return this.mode === 'carnaval' && this.lead ? this.lead : null; }
   countdown(dt, st) {
     if (!(this.count > 0)) return; const g = this.g, play = g.mode === 'play';
     this.count -= dt; g.grid.hour = 23.97; const n = Math.ceil(this.count);
@@ -328,19 +342,21 @@ export class Fiestas {
     this.flutT = (this.flutT || 0) - dt; const flut = this.flutT <= 0; if (flut) this.flutT = 1 / 24;
     for (const A of S.anim) if (A.kind !== 'flags' || flut) this.pose(A, t, night);
     if (k === 'carnaval') {
-      const P = S.parade, on = h >= 17 || h < 1;
-      if (st.demo && st.focus.z > 60 && Math.abs(P.x - st.focus.x) > 22) P.x = st.focus.x + 5;   // en la demostración, el desfile aparece en cámara
-      if (on) { P.x -= 0.85 * dt; if (P.x < -86) P.x = -10; }
+      const P = S.parade, on = h >= 17 || h < 1, q = this.llq || (this.llq = {}), q2 = this.llq2 || (this.llq2 = {});
+      if (st.demo && st.focus.z > 58) { llPoint(P.s, q); if (Math.abs(q.x - st.focus.x) > 24) P.s = llAt(clamp(st.focus.x + 6, LL.x0 + 2, LL.x1 - 2)); }   // en la demostración, el desfile aparece en cámara
+      if (on) P.s += 0.95 * dt;
       for (const mb of P.members) {
-        const p = mb.p, x = P.x + mb.dx, vis = on && x > -84 && x < -9; p.group.visible = vis; if (!vis) continue;
-        const ph = t * 5.2 + mb.dx; p.group.position.set(x, 2.2 + Math.abs(Math.sin(ph)) * 0.07, mb.dz); p.group.rotation.y = -Math.PI / 2 + Math.sin(t * 1.5 + mb.dx) * 0.12;
+        const p = mb.p; p.group.visible = on; if (!on) continue;
+        llPoint(P.s - mb.back, q); llPoint(P.s - mb.back + 0.08, q2); const hd = Math.atan2(q2.x - q.x, q2.z - q.z), x = q.x + Math.cos(hd) * mb.lat, z = q.z - Math.sin(hd) * mb.lat;
+        const ph = t * 5.2 + mb.back * 1.7 + mb.lat; p.group.position.set(x, 2.2 + Math.abs(Math.sin(ph)) * 0.07, z); p.group.rotation.y = hd + Math.sin(t * 1.5 + mb.back) * 0.12;
         p.legL.rotation.x = Math.sin(ph) * 0.45; p.legR.rotation.x = -Math.sin(ph) * 0.45;
         if (mb.drum) { p.armR.rotation.x = -1.0 - Math.abs(Math.sin(t * 12.2 + mb.i * 0.7)) * 0.8; p.armL.rotation.x = -0.7 - Math.abs(Math.sin(t * 6.1 + mb.i)) * 0.6; }
+        if (mb.dancer) { p.group.rotation.y += Math.sin(t * 2.6 + mb.i * 3) * 0.6; p.armR.rotation.x = -2.2 + Math.sin(t * 5.2 + mb.i) * 0.5; p.armL.rotation.z = 0.5 + Math.sin(t * 5.2) * 0.3; p.group.position.y += Math.abs(Math.sin(t * 5.2 + mb.i)) * 0.06; }
       }
       if (on) {
-        const d = Math.hypot(L.x - (P.x + 5), L.z - 73.4); this.soft = clamp(1 - d / 42, 0, 1);
-        if (this.soft > 0.2 && (this.cfT -= dt) <= 0) { this.cfT = 5 + Math.random() * 5; st.fx && st.fx.confetti && st.fx.confetti(P.x + 4, 5.2, 73.4, 36); }
-      }
+        llPoint(P.s - 3, q); const d = Math.hypot(L.x - q.x, L.z - q.z); this.soft = clamp(1 - d / 42, 0, 1); this.lead = q;
+        if (this.soft > 0.2 && (this.cfT -= dt) <= 0) { this.cfT = 5 + Math.random() * 5; st.fx && st.fx.confetti && st.fx.confetti(q.x, 5.2, q.z, 36); }
+      } else this.lead = null;
     }
     if (k === 'patrimonio') this.tour(S.tour, dt, t, h, st);
     if (k === 'criolla') this.criolla(S, dt, t, st, L);
@@ -415,6 +431,19 @@ export class Fiestas {
 }
 
 const lerpN = (a, b, k) => a + (b - a) * k;
+// Recorrido de las llamadas: circuito cerrado en el tramo abierto de la rambla (ida por el lado de la ciudad, vuelta por el lado del río)
+const LL = { x0: -71, x1: -43.5, zA: 72.55, zB: 74.35 };
+const LL_R = (LL.zB - LL.zA) / 2, LL_CZ = (LL.zA + LL.zB) / 2, LL_LEN = LL.x1 - LL.x0, LL_ARC = Math.PI * LL_R, LL_L = 2 * LL_LEN + 2 * LL_ARC;
+function llPoint(s, o) {
+  s = ((s % LL_L) + LL_L) % LL_L;
+  if (s < LL_LEN) { o.x = LL.x1 - s; o.z = LL.zA; }
+  else if (s < LL_LEN + LL_ARC) { const a = (s - LL_LEN) / LL_R; o.x = LL.x0 - Math.sin(a) * LL_R; o.z = LL_CZ - Math.cos(a) * LL_R; }
+  else if (s < 2 * LL_LEN + LL_ARC) { o.x = LL.x0 + (s - LL_LEN - LL_ARC); o.z = LL.zB; }
+  else { const a = (s - 2 * LL_LEN - LL_ARC) / LL_R; o.x = LL.x1 + Math.sin(a) * LL_R; o.z = LL_CZ + Math.cos(a) * LL_R; }
+  return o;
+}
+const llAt = x => LL.x1 - x;                         // punto del tramo de ida (hacia el oeste) a la altura x
+const LL_START = LL_LEN + LL_ARC + 12;              // al arrancar vienen por el lado del río hacia el este, de frente a Capi
 
 // Estandarte de comparsa: paño de color con media luna y estrellas, flecos dorados
 function estandarte(cA, cB, s) {

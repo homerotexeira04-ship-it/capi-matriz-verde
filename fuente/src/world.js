@@ -406,6 +406,14 @@ export class World {
   // ---------- Cierre: fusiona lotes y crea instancias ----------
   finalize() {
     const s = this.scene, M = this.mats;
+    // Detalles (puertas, aberturas, ventanales) que quedaron en el lote común pero están pegados a un edificio que la cámara
+    // puede cortar: pasan al lote de la ciudad, así el corte no deja piezas flotando en el aire
+    this.batch.list = this.batch.list.filter(g => {
+      if (!g.boundingBox) g.computeBoundingBox(); const b = g.boundingBox; if (b.max.y < 2.6) return true;
+      for (const o of this.occ) if (b.min.x >= o.x0 - 0.7 && b.max.x <= o.x1 + 0.7 && b.min.z >= o.z0 - 0.7 && b.max.z <= o.z1 + 0.7 && b.min.y < o.y1) { this.cityBatch.list.push(g); return false; }
+      return true;
+    });
+    M.glass.clippingPlanes = this.clip; M.glass.clipIntersection = true;
     const main = this.batch.mesh(M.solid); main.castShadow = true; main.receiveShadow = true; s.add(main);
     const city = this.cityBatch.mesh(M.city); if (city) { city.castShadow = true; city.receiveShadow = true; s.add(city); }
     this.winBatch.forEach((b, i) => { const m = b.mesh(M.win[i]); if (m) s.add(m); });

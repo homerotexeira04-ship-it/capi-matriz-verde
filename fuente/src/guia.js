@@ -45,7 +45,8 @@ export class Stats {
   text() {
     const d = this.d, avg = d.sessions ? d.sessionSec / d.sessions : 0, L = [];
     L.push(`Capi: Guardián de la Matriz Verde · Museo Energimundo`, `Estadísticas desde el ${fmtDate(d.since)} hasta el ${fmtDate(today())}`, '');
-    L.push(`Partidas nuevas: ${d.games} (historia corta ${d.mode.corta}, historia larga ${d.mode.larga}) · Partidas continuadas: ${d.cont}`);
+    L.push(`Partidas nuevas: ${d.games} (historia corta ${d.mode.corta}, historia larga ${d.mode.larga}, modo escuela ${d.mode.escuela || 0}) · Partidas continuadas: ${d.cont}`);
+    L.push(`Medallas del modo escuela entregadas: ${d.medallas || 0}`);
     L.push(`Nivel elegido: Explorador ${d.level.explorador}, Ingeniero ${d.level.ingeniero}`);
     L.push(`Historias terminadas: corta ${d.done.corta}, larga ${d.done.larga}`);
     L.push(`Visitas al juego: ${d.sessions} · Duración media: ${mmss(avg)} · Tiempo total jugado: ${mmss(d.playSec)}`);

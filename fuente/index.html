@@ -151,6 +151,19 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #alList{display:grid;gap:7px;width:100%;text-align:left} .alItem{display:flex;gap:10px;padding:8px 10px;border:2px solid #2a4374;border-radius:10px;opacity:.6} .alItem.on{opacity:1;border-color:var(--sun)} .alItem b{font-family:var(--display);font-weight:400;font-size:20px;color:var(--sun);min-width:22px} .alItem em{display:block;font-style:normal;font-size:12px;color:var(--sun);font-weight:900} .alItem span{font-size:13.5px;line-height:1.35}
 #favLine{margin-top:5px;font-size:12.5px;color:#9be7ff;font-weight:900} #bAlb{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900} #bAlb:hover{border-color:var(--sun)}
 #album .oBox,#arcade .oBox{width:min(620px,96vw)}
+#escuela .eBox{width:min(860px,97vw)} .eLevel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap} .eLevel .btn{min-width:180px;display:grid;justify-items:center;line-height:1.15;padding:6px 14px} .eLevel .btn small{font-size:12px;font-weight:800;opacity:.85} .eLevel .btn.on{background:var(--sun);color:#2a1a00;border-color:#fff3b0}
+#eList{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:9px;width:100%}
+.eCard{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 11px;border-radius:14px;border:3px solid color-mix(in srgb,var(--c) 70%,#fff 0%);background:linear-gradient(135deg,color-mix(in srgb,var(--c) 26%,#0c1a34),#0c1a34 70%);color:var(--cream);font:inherit;cursor:pointer;box-shadow:0 4px 0 #071226;transition:transform .12s}
+.eCard:hover,.eCard:focus-visible{transform:translateY(-2px);outline:3px solid var(--sun);outline-offset:2px}
+.eCard canvas{width:58px;height:58px;flex:none} #eList .eCard:last-child:nth-child(3n+1){grid-column:1/-1;justify-content:center}
+.eTxt{display:grid;gap:2px} .eTxt b{font-family:var(--display);font-weight:400;font-size:18px;color:#fff} .eTxt kbd{font-size:12px;background:var(--sun);color:#2a1a00;border-radius:6px;padding:0 6px;font-family:Nunito,sans-serif;font-weight:900}
+.eTxt small{font-size:13px;color:#c9d6ee;line-height:1.3} .eTxt em{font-style:normal;font-size:12.5px;font-weight:900;color:#a9bbd6} .eCard.got .eTxt em{color:var(--sun)}
+.eFoot{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap} #eCount{font-weight:900;color:var(--sun)}
+.eWinBox{width:min(560px,96vw)} #eMedal{width:150px;height:150px} #eWinS{color:var(--cream)!important}
+#eLearn{margin:0;padding:0 0 0 20px;text-align:left;display:grid;gap:5px;font-size:15px;line-height:1.35;color:var(--cream)} #ePrize{color:var(--sun)!important;font-weight:900}
+.eWinBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+body.bigText .eTxt b{font-size:21px} body.bigText .eTxt small{font-size:15px} body.bigText #eLearn{font-size:18px}
+.tBtns .btn.school{background:linear-gradient(135deg,#1fb5ad,#2f6fe4);color:#fff}
 #domo .oBox{width:min(560px,96vw)} #domoCv{width:min(440px,84vw,62vh);height:auto;aspect-ratio:1;border-radius:50%;background:#050b18;box-shadow:0 0 0 6px #26262b,0 10px 30px rgba(0,0,0,.5)}
 #domo #domoTx{min-height:3.2em;font-size:16px;color:var(--cream);max-width:460px} body.bigText #domo #domoTx{font-size:19px}
 #mExtra{display:flex;flex-wrap:wrap;row-gap:5px;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
@@ -426,24 +439,41 @@ input[type=text]{cursor:text}
   <button class="btn" id="domoClose" type="button">Salir del domo <kbd>Esc</kbd></button>
 </div></div>
 
+<div id="escuela" class="ov hidden"><div class="oBox pane eBox">
+  <h2>Modo escuela</h2>
+  <p>Elegí qué energía querés aprender. Jugás solo esa misión, de unos pocos minutos, y al final te llevás una medalla, un premio para Capi y un certificado.</p>
+  <div class="eLevel" role="group" aria-label="Nivel"><button type="button" class="btn ghost" data-l="explorador">Explorador<small>más tranquilo</small></button><button type="button" class="btn ghost" data-l="ingeniero">Ingeniero<small>el desafío completo</small></button></div>
+  <div id="eList"></div>
+  <div class="eFoot"><span id="eCount"></span><button class="btn ghost" id="eReset" type="button">Borrar medallas</button><button class="btn" id="eClose" type="button">Volver <kbd>Esc</kbd></button></div>
+</div></div>
+
+<div id="eWin" class="ov hidden"><div class="oBox pane eWinBox">
+  <canvas id="eMedal" width="220" height="220" aria-hidden="true"></canvas>
+  <h2 id="eWinT"></h2>
+  <p id="eWinS"></p>
+  <ul id="eLearn"></ul>
+  <p id="ePrize"></p>
+  <div class="eWinBtns"><button class="btn" id="eCert" type="button">Recibir mi certificado</button><button class="btn ghost" id="eOther" type="button">Elegir otra misión</button><button class="btn ghost" id="eFree" type="button">Seguir explorando</button></div>
+</div></div>
+
 <div id="diploma" class="ov hidden">
   <div class="oBox pane" id="dAsk">
-    <h2>¡Te ganaste un diploma!</h2>
+    <h2 id="dAskT">¡Te ganaste un diploma!</h2>
     <label for="dpName">Escribí tu nombre para ponerlo en el diploma</label>
     <input id="dpName" type="text" maxlength="40" autocomplete="off" placeholder="Tu nombre">
     <button class="btn" id="dGo" type="button">Ver mi diploma</button>
   </div>
   <div class="dCard hidden" id="dCard">
     <div class="dTop"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"></div>
-    <div class="dKicker">DIPLOMA</div>
+    <div class="dKicker" id="dKick">DIPLOMA</div>
     <div class="dLine">El museo Energimundo reconoce a</div>
     <div id="dWho"></div>
-    <div class="dLine">como</div>
-    <div class="dTitle">Guardián de la Matriz Verde</div>
-    <div class="dLine">por llevar la red eléctrica al 100&nbsp;% renovable junto a Capi, con agua, viento, sol y biomasa del Uruguay.</div>
+    <div class="dLine" id="dComo">como</div>
+    <div class="dTitle" id="dTit">Guardián de la Matriz Verde</div>
+    <div class="dLine" id="dDesc">por llevar la red eléctrica al 100&nbsp;% renovable junto a Capi, con agua, viento, sol y biomasa del Uruguay.</div>
     <div class="dMeta"><span id="dStory"></span><span id="dSparks"></span><span id="dDate"></span></div>
     <div class="dSign"><canvas id="dCapi" width="24" height="24" aria-hidden="true"></canvas><div><b>Capi</b><em>Ingeniero Jefe de Energía Limpia</em></div><img src="__LOGO_ISO__" alt="" width="170" height="163"></div>
-    <div class="dFoot"><div class="dQr"><canvas id="dQR" width="116" height="116" aria-label="Código QR con la dirección del juego"></canvas><span>Seguí jugando en casa:<br>escaneá el código.<br>Y sacale una foto a tu diploma.</span></div><button class="btn" id="dDone" type="button">Seguir</button></div>
+    <div class="dFoot"><div class="dQr"><canvas id="dQR" width="116" height="116" aria-label="Código QR con la dirección del juego"></canvas><span>Seguí jugando en casa:<br>escaneá el código.<br>Y sacale una foto a tu <b id="dWhat">diploma</b>.</span></div><button class="btn" id="dDone" type="button">Seguir</button></div>
   </div>
 </div>
 
@@ -502,6 +532,7 @@ input[type=text]{cursor:text}
     <button class="btn hidden" id="bCont" type="button">Continuar</button>
     <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
     <button class="btn" id="bLong" type="button" disabled>Historia larga<small>7 misiones · unos 20 minutos</small></button>
+    <button class="btn school" id="bSchool" type="button" disabled>Modo escuela<small>Una misión por energía, con medalla</small></button>
   </div>
   <div class="tBtns2"><button class="btn ghost" id="bArc" type="button">Minijuegos</button><button class="btn ghost" id="bCred" type="button">Créditos</button><button class="btn ghost bigToggle" id="bBig" type="button" aria-pressed="false">Letra grande: no</button></div>
   <div id="load">Construyendo el diorama…</div>

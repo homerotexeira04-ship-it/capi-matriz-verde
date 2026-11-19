@@ -197,6 +197,7 @@ export class UI {
     for (const s of st.sparks || []) { if (Math.hypot(s.x - st.capi.x, s.z - st.capi.z) > 42) continue; const [px, py] = P(s.x, s.z); g.save(); g.translate(c + px, c + py); g.rotate(Math.PI / 4 + this.t * 2); g.fillStyle = '#ffe066'; g.strokeStyle = '#0f2140'; g.lineWidth = 2; g.fillRect(-6, -6, 12, 12); g.strokeRect(-6, -6, 12, 12); g.restore(); }
     for (const it of st.inter) { if (it.state === 'need' && !it.target) mark(it.x, it.z, '#ff4d4d', 6, false); }
     for (const it of st.inter) if (it.target) mark(it.x, it.z, '#ffd23f', 9, true);
+    const fm = this.g.fiestas && this.g.fiestas.mark(); if (fm) mark(fm.x, fm.z, '#e6007e', 8, true);   // las llamadas, en el minimapa
     // Capi y norte
     g.save(); g.translate(c, c); g.rotate(Math.PI - st.heading + yaw); g.fillStyle = '#fff7e6'; g.strokeStyle = '#0f2140'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, -17); g.lineTo(11, 12); g.lineTo(0, 5); g.lineTo(-11, 12); g.closePath(); g.stroke(); g.fill(); g.restore();
     const nx = c + Math.sin(yaw) * -(c - 20) * -1, ny = c - Math.cos(yaw) * (c - 20);

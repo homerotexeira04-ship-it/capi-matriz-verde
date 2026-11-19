@@ -14,11 +14,11 @@ const N = ' ';
 
 export const OUTFITS = [
   { name: 'Clásico', kit: 'clasico', need: 0, helmet: 0xffc420, vest: 0x4fc3f7, band: 0xf1ff6b, desc: 'Casco, chaleco reflectivo y walkie-talkie' },
-  { name: 'Eólico', kit: 'eolico', need: 2, helmet: 0xf4f4f4, vest: 0x7fd8c2, band: 0xffffff, desc: 'Arnés de altura, antiparras y un molinito en el casco' },
-  { name: 'Hidro', kit: 'hidro', need: 4, helmet: 0x4fc3f7, vest: 0x2a5fb0, band: 0xbfe9fb, desc: 'Chaleco salvavidas, silbato y botas de goma' },
-  { name: 'Solar', kit: 'solar', need: 6, helmet: 0xff8a2a, vest: 0xffd23f, band: 0xfff3b0, desc: 'Lentes de sol, cubrenuca y panelito en el casco' },
-  { name: 'Biomasa', kit: 'biomasa', need: 8, helmet: 0x57b85a, vest: 0x9a6a3f, band: 0xd9f29b, desc: 'Casco forestal con orejeras, guantes y leña' },
-  { name: 'Guardián', kit: 'guardian', need: 10, helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6, desc: 'Capa, hombreras y visera que brilla' },
+  { name: 'Eólico', kit: 'eolico', need: 2, school: 'viento', helmet: 0xf4f4f4, vest: 0x7fd8c2, band: 0xffffff, desc: 'Arnés de altura, antiparras y un molinito en el casco' },
+  { name: 'Hidro', kit: 'hidro', need: 4, school: 'rio', helmet: 0x4fc3f7, vest: 0x2a5fb0, band: 0xbfe9fb, desc: 'Chaleco salvavidas, silbato y botas de goma' },
+  { name: 'Solar', kit: 'solar', need: 6, school: 'sol', helmet: 0xff8a2a, vest: 0xffd23f, band: 0xfff3b0, desc: 'Lentes de sol, cubrenuca y panelito en el casco' },
+  { name: 'Biomasa', kit: 'biomasa', need: 8, school: 'urbano', helmet: 0x57b85a, vest: 0x9a6a3f, band: 0xd9f29b, desc: 'Casco forestal con orejeras, guantes y leña' },
+  { name: 'Guardián', kit: 'guardian', need: 10, school: 'pico', helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6, desc: 'Capa, hombreras y visera que brilla' },
   { name: 'Gaucho', kit: 'gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0, desc: 'Boina, poncho a rayas con flecos y rastra' },
   { name: 'Chofer', kit: 'chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff, desc: 'Gorra de chofer, camisa, corbata y charreteras' },
   { name: 'Control', kit: 'control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0, desc: 'Auriculares con micrófono, lentes y credencial' }
@@ -76,8 +76,9 @@ export class Extras {
   }
   data() { return { sparks: [...this.got], outfit: this.outfit, favors: this.g.social ? this.g.social.saved() : [], acc: [...this.acc], accOn: this.accOn }; }
   reset() { if (this.g.social) this.g.social.reset(); this.got.clear(); this.setOutfit(0); this.acc.clear(); this.setAcc(null); this.refresh(); }
-  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && (O.favor ? this.g.social && this.g.social.done[O.favor] : O.need <= this.got.size) ? s.outfit : 0; this.setOutfit(o); this.acc = new Set((s && Array.isArray(s.acc) ? s.acc : []).filter(k => ACCS[k])); this.setAcc(s && s.accOn); this.refresh(); }
+  restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && this.unlocked(O) ? s.outfit : 0; this.setOutfit(o); this.acc = new Set((s && Array.isArray(s.acc) ? s.acc : []).filter(k => ACCS[k])); this.setAcc(s && s.accOn); this.refresh(); }
   refresh() { this.sparks.forEach(s => { s.group.visible = !this.got.has(s.i); }); $('sparkCount').textContent = `Chispas de saber: ${this.got.size}/${SPARKS.length}`; }
+  unlocked(o) { return o.favor ? !!(this.g.social && this.g.social.done[o.favor]) : this.got.size >= o.need || !!(o.school && this.g.escuela && this.g.escuela.has(o.school)); }
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
   setAcc(k) { this.accOn = k && this.acc.has(k) ? k : null; this.g.capi.setAccessory(this.accOn); }
   giveAcc(k) { this.acc.add(k); this.setAcc(k); }
@@ -105,8 +106,8 @@ export class Extras {
   drawWardrobe() {
     const box = $('wList'), h = c => '#' + c.toString(16).padStart(6, '0'); box.textContent = '';
     OUTFITS.forEach((o, i) => {
-      const ok = o.favor ? !!this.g.social.done[o.favor] : this.got.size >= o.need, b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
-      b.innerHTML = `<canvas class="wFace" width="24" height="24" aria-hidden="true"></canvas><b>${o.name}</b><small>${o.desc}</small><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas`}</em>`;
+      const ok = this.unlocked(o), b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
+      b.innerHTML = `<canvas class="wFace" width="24" height="24" aria-hidden="true"></canvas><b>${o.name}</b><small>${o.desc}</small><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas` + (o.school ? ' o su medalla' : '')}</em>`;
       drawFace(b.querySelector('canvas').getContext('2d'), 'capi', 1, false, this.colors(i));
       b.onclick = () => { this.setOutfit(i); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
       box.appendChild(b);
@@ -146,16 +147,19 @@ export class Extras {
   }
   key(code) {
     if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
+    if (this.open === 'escuela' && this.g.escuela) return this.g.escuela.key(code);
     if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([0-9])$/.exec(code), n = m ? (+m[1] + 9) % 10 : null; if (n != null && n < POS.stops.length) this.travel(n); }
   }
 
   // ---- Diploma final ----
-  showDiploma(done) {
+  showDiploma(done, o = {}) {
+    $('dKick').textContent = o.kicker || 'DIPLOMA'; $('dTit').textContent = o.title || 'Guardián de la Matriz Verde'; $('dDesc').textContent = o.desc || 'por llevar la red eléctrica al 100\u00a0% renovable junto a Capi, con agua, viento, sol y biomasa del Uruguay.';
+    $('dComo').textContent = o.kicker ? 'con la' : 'como'; $('dWhat').textContent = o.kicker ? 'certificado' : 'diploma'; $('dAskT').textContent = o.kicker ? '¡Te ganaste un certificado!' : '¡Te ganaste un diploma!'; $('dGo').textContent = o.kicker ? 'Ver mi certificado' : 'Ver mi diploma';
     this.open = 'diploma'; const el = $('diploma'); el.classList.remove('hidden'); $('dAsk').classList.remove('hidden'); $('dCard').classList.add('hidden');
     const inp = $('dpName'); inp.value = ''; setTimeout(() => { try { inp.focus(); } catch (e) { /* sin foco */ } }, 50);
     $('dGo').onclick = () => {
       const name = inp.value.trim().replace(/\s+/g, ' ').slice(0, 40) || 'Visitante', m = this.g.missions;
-      this.g.stats.finished(m.mode); $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = `${this.got.size} de ${SPARKS.length} chispas de saber`;
+      if (!o.story) this.g.stats.finished(m.mode); $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = o.story || (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = o.extra || `${this.got.size} de ${SPARKS.length} chispas de saber`;
       $('dDate').textContent = new Date().toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' });
       const c = this.colors(); drawFace($('dCapi').getContext('2d'), 'capi', 1, false, c);
       try {   // código QR con la dirección pública del juego

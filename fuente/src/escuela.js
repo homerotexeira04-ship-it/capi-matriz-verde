@@ -266,7 +266,7 @@ export class Escuela {
       if (id !== this.shineId || $('eWin').classList.contains('hidden')) { g.clearRect(0, 0, cv.width, cv.height); g.drawImage(base, 0, 0); return; }
       const t = ((now - t0) / 1000) % 3.6, k = t / 1.1; g.clearRect(0, 0, cv.width, cv.height); g.drawImage(base, 0, 0);
       if (k < 1) { const { c, cy, R } = geo, x = c - R * 1.6 + k * R * 3.2; g.save(); g.beginPath(); g.arc(c, cy, R * 0.99, 0, Math.PI * 2); g.clip(); g.globalCompositeOperation = 'lighter';
-        const gr = g.createLinearGradient(x - R * 0.35, cy - R, x + R * 0.35, cy + R); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,245,210,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(c - R, cy - R, R * 2, R * 2); g.restore(); }
+        const gr = g.createLinearGradient(x - R * 0.2, cy - R * 0.5, x + R * 0.2, cy + R * 0.5); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,245,215,.32)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(c - R, cy - R, R * 2, R * 2); g.restore(); }
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);

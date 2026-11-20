@@ -161,7 +161,7 @@ export class UI {
     // Cartel de sector
     let z = null; for (const q of ZONES) if (q.rect ? (st.capi.x > q.rect[0] && st.capi.x < q.rect[1] && st.capi.z > q.rect[2] && st.capi.z < q.rect[3]) : Math.hypot(st.capi.x - q.x, st.capi.z - q.z) < (q.id === 'ciudad' ? 46 : 34)) z = q;
     if (z && z.id !== this.zoneId) { this.zoneId = z.id; $('zone').textContent = z.name; this.zoneT = 5; } else if (!z) { this.zoneId = ''; this.zoneT = Math.min(this.zoneT, 0.6); }
-    if (this.zoneT > 0) { this.zoneT -= 0.09; $('zone').style.opacity = clamp(this.zoneT, 0, 1); }
+    if (this.zoneT > 0) { this.zoneT -= dt * 1.6; $('zone').style.opacity = clamp(this.zoneT, 0, 1); }
     if (st.panel) { this.drawPanel(); if ((this._pd = (this._pd || 0) + 1) % 4 === 0) this.panelDom(); }
   }
 
@@ -195,7 +195,7 @@ export class UI {
       g.beginPath(); g.arc(c + px, c + py, r, 0, 7); g.fillStyle = col; g.fill(); g.lineWidth = 3; g.strokeStyle = '#0f2140'; g.stroke();
       if (ring) { g.beginPath(); g.arc(c + px, c + py, r + 6 + (this.t * 14 % 12), 0, 7); g.strokeStyle = col; g.globalAlpha = 1 - (this.t * 14 % 12) / 12; g.stroke(); g.globalAlpha = 1; }
     };
-    for (const z of ZONES) mark(z.x, z.z, z.color, 8, false);
+    for (const z of ZONES) if (!z.area) mark(z.x, z.z, z.color, 8, false);
     // paradas de ómnibus (si la flota ya anda) y chispas cercanas todavía sin juntar
     if (st.buses) for (const s of POS.stops) { const [px, py] = P(s[0], s[1]); if (Math.hypot(px, py) < c - 12) { g.fillStyle = '#35b3e8'; g.strokeStyle = '#0f2140'; g.lineWidth = 2; g.fillRect(c + px - 6, c + py - 6, 12, 12); g.strokeRect(c + px - 6, c + py - 6, 12, 12); } }
     for (const s of st.sparks || []) { if (Math.hypot(s.x - st.capi.x, s.z - st.capi.z) > 42) continue; const [px, py] = P(s.x, s.z); g.save(); g.translate(c + px, c + py); g.rotate(Math.PI / 4 + this.t * 2); g.fillStyle = '#ffe066'; g.strokeStyle = '#0f2140'; g.lineWidth = 2; g.fillRect(-6, -6, 12, 12); g.strokeRect(-6, -6, 12, 12); g.restore(); }

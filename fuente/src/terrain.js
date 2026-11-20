@@ -24,7 +24,7 @@ export const POS = {
   inverter: [13.5, -77.5], batYard: [37, -69], batConsole: [37, -60.2],
   boiler: [60, 63], chips: [48, 58], bioSub: [73, 56],
   bridge: { x: -46, z0: -42, z1: -12 },
-  stops: [[-24, 71.8, 'Terminal y bulevar'], [-44, 52.3, 'Plaza Matriz'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
+  stops: [[-24, 71.8, 'Terminal del Bulevar'], [-44, 52.3, 'Plaza Matriz'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
     [-56, -3.2, 'Barrio Norte'], [-86.4, 52.6, 'Puerto'], [12, 0.4, 'Barrio Jardín'], [-79.5, -55.6, 'Energimundo']],
   // Ciudad ampliada
   norte: { z: 6, xs: [-68, -52, -36, -20] }, hospital: [-68, 6], escuela: [-52, 6], mercado: [-36, 6],
@@ -83,11 +83,11 @@ export function terrainH(x, z) {
 export function waterAt(x, z) { return z < DAM_Z - 3 && x < eastBank(z) + 30 ? RES : 0; }
 
 export const ZONES = [
-  { id: 'rio', name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 210] },
-  { id: 'campo', name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
+  { id: 'rio', area: true, name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 210] },
+  { id: 'campo', area: true, name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
   { id: 'ciudad', name: 'Ciudad de Salto', x: -36, z: 50, color: '#ffd166', rect: [-86, 22, 12, 102] },
-  { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-166, -86, -112, -84] },
-  { id: 'lago', name: 'Lago de Salto Grande', x: -150, z: -128, color: '#4cc9f0', rect: [-230, -86, -150, -112] },
+  { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-166, -56, -112, -84] },
+  { id: 'lago', area: true, name: 'Lago de Salto Grande', x: -150, z: -128, color: '#4cc9f0', rect: [-230, -56, -150, -112] },
   { id: 'eolica', name: 'Parque Eólico de las Cuchillas', x: 70, z: -12, color: '#e8f1f2' },
   { id: 'solar', name: 'Parque Solar y Baterías', x: 18, z: -80, color: '#ffb703', rect: [-18, 50, -112, -54] },
   { id: 'biomasa', name: 'Planta de Biomasa', x: 60, z: 62, color: '#90be6d' },

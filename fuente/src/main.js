@@ -114,7 +114,7 @@ class Game {
     $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false;
     c.classList.toggle('hidden', !sv || (sv.phase === 0));
     if (sv) { const n = sv.mode === 'corta' ? 5 : 7; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
-    $('load').textContent = 'Teclado y ratón · también funciona con pantalla táctil';
+    $('load').textContent = 'Teclado y mouse · también funciona con pantalla táctil';
   }
   play(mode, phase, saved, level, opt = {}) {
     this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
@@ -171,7 +171,7 @@ class Game {
       else { this.missions.forget(); this.toTitle(); }
       this.lastInput = now;
     }
-    else if (left <= K.warn) this.ui.note(`¿Seguís ahí? El juego vuelve al inicio en ${left} s. Mové el ratón o tocá una tecla para seguir.`, 1.2);
+    else if (left <= K.warn) this.ui.note(`¿Seguís ahí? El juego vuelve al inicio en ${left} s. Mové el mouse o tocá una tecla para seguir.`, 1.2);
   }
   // ---------- Demostración: si nadie toca nada en el título, la cámara pasea por el diorama ----------
   attractStep(dt, real) {
@@ -239,6 +239,7 @@ class Game {
     const cv = $('gl');
     for (const ev of ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart']) window.addEventListener(ev, e => { this.titleIdle = 0; if (this.attract) { this.stopAttract(); if (ev === 'keydown') { e.stopPropagation(); e.preventDefault(); } } }, { capture: true });
     const K = window.CAPI_KIOSCO; this.kioskCfg = K ? { idle: Math.max(30, +K.idle || 180), warn: Math.max(5, +K.warn || 30) } : null; this.lastInput = performance.now();
+    document.addEventListener('visibilitychange', () => { const c = this.audio.ctx; if (!c) return; if (document.hidden) { if (c.state === 'running') c.suspend(); } else if (c.state === 'suspended') c.resume(); });   // pestaña oculta: el juego se congela y el sonido también
     if (this.kioskCfg) { this.missions.forget(); for (const ev of ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart']) window.addEventListener(ev, () => { this.lastInput = performance.now(); }, { passive: true, capture: true }); window.addEventListener('contextmenu', e => e.preventDefault()); }
     window.addEventListener('pointermove', e => { this.mouse = e.pointerType === 'mouse' ? { x: e.clientX, y: e.clientY } : null; }, { passive: true });
     window.addEventListener('resize', () => this.resize());
@@ -264,6 +265,7 @@ class Game {
       if (this.ui.dlg) { if (!e.repeat && (c === 'KeyE' || c === 'Space' || c === 'Enter' || c === 'KeyF')) this.ui.advance(); return; }
       if (this.panel || this.help) return;
       if (e.repeat) return;
+      if (c === 'KeyT' && this.extras.rideTo) { this.extras.ride(); return; }
       this.keys[c] = true;
       if (c === 'Space') this.jump = true;
       if (c === 'KeyE' || c === 'KeyF' || c === 'Enter') { if (this.cand) { if (c === 'KeyE') this.eUsed = true; this.interact(this.cand.id); } }

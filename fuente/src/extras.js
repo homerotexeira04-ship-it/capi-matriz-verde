@@ -73,7 +73,7 @@ export class Extras {
       return { i, x, y, z, place, text, group: g, ghost, gm };
     });
     // Interfaz
-    $('bWard').onclick = () => this.toggleWardrobe();
+    $('bWard').onclick = () => this.toggleWardrobe(); $('ride').onclick = () => this.ride();
     $('wClose').onclick = () => this.close(); $('tvClose').onclick = () => this.close();
     $('fact').addEventListener('click', () => { this.factT = 0.01; });
     $('dpName').addEventListener('keydown', e => { if (e.key === 'Enter') $('dGo').click(); });
@@ -134,6 +134,35 @@ export class Extras {
     const box = $('tvList'); box.textContent = '';
     POS.stops.forEach((s, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.disabled = i === from; b.innerHTML = `<kbd>${(i + 1) % 10}</kbd> ${s[2]}` + (i === from ? ' · estás acá' : ''); b.onclick = () => this.travel(i); box.appendChild(b); });
   }
+  // ---- Camioneta eléctrica: viaje rápido hasta el objetivo de la misión cuando queda lejos ----
+  rideUpdate(dt, play) {
+    if ((this.rideT = (this.rideT || 0) - dt) > 0) return; this.rideT = 0.35;
+    const g = this.g, M = g.missions, el = $('ride'); if (!el) return; let best = null;
+    if (play && M.active && !M.free && !g.locked && !this.fading && !this.open && !g.mg.active && !g.ui.dlg && !g.cine && !(g.tut && g.tut.on)) {
+      const c = g.capi.pos; for (const it of g.world.interList) if (it.target) { const d = Math.hypot(it.x - c.x, it.z - c.z); if (!best || d < best.d) best = { it, d }; }
+    }
+    const show = !!best && best.d > 115; if (show === el.classList.contains('hidden')) el.classList.toggle('hidden', !show); this.rideTo = show ? best.it : null;
+  }
+  rideSpot(it) {   // un lugar firme a pocos metros del objetivo, a su misma altura (sirve para el coronamiento y los techos)
+    const w = this.g.world, n = this.g.capi.nav;
+    for (const r of [2.4, 3.2, 4.5, 6, 8, 11]) for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2 + 0.3, x = it.x + Math.cos(a) * r, z = it.z + Math.sin(a) * r;
+      if (n) { const c = n.idx(x, z); if (!n.ok[c] || n.water[c]) continue; }
+      if (Math.abs(w.groundAt(x, z, it.y + 2) - it.y) > 1.3 || w.waterAt(x, z) > w.groundAt(x, z) - 0.2) continue;
+      return [x, z];
+    }
+    return [it.x, it.z + 2.5];
+  }
+  ride() {
+    const g = this.g, it = this.rideTo; if (!it || this.fading || g.locked) return;
+    this.fading = true; this.rideTo = null; $('ride').classList.add('hidden'); $('fade').classList.add('on'); $('fadeTxt').textContent = 'En la camioneta eléctrica de mantenimiento…';
+    g.audio.tone(330, 0.25, 'square', 0.06); g.audio.tone(440, 0.3, 'square', 0.06, 0.2); g.audio.power();
+    setTimeout(() => {
+      const [x, z] = this.rideSpot(it); g.capi.teleport(x, z); g.capi.pos.y = g.world.groundAt(x, z, it.y + 2);
+      g.capi.heading = Math.atan2(it.x - x, it.z - z); g.cam.target.set(x, g.capi.pos.y + 1.5, z); g.cam.inspect = null;
+      setTimeout(() => { $('fade').classList.remove('on'); this.fading = false; g.ui.note('Llegaste. La camioneta de mantenimiento anda con electricidad renovable, como los ómnibus.', 4); }, 450);
+    }, 650);
+  }
   travel(i) {
     if (i === this.from || this.fading) return; const g = this.g, s = POS.stops[i];
     this.close(); this.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = 'En ómnibus eléctrico hacia ' + s[2] + '…';
@@ -179,6 +208,7 @@ export class Extras {
   }
 
   update(dt, st) {
+    this.rideUpdate(dt, st.play);
     this.t += dt; const c = this.g.capi.pos;
     if (this.factT > 0) { this.factT -= dt; if (this.factT <= 0) $('fact').classList.remove('on'); }
     for (const s of this.sparks) {

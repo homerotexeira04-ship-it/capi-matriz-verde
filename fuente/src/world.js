@@ -92,7 +92,7 @@ void main(){
   #include <fog_vertex>
 }`;
 const WATER_FS = `
-uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uSky; uniform float uOpacity; uniform float uLight;
+uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uSky; uniform float uOpacity; uniform float uLight; uniform float uTime;
 varying vec3 vWorld;
 #include <fog_pars_fragment>
 void main(){
@@ -104,7 +104,10 @@ void main(){
   float diff=max(dot(n,uSunDir),0.0);
   col*=uLight*(0.62+0.5*diff);
   float spec=pow(max(dot(n,normalize(uSunDir+v)),0.0),90.0);
-  col+=uSunColor*step(0.45,spec)*0.75;
+  // reflejo del sol: un camino suave y destellos que titilan, en vez de una mancha blanca dura
+  vec2 cell=floor(vWorld.xz*1.3); float h=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+  float tw=step(0.7,fract(h*7.0+uTime*(0.25+0.5*h)));
+  col+=uSunColor*(smoothstep(0.2,0.95,spec)*0.3+smoothstep(0.3,0.7,spec)*tw*0.6);
   gl_FragColor=vec4(col,uOpacity);
   #include <colorspace_fragment>
   #include <fog_fragment>

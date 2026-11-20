@@ -263,6 +263,7 @@ function puerto(w, R) {
   plaque(w, 'PUERTO · LANCHA A CONCORDIA', px, gy + 3.0, z1 + 0.1, 0, 7.6, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
   plaque(w, 'PUERTO DE SALTO', x1 + 0.1, gy + 3.0, pz, Math.PI / 2, 4.6, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
   flag(w, -85.2, gy, 45.2, 2.4, 1.6, 7); w.addCircle(-85.2, 45.2, 0.3);
+  for (const [x, z] of [[-94.6, 45.4], [-94.6, 51.4]]) w.lamp(x, z, -Math.PI / 2, gy);   // boca del muelle
   // muelle de pasajeros: tablones sobre pilotes hacia el oeste, baja suave desde la explanada
   const MZ = Mu.z, top = (x) => lerp(gy + 0.02, 1.35, clamp((DX0 - x) / 5, 0, 1));
   w.addPlatform(Mu.x1, Mu.x0 + 0.4, MZ - 1.7, MZ + 1.7, (x) => top(x));
@@ -344,6 +345,7 @@ function orilla(w, R) {
   for (let z = -82; z <= 202; z += 12) { if (Math.abs(z - OZ) < 6) continue; plant(w, R() < 0.6 ? 'palm' : 'ceibo', westBank(z) - 7.2, z, 0.9 + R() * 0.2); }
   // calles de Concordia: una avenida paralela a la costanera y transversales hasta el borde de la maqueta
   const av = []; for (let z = -78; z <= 206; z += 8) av.push([westBank(z) - 15, z]); w.road(av, 3.2, C.asphalt);
+  for (let z = -70; z <= 200; z += 22) w.lamp(westBank(z) - 17.2, z, Math.PI / 2);
   for (const z of [-40, 8, OZ, 92, 140, 186]) w.road([[westBank(z) - 8.4, z], [westBank(z) - 15, z], [-196, z], [-229, z]], z === OZ ? 3.2 : 2.6, C.asphalt);
   // casas y edificios bajos de la ciudad vecina
   for (let i = 0; i < 130; i++) {
@@ -357,7 +359,7 @@ function orilla(w, R) {
   // iglesia con campanario, que se ve desde la costanera de Salto (la torre mira al río)
   const cx = -182, cz = 40, cy = w.terrainAt(cx, cz);
   b.boxB(cx, cy - 0.3, cz, 8, 5.3, 5, 0xf2e4c4); gable(b, cx, cy + 5, cz, 5.2, 1.8, 8.2, 0xb5533c, true);
-  b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); w.addSolid(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5); w.addOcc(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5, cy + 6); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
+  b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); w.addSolid(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5); w.addOcc(cx - 4.2, cx + 6, cz - 2.7, cz + 2.7, cy + 6); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
   w.nightBatch.add(new THREE.CircleGeometry(0.6, 12), 0xffffff, cx + 5.72, cy + 3.5, cz, 1, 1, 1, 0, Math.PI / 2, 0, 0);
   for (let i = 0; i < 90; i++) { const x = lerp(-228, -164, R()), z = lerp(-84, 206, R()); if (farD(x, z) > 10 && !(Math.abs(z - OZ) < 6 && x > -178) && !w.nearRoad(x, z, 2.6)) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
 }

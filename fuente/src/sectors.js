@@ -561,11 +561,13 @@ export function buildRoads(w) {
   w.road([[-44, 11], [-44, 0], [-44.6, -7], [-46, -12]], 3.4, A);
   w.road([[-46, -42], [-47, -52], [-47.6, -72], [-49, -90], [-56, -99.2], [-70, -100.4], [-86.4, -100.2]], 3.4, A);
   w.road([[-47.4, -49.6], [-60, -49.4], [-74, -49.6], [-82, -50], [-86.8, -50.6]], 3.0, A);   // acceso a Energimundo
+  for (const [x, z, r] of [[-49.4, -56, Math.PI / 2], [-50.2, -76, Math.PI / 2], [-49.6, -95.4, -0.92], [-66, -97.5, Math.PI], [-80, -97.6, Math.PI], [-60, -47.4, Math.PI], [-74, -47.4, Math.PI]]) w.lamp(x, z, r);   // de noche el camino a la represa y al museo queda iluminado
   w.road([[-166, -100.2], [-174, -99.6], [-179, -93], [-178.6, -84], [-177.4, -77]], 3.4, A);   // del lado argentino, hasta la avenida de Concordia
   // al noreste: Barrio Jardín y el Parque Solar
   w.road([[-12, 13], [4, 2], [16, -14], [24, -34], [27.5, -49], [27, -54.6]], 3.4, A);
   // al sur: la ruta que sale de la ciudad, con el Barrio Sur y los naranjales
   w.road([[-12, 94.4], [-12, 112], [-11, 140], [-6, 172], [0, 208]], 3.4, A);
+  for (const z of [104, 120, 136]) w.lamp(-14.2, z, Math.PI / 2);
   w.road([[-40, 100.4], [-26, 100.4], [-12, 100.4]], 2.8, A);
   w.road([[-11.2, 126], [12, 128], [40, 124], [70, 128], [104, 132]], 2.4, G);
   // Puente arqueado sobre el arroyo

@@ -16,6 +16,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Decisiones:** dos niveles al empezar (Explorador e Ingeniero), elegir si después del viento se sigue por el río o por el sol, qué atender primero en la sudestada y cómo enfrentar un año seco. En modo libre aparecen olas de calor y sequías con su propia decisión.
 - **Vestuario de Capi (tecla V):** nueve atuendos con piezas propias, no sólo colores. Eólico con arnés y molinito en el casco, Hidro con chaleco salvavidas y botas de goma, Solar con lentes de sol y panelito, Biomasa con casco forestal y leña, Guardián con capa, Gaucho con boina y poncho con flecos, Chofer con gorra y corbata, y Control con auriculares y credencial. Cada uno aparece con su retrato en el vestuario.
 - Álbum de chispas (tecla B), modo foto (tecla P) y soporte para joystick.
+- **Camioneta eléctrica de mantenimiento:** cuando el próximo objetivo de la misión queda a más de 115 metros, la tarjeta de la misión ofrece ir en camioneta (botón o tecla T). Capi aparece al lado del objetivo, mirando hacia él, y se ahorran las caminatas largas entre la represa, el parque solar y la planta de biomasa.
 - **Tutorial jugable** de cuatro pasos antes de la primera misión (caminar, mirar, saltar y hablar con la Ing. Valeria), con instrucciones para teclado, pantalla táctil o joystick. Si alguien se traba, aparece una ayuda extra y el tutorial sigue solo.
 - **Letra grande:** opción en la pantalla de inicio y en la ayuda, que queda guardada.
 - **Neblina sobre el río al amanecer**, que se levanta a media mañana.
@@ -58,14 +59,15 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 
 ## Controles
 
-| Acción | Teclado y ratón |
+| Acción | Teclado y mouse |
 |---|---|
 | Mover a Capi | W A S D o flechas, o clic en el lugar de destino |
 | Saltar | Espacio |
 | Interactuar / seguir un diálogo | E |
 | Girar la cámara | Q y E, o arrastrar con el botón derecho |
-| Acercar y alejar | Rueda del ratón |
+| Acercar y alejar | Rueda del mouse |
 | Panel de la red eléctrica | Tab |
+| Ir en la camioneta eléctrica cuando el objetivo queda lejos | T |
 | Vestuario | V |
 | Álbum de chispas | B |
 | Modo foto | P |

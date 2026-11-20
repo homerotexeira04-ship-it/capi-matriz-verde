@@ -4,7 +4,7 @@
 // escenario a pedal con bicicletas generadoras, cafetería y un sendero con las seis estaciones de energía.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { POS } from './terrain.js';
+import { POS, MUSEO_OFF } from './terrain.js';
 import { C, Batch, canvasTex } from './world.js';
 import { flag } from './sectors.js';
 import { argFlag } from './barrios.js';
@@ -12,7 +12,10 @@ import { argFlag } from './barrios.js';
 const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 // La flora al azar no planta dentro del predio (los árboles del museo se plantan a mano)
-export const CLEAR4 = [[POS.museo.x0, POS.museo.x1, POS.museo.z0, POS.museo.z1], [30, 63, -53, -42.5]];   // y el pasto frente a las letras
+export const CLEAR4 = [[POS.museo.x0, POS.museo.x1, POS.museo.z0, POS.museo.z1], [POS.museo.x0 + 2, POS.museo.x1, POS.museo.z1 - 1, POS.museo.z1 + 9.5]];   // y el pasto frente a las letras
+// El predio se arma en sus coordenadas de siempre (locales) y main.js lo ubica junto a la represa con una vista desplazada
+const [MX, MZ] = MUSEO_OFF, loc = r => ({ x0: r.x0 - MX, x1: r.x1 - MX, z0: r.z0 - MZ, z1: r.z1 - MZ }), lp = p => [p[0] - MX, p[1] - MZ];
+const LP = { edificio: loc(POS.edificio), crono: lp(POS.crono), domo: lp(POS.domo), portal: lp(POS.portal), escenario: loc(POS.escenario) };
 
 const MAROON = 0x7a2a27, RED = 0xd23a3f, DARK = 0x2a2a2e, BLACK = 0x1d1d22, ROOF = 0x47474c, CONC = 0xd0cbc2, GRAVEL = 0xbdb5a8,
   CORTEN = 0x8e4a2a, SILVER = 0xd5d8dd, WHITE = 0xf2f2f0, PATH = 0xd8cfc0, TRAIL = 0xcdbb93;
@@ -128,7 +131,7 @@ export function buildMuseo(w) {
 
   // ---------- Edificio principal ----------
   {
-    const { x0, x1, z0, z1 } = POS.edificio, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, Lx = x1 - x0, D = z1 - z0, y = gy(cx, cz), yb = y + 0.3, H = 3.2;
+    const { x0, x1, z0, z1 } = LP.edificio, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, Lx = x1 - x0, D = z1 - z0, y = gy(cx, cz), yb = y + 0.3, H = 3.2;
     b.boxB(cx, y - 0.4, cz, Lx + 0.6, 0.7, D + 0.6, CONC);
     b.boxB(cx, yb, cz, Lx, H, D, MAROON);
     for (let k = 0; k < 5; k++) { const yy = yb + 2.06 + k * 0.22; b.box(cx, yy, z1 + 0.07, Lx + 0.12, 0.12, 0.1, RED); b.box(x0 - 0.07, yy, cz, 0.1, 0.12, D + 0.12, RED); b.box(x1 + 0.07, yy, cz, 0.1, 0.12, D + 0.12, RED); }
@@ -169,7 +172,7 @@ export function buildMuseo(w) {
     w.road([[44, -54.2], [44, -60], [44, -66.2]], 2.2, PATH);
     w.road([[36.2, -57.5], [40, -57.5], [43.2, -57.6]], 1.6, PATH);  // desde la parada
     w.road([[44.9, -62.5], [48.5, -62.5], [51.4, -62.5]], 1.6, PATH);  // al domo
-    w.road([[31.6, -38.6], [36.5, -44.6], [41.5, -50], [44, -53.6]], 1.8, PATH);  // subida desde la parada de la Central
+    w.road([[42.4, -51.2], [44, -53.6]], 1.8, PATH);  // desde el camino de acceso
     for (const [x, z, r] of [[52.2, -67.4, 0], [40.9, -71.2, PI / 2], [50.4, -75.2, 0]]) { b.boxB(x, y, z, r ? 0.45 : 1.6, 0.42, r ? 1.6 : 0.45, CONC); b.boxB(x, y + 0.42, z, r ? 0.5 : 1.7, 0.08, r ? 1.7 : 0.5, C.wood); w.addSolid(x - (r ? 0.25 : 0.85), x + (r ? 0.25 : 0.85), z - (r ? 0.85 : 0.25), z + (r ? 0.85 : 0.25), y + 0.5); }
     flag(w, 53.4, y, -75.9, 1.5, 1.0, 5.6); argFlag(w, 55.1, y, -75.9, 1.5, 1.0, 5.6); w.addCircle(53.4, -75.9, 0.25);
     b.boxB(41.2, y, -66.9, 1.0, 2.0, 0.24, BLACK); quad('totem', 41.2, y + 1.42, -66.76, 0.92, 0.8, 0); quad('totem', 41.2, y + 1.42, -67.04, 0.92, 0.8, PI); w.addSolid(40.7, 41.7, -67.05, -66.75, y + 2);
@@ -178,7 +181,7 @@ export function buildMuseo(w) {
 
   // ---------- Cronomundo: reloj de sol de acero corten, con el eje paralelo al de la Tierra ----------
   {
-    const [x, z] = POS.crono, y = gy(x, z), R0 = 1.45, cy = y + 0.27 + R0, lat = 31.4 * PI / 180;
+    const [x, z] = LP.crono, y = gy(x, z), R0 = 1.45, cy = y + 0.27 + R0, lat = 31.4 * PI / 180;
     b.cyl(x, y, z, 1.85, 1.95, 0.24, CONC, 24); b.add(new THREE.TorusGeometry(1.55, 0.05, 4, 40), CORTEN, x, y + 0.26, z, 1, 1, 1, PI / 2, 0, 0, 0.04);
     b.box(x, y + 0.27, z + 0.2, 0.14, 0.03, 2.6, 0x6e3a22, 0, 0.05);   // escala de fechas sur-norte
     const A = new THREE.Vector3(0, Math.sin(lat), Math.cos(lat)), U = new THREE.Vector3(1, 0, 0), V = new THREE.Vector3().crossVectors(A, U).normalize();
@@ -197,7 +200,7 @@ export function buildMuseo(w) {
 
   // ---------- Domo geodésico negro (cine) ----------
   {
-    const [x, z] = POS.domo, y = gy(x, z) + 0.12, Rd = 3.3, el = [0, 0.32, 0.64, 0.96, 1.22], n = 15, apex = [0, Rd, 0];
+    const [x, z] = LP.domo, y = gy(x, z) + 0.12, Rd = 3.3, el = [0, 0.32, 0.64, 0.96, 1.22], n = 15, apex = [0, Rd, 0];
     const P = (i, j) => { const f = el[i], a = (j + (i % 2) * 0.5) * 2 * PI / n; return [Math.cos(f) * Math.cos(a) * Rd, Math.sin(f) * Rd, Math.cos(f) * Math.sin(a) * Rd]; };
     const tris = [];
     for (let i = 0; i < el.length - 1; i++) for (let j = 0; j < n; j++) {
@@ -220,7 +223,7 @@ export function buildMuseo(w) {
 
   // ---------- Pórtico de entrada y boletería ----------
   {
-    const [x, z] = POS.portal, y = gy(x, z), hw = 1.75, hd = 0.6, H = 3.4;
+    const [x, z] = LP.portal, y = gy(x, z), hw = 1.75, hd = 0.6, H = 3.4;
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { b.boxB(x + sx * hw, y, z + sz * hd, 0.13, H, 0.13, WHITE); w.addCircle(x + sx * hw, z + sz * hd, 0.2); }
     for (const sz of [-1, 1]) b.box(x, y + H, z + sz * hd, hw * 2 + 0.13, 0.13, 0.13, WHITE); for (const sx of [-1, 1]) b.box(x + sx * hw, y + H, z, 0.13, 0.13, hd * 2, WHITE);
     for (const sx of [-1, 1]) { b.boxB(x + sx * 2.6, y, z, 0.1, 2.7, 0.1, WHITE); b.box(x + sx * 2.15, y + 2.7, z, 0.95, 0.1, 0.1, WHITE); }
@@ -271,7 +274,7 @@ export function buildMuseo(w) {
 
   // ---------- Escenario a pedal y bicicletas generadoras ----------
   {
-    const { x0, x1, z0, z1 } = POS.escenario, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, y = gy(cx, cz), top = y + 0.96;
+    const { x0, x1, z0, z1 } = LP.escenario, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, y = gy(cx, cz), top = y + 0.96;
     b.boxB(cx, y - 0.3, cz, x1 - x0, 1.2, z1 - z0, CONC); b.boxB(cx, y + 0.9, cz, x1 - x0, 0.06, z1 - z0, C.wood);
     const sz = -72.625;   // escalones al medio, entre las bicis (alineados con la grilla de caminos)
     for (let k = 0; k < 3; k++) { const sx = x0 - 0.15 - k * 0.3; b.boxB(sx, y, sz, 0.3, 0.3 * (3 - k), 1.2, CONC); w.addPlatform(sx - 0.15, sx + 0.15, sz - 0.6, sz + 0.6, y + 0.3 * (3 - k)); }
@@ -324,15 +327,19 @@ export function buildMuseo(w) {
 
 // ================= Vida del museo: interacciones, función del domo y show del escenario =================
 const LABEL = { entrada: 'Entrar a Energimundo', crono: 'Leer la hora en el Cronomundo', domo: 'Ver la función del domo', bici: 'Pedalear para el escenario' };
+// Función del domo: la historia del universo contada como si fuera un año (calendario cósmico) y, al final, el cuidado del ambiente
 const SCENES = [
-  { t: 'Energimundo presenta: el viaje de la energía. Mirá para arriba…' },
-  { t: 'Casi toda la energía que usamos empieza en el Sol: calienta el aire, evapora el agua y hace crecer las plantas.' },
-  { t: 'El sol calienta la tierra de forma despareja y el aire se mueve: ese viento hace girar los molinos.' },
-  { t: 'El agua que evapora el sol vuelve como lluvia, baja por los ríos y mueve las turbinas de Salto Grande.' },
-  { t: 'Las plantas guardan la energía del sol. Con los restos de madera funciona la biomasa.' },
-  { t: 'Y la energía más limpia es la que no se desperdicia. ¡Gracias por venir al domo!' }
+  { t: 'Si toda la historia del universo entrara en un año, ¿qué pasaría cada mes? Mirá para arriba…' },
+  { t: '1 de enero: el Big Bang. Todo lo que existe empieza a expandirse.' },
+  { t: 'En los primeros meses se forman las galaxias, como nuestra Vía Láctea, con miles de millones de estrellas.' },
+  { t: 'Entre fines de agosto y principios de septiembre nacen el Sol y la Tierra.' },
+  { t: 'A fines de septiembre aparecen los primeros seres vivos, diminutos, en el mar.' },
+  { t: 'El 25 de diciembre llegan los dinosaurios. El 30 se extinguen.' },
+  { t: 'El 31 de diciembre, en los últimos minutos del año, aparecemos los seres humanos.' },
+  { t: 'Y en el último segundo empezamos a quemar petróleo y carbón: el aire se calienta y el clima cambia.' },
+  { t: 'Nos toca cuidar la casa común: energía del sol, del viento y del agua, y usarla con cabeza. ¡Gracias por venir al domo!' }
 ];
-const SCENE_T = 4.6;
+const SCENE_T = 4.4;
 
 export class Museo {
   constructor(g) {
@@ -353,7 +360,7 @@ export class Museo {
     ], i => {
       if (i === 0) say('Salas interactivas sobre las energías renovables: maquetas de la represa, pantallas gigantes, juegos y realidad aumentada. Afuera hay un sendero, el domo, el Cronomundo y el escenario a pedal.');
       if (i === 1) say('¡La entrada es gratis! El recorrido lleva por lo menos una hora, adentro y afuera.');
-      if (i === 2) say('Es de Salto Grande, la represa que comparten Uruguay y Argentina. El museo está en la margen oriental de la central, del lado uruguayo.');
+      if (i === 2) say('Es de Salto Grande, la represa que comparten Uruguay y Argentina sobre el río Uruguay. El museo está del lado uruguayo, al lado de la represa.');
     });
   }
   crono() {
@@ -370,7 +377,7 @@ export class Museo {
     g.mg.start('bici', { title: 'Escenario a pedal' }, ok => {
       if (!ok) return;
       this.show = 24; this.beat = 0; g.audio.fanfare(); g.capi.celebrate && g.capi.celebrate(2);
-      const [x, , z] = [60.6, 0, -72.8]; g.fx.sparks(x, g.world.groundAt(x, z) + 4, z, 40, 0xffc93c);
+      const x = 60.6 + MX, z = -72.8 + MZ; g.fx.sparks(x, g.world.groundAt(x, z) + 4, z, 40, 0xffc93c);
       g.ui.note('¡Con tu pedaleo el escenario tiene luz y sonido! En Energimundo el público le pone las piernas al espectáculo.', 6);
     });
   }
@@ -397,37 +404,42 @@ export class Museo {
       const el = $('domo'); if (!el || el.classList.contains('hidden')) { this.endDomo(false); return; }
       this.dT += dt; const i = Math.floor(this.dT / SCENE_T);
       if (i >= SCENES.length) { g.extras.close(); this.endDomo(true); return; }
-      if (i !== this.sc) { this.sc = i; $('domoTx').textContent = SCENES[i].t; if (i) g.audio.tone([262, 330, 392, 349, 523][i - 1] || 262, 0.9, 'sine', 0.05); }
+      if (i !== this.sc) { this.sc = i; $('domoTx').textContent = SCENES[i].t; if (i) g.audio.tone([196, 262, 330, 392, 349, 294, 247, 523][i - 1] || 262, 0.9, 'sine', 0.05); }
       this.drawDomo(i, (this.dT % SCENE_T) / SCENE_T);
     }
   }
   endDomo(full) {
     this.dT = -1; const g = this.g;
-    if (full) g.ui.note('¡Qué función! El domo de Energimundo es un cine: la película se proyecta sobre toda la cúpula.', 5);
+    if (full) g.ui.note('¡Qué función! En el domo de Energimundo se proyecta un video sobre la historia del universo y el cuidado del ambiente.', 6);
   }
   drawDomo(i, u) {
     const cv = $('domoCv'); if (!cv) return; const g = cv.getContext('2d'), W = cv.width, c = W / 2, R = c - 4, t = this.dT;
-    const fade = Math.min(1, u * 6, (1 - u) * 6);
+    const fade = Math.min(1, u * 6, (1 - u) * 6), P = Math.PI, T = (s, x, y, px, col = '#fff7e6') => { g.fillStyle = col; g.font = `${px}px "Lilita One","Arial Black",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, x, y); };
     g.save(); g.clearRect(0, 0, W, W); g.beginPath(); g.arc(c, c, R, 0, 7); g.clip();
-    const sky = [['#050b1e', '#14244d'], ['#2a1d4f', '#f29a4a'], ['#5fb7ea', '#d6f0ff'], ['#58687a', '#a9c3d6'], ['#7fc7ef', '#e8f6d8'], ['#0b1530', '#3a1f6b']][i];
+    const sky = [['#050b1e', '#14244d'], ['#000000', '#1a0f2e'], ['#02040f', '#121a3a'], ['#04060f', '#161a33'], ['#0b3a5a', '#2d8fb5'], ['#3a5a2a', '#9cc77a'], ['#1d3b5c', '#d98b4a'], ['#3a2a28', '#8a5a4a'], ['#0b2b55', '#5fb7ea']][i];
     const gr = g.createRadialGradient(c, c, 0, c, c, R); gr.addColorStop(0, sky[1]); gr.addColorStop(1, sky[0]); g.fillStyle = gr; g.fillRect(0, 0, W, W);
     g.globalAlpha = fade;
-    const star = (a) => { for (const [ang, r, s, ph] of this.stars) { const q = ang + t * 0.05; g.fillStyle = `rgba(255,255,255,${a * (0.5 + 0.5 * Math.sin(t * 2 + ph))})`; g.fillRect(c + Math.cos(q) * r * R - s / 2, c + Math.sin(q) * r * R - s / 2, s, s); } };
-    // el horizonte rodea el borde (vista de cúpula, mirando hacia arriba)
-    const ground = (col) => { g.lineWidth = R * 0.16; g.strokeStyle = col; g.beginPath(); g.arc(c, c, R * 0.95, 0, 7); g.stroke(); };
-    if (i === 0) { star(1); const cols = ['#6a2c91', '#e6007e', '#1fb5ad', '#8cc63f', '#ffc93c']; cols.forEach((cl, k) => { g.strokeStyle = cl; g.lineWidth = 14; g.beginPath(); const a0 = t * (0.6 + k * 0.2) + k; g.arc(c, c, 150 - k * 24, a0, a0 + 4.4); g.stroke(); }); g.fillStyle = '#f28c28'; g.beginPath(); g.arc(c, c, 26, 0, 7); g.fill(); }
-    if (i === 1) { star(1 - u); const r = 40 + u * 50, sy = c + (1 - u) * 120; g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(c, sy, r, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,214,90,.8)'; g.lineWidth = 8; for (let k = 0; k < 16; k++) { const a = k * PI / 8 + t * 0.4; g.beginPath(); g.moveTo(c + Math.cos(a) * (r + 14), sy + Math.sin(a) * (r + 14)); g.lineTo(c + Math.cos(a) * (r + 40 + 10 * Math.sin(t * 3 + k)), sy + Math.sin(a) * (r + 40 + 10 * Math.sin(t * 3 + k))); g.stroke(); } ground('#2f6b3a'); }
-    if (i === 2) { ground('#4f9a3f'); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 4; for (let k = 0; k < 9; k++) { const y = 120 + k * 40, x = ((t * 160 + k * 97) % (W + 200)) - 100; g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + 40, y - 14, x + 80, y + 14, x + 130, y); g.stroke(); }
-      for (let k = 0; k < 3; k++) { const a = -PI / 2 + (k - 1) * 0.75, bx = c + Math.cos(a) * R * 0.62, byy = c + Math.sin(a) * R * 0.62 + 120; g.save(); g.translate(bx, byy); g.strokeStyle = '#f4f6f8'; g.lineWidth = 7; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -110); g.stroke(); g.lineWidth = 9; const r0 = t * 3 + k; for (let m = 0; m < 3; m++) { const q = r0 + m * 2.094; g.beginPath(); g.moveTo(0, -110); g.lineTo(Math.cos(q) * 62, -110 + Math.sin(q) * 62); g.stroke(); } g.restore(); } }
-    if (i === 3) { ground('#4f9a3f'); g.fillStyle = '#eef3f7'; for (const [x, y, r] of [[170, 150, 60], [230, 130, 72], [300, 150, 58], [360, 165, 48]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
-      g.strokeStyle = 'rgba(90,170,240,.9)'; g.lineWidth = 3; for (let k = 0; k < 40; k++) { const x = 140 + (k * 53) % 260, y = 210 + ((t * 220 + k * 37) % 170); g.beginPath(); g.moveTo(x, y); g.lineTo(x - 4, y + 14); g.stroke(); }
-      g.fillStyle = '#2f86c8'; g.beginPath(); g.moveTo(80, 470); g.quadraticCurveTo(280, 380, 480, 470); g.lineTo(480, 520); g.lineTo(80, 520); g.fill(); g.fillStyle = '#9a948a'; g.fillRect(180, 400, 200, 34); g.fillStyle = '#bfe9fb'; for (let k = 0; k < 4; k++) g.fillRect(200 + k * 46, 434, 18, 24 + 10 * Math.sin(t * 6 + k)); }
-    if (i === 4) { ground('#4f9a3f'); const s = Math.min(1, u * 1.6); g.fillStyle = '#6b4a2f'; g.fillRect(c - 10, c + 160 - 150 * s, 20, 150 * s); g.fillStyle = '#4f9a3f'; for (const [dx, dy, r] of [[0, -40, 70], [-56, 0, 52], [56, 0, 52], [0, 20, 60]]) { g.beginPath(); g.arc(c + dx * s, c + 10 + dy * s - 150 * s + 150, r * s, 0, 7); g.fill(); }
-      g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(c + 150, c - 150, 40, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,214,90,.7)'; g.lineWidth = 5; g.setLineDash([10, 12]); g.lineDashOffset = -t * 40; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(c + 120, c - 120 + k * 20); g.lineTo(c + 30, c - 20 + k * 20); g.stroke(); } g.setLineDash([]); }
-    if (i === 5) { star(1); const cols = ['#6a2c91', '#e6007e', '#1fb5ad', '#8cc63f', '#ffc93c']; cols.forEach((cl, k) => { g.strokeStyle = cl; g.lineWidth = 12; g.beginPath(); g.arc(c, c, (60 + k * 30) * Math.min(1, u * 3), 0, 7); g.stroke(); }); g.fillStyle = '#fff7e6'; g.font = '34px "Lilita One","Arial Black",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ENERGIMUNDO', c, c); }
+    const star = (a, k = 1) => { for (const [ang, r, s, ph] of this.stars) { const q = ang + t * 0.05 * k; g.fillStyle = `rgba(255,255,255,${a * (0.5 + 0.5 * Math.sin(t * 2 + ph))})`; g.fillRect(c + Math.cos(q) * r * R - s / 2, c + Math.sin(q) * r * R - s / 2, s, s); } };
+    const cal = (day, mon) => { g.fillStyle = 'rgba(255,255,255,.92)'; g.fillRect(c - 46, 40, 92, 84); g.fillStyle = '#e5484d'; g.fillRect(c - 46, 40, 92, 24); T(mon, c, 53, 16, '#ffffff'); T(day, c, 96, 40, '#1b2b4a'); };
+    if (i === 0) { star(1); for (let m = 0; m < 12; m++) { const a = -P / 2 + m * P / 6 + t * 0.1, on = m <= Math.floor(u * 12); g.fillStyle = on ? '#ffd23f' : 'rgba(255,255,255,.25)'; g.beginPath(); g.arc(c + Math.cos(a) * 150, c + Math.sin(a) * 150, 13, 0, 7); g.fill(); } T('EL UNIVERSO', c, c - 18, 34); T('EN UN AÑO', c, c + 22, 34, '#ffd23f'); }
+    if (i === 1) { const r = 10 + u * 230; for (let k = 6; k >= 0; k--) { const rr = r * (0.35 + k * 0.11); g.fillStyle = `rgba(${255},${200 - k * 20},${120 + k * 15},${0.12 + (6 - k) * 0.05})`; g.beginPath(); g.arc(c, c, rr, 0, 7); g.fill(); } g.fillStyle = '#ffffff'; g.beginPath(); g.arc(c, c, 14 + 20 * (1 - u), 0, 7); g.fill(); star(u, 3); cal('1', 'ENERO'); }
+    if (i === 2) { star(0.8); g.save(); g.translate(c, c + 20); g.rotate(t * 0.25); for (let arm = 0; arm < 2; arm++) for (let k = 0; k < 220; k++) { const a = arm * P + k * 0.05, r = 12 + k * 0.95, x = Math.cos(a) * r, y = Math.sin(a) * r * 0.62; g.fillStyle = `rgba(${200 + (k % 3) * 20},${190 + (k % 5) * 10},255,${0.95 - k / 300})`; const s2 = 3 + (k % 4 === 0 ? 2 : 0); g.fillRect(x + Math.sin(k * 7) * 9, y + Math.cos(k * 5) * 7, s2, s2); } g.fillStyle = 'rgba(255,240,200,.9)'; g.beginPath(); g.ellipse(0, 0, 30, 19, 0, 0, 7); g.fill(); g.restore(); T('VÍA LÁCTEA', c, c + 190, 24, '#cfe0ff'); }
+    if (i === 3) { star(0.6); g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(c, c, 40, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2; for (const r of [80, 120, 170]) { g.beginPath(); g.arc(c, c, r, 0, 7); g.stroke(); } [[80, '#c9a37a', 1.6, 6], [120, '#2f86c8', 1.0, 11], [170, '#d0603a', 0.7, 8]].forEach(([r, col, sp, sz], k) => { const a = t * sp + k * 2; g.fillStyle = col; g.beginPath(); g.arc(c + Math.cos(a) * r, c + Math.sin(a) * r, sz, 0, 7); g.fill(); if (k === 1) { g.fillStyle = '#57e389'; g.beginPath(); g.arc(c + Math.cos(a) * r - 3, c + Math.sin(a) * r - 2, 4, 0, 7); g.fill(); } }); cal('1', 'SEPTIEMBRE'); }
+    if (i === 4) { for (let k = 0; k < 7; k++) { g.strokeStyle = `rgba(255,255,255,${0.08 + k * 0.02})`; g.lineWidth = 3; g.beginPath(); for (let x = 0; x <= W; x += 10) { const y = 120 + k * 50 + Math.sin(x * 0.02 + t * 1.5 + k) * 10; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+      for (let k = 0; k < 14; k++) { const x = c + Math.cos(k * 2.3 + t * 0.3) * (60 + (k * 37) % 150), y = c + Math.sin(k * 1.7 + t * 0.4) * (50 + (k * 29) % 140), r = 7 + (k % 4) * 3; g.fillStyle = 'rgba(140,230,160,.55)'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.fillStyle = 'rgba(30,110,60,.8)'; g.beginPath(); g.arc(x + 1, y - 1, r * 0.35, 0, 7); g.fill(); } cal('25', 'SEPTIEMBRE'); }
+    if (i === 5) { g.fillStyle = '#3f6b2f'; g.beginPath(); g.arc(c, c + 330, 300, 0, 7); g.fill(); const x0 = c - 120 + u * 120, y0 = c + 70;
+      g.fillStyle = '#2d4a22'; g.beginPath(); g.ellipse(x0, y0, 70, 34, 0, 0, 7); g.fill(); g.beginPath(); g.moveTo(x0 + 50, y0 - 14); g.quadraticCurveTo(x0 + 110, y0 - 110, x0 + 140, y0 - 120); g.lineTo(x0 + 150, y0 - 104); g.quadraticCurveTo(x0 + 110, y0 - 80, x0 + 70, y0 + 4); g.fill(); g.beginPath(); g.moveTo(x0 - 60, y0); g.quadraticCurveTo(x0 - 130, y0 - 10, x0 - 160, y0 + 30); g.lineTo(x0 - 60, y0 + 20); g.fill(); for (const dx of [-38, -12, 18, 42]) g.fillRect(x0 + dx, y0 + 20, 12, 38);
+      if (u > 0.55) { const k = (u - 0.55) / 0.45, mx = c + 200 - k * 260, my = 40 + k * 220; g.strokeStyle = 'rgba(255,190,80,.8)'; g.lineWidth = 10; g.beginPath(); g.moveTo(mx + 60, my - 60); g.lineTo(mx, my); g.stroke(); g.fillStyle = '#ffdd88'; g.beginPath(); g.arc(mx, my, 12, 0, 7); g.fill(); } cal(u > 0.6 ? '30' : '25', 'DICIEMBRE'); }
+    if (i === 6) { g.fillStyle = '#2d3a28'; g.fillRect(0, c + 90, W, W); for (let k = 0; k < 4; k++) { const x = c - 120 + k * 70, y = c + 90; g.fillStyle = '#1b1410'; g.beginPath(); g.arc(x, y - 66, 12, 0, 7); g.fill(); g.fillRect(x - 9, y - 54, 18, 40); g.fillRect(x - 8, y - 14, 6, 26); g.fillRect(x + 2, y - 14, 6, 26); }
+      const fx = c + 150, fy = c + 90; for (let k = 0; k < 5; k++) { g.fillStyle = ['#ffd23f', '#ff8a2a', '#e5484d'][k % 3]; g.beginPath(); g.moveTo(fx - 22 + k * 9, fy); g.quadraticCurveTo(fx - 18 + k * 9, fy - 40 - 20 * Math.abs(Math.sin(t * 6 + k)), fx - 8 + k * 9, fy); g.fill(); } T('23:48', c, 92, 34, '#ffd23f'); T('31 DE DICIEMBRE', c, 128, 18); }
+    if (i === 7) { g.fillStyle = '#4a4040'; g.fillRect(0, c + 80, W, W); for (let k = 0; k < 4; k++) { const x = c - 150 + k * 95; g.fillStyle = '#2a2224'; g.fillRect(x, c + 10, 60, 70); g.fillRect(x + 36, c - 50, 14, 60); for (let p = 0; p < 6; p++) { const s = (t * 0.6 + p * 0.33 + k * 0.2) % 2, r = 10 + s * 22; g.fillStyle = `rgba(90,90,95,${0.55 - s * 0.25})`; g.beginPath(); g.arc(x + 43 + s * 30, c - 60 - s * 90, r, 0, 7); g.fill(); } }
+      g.fillStyle = `rgba(229,72,77,${0.25 + 0.2 * Math.sin(t * 2)})`; g.beginPath(); g.arc(c, c, R, 0, 7); g.fill(); T('23:59:59', c, 92, 34, '#ffd23f'); }
+    if (i === 8) { g.fillStyle = '#2f86c8'; g.beginPath(); g.arc(c, c + 30, 120, 0, 7); g.fill(); g.fillStyle = '#57b85a'; for (const [x, y, rx, ry] of [[-40, -30, 46, 30], [40, 20, 38, 50], [-20, 60, 30, 18]]) { g.beginPath(); g.ellipse(c + x, c + 30 + y, rx, ry, 0.4, 0, 7); g.fill(); }
+      g.strokeStyle = '#ffffff'; g.lineWidth = 5; g.beginPath(); g.moveTo(c + 70, c - 70); g.lineTo(c + 70, c - 140); g.stroke(); g.lineWidth = 7; for (let k = 0; k < 3; k++) { const a = t * 2.5 + k * 2.094; g.beginPath(); g.moveTo(c + 70, c - 140); g.lineTo(c + 70 + Math.cos(a) * 34, c - 140 + Math.sin(a) * 34); g.stroke(); }
+      g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(c - 110, c - 120, 26, 0, 7); g.fill(); const cols = ['#6a2c91', '#e6007e', '#1fb5ad', '#8cc63f', '#ffc93c']; cols.forEach((cl, k) => { g.strokeStyle = cl; g.lineWidth = 6; g.beginPath(); g.arc(c, c + 30, 150 + k * 9, -P * 0.95 + k * 0.2, -P * 0.95 + k * 0.2 + P * 0.9 * Math.min(1, u * 2)); g.stroke(); }); T('CUIDEMOS LA CASA COMÚN', c, c + 200, 22); }
     g.restore(); g.globalAlpha = 1;
     // borde de la cúpula con los gajos del domo
-    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1.5; for (let k = 0; k < 15; k++) { const a = k * 2 * PI / 15; g.beginPath(); g.moveTo(c, c); g.lineTo(c + Math.cos(a) * R, c + Math.sin(a) * R); g.stroke(); }
+    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1.5; for (let k = 0; k < 15; k++) { const a = k * 2 * P / 15; g.beginPath(); g.moveTo(c, c); g.lineTo(c + Math.cos(a) * R, c + Math.sin(a) * R); g.stroke(); }
     for (const r of [0.33, 0.62, 0.86]) { g.beginPath(); g.arc(c, c, R * r, 0, 7); g.stroke(); }
     g.strokeStyle = '#26262b'; g.lineWidth = 8; g.beginPath(); g.arc(c, c, R, 0, 7); g.stroke();
   }

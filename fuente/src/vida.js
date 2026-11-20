@@ -5,9 +5,9 @@ import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
-const NAR = [73, -76], TER = [91.5, -73], TERMICA = [28, 54], FAM = [-34, -18.5];
+const NAR = [73, -76], TER = [91.5, -73], TERMICA = [33, 52], FAM = [-34, -18.5];
 // Claros donde no se plantan árboles del monte (naranjal, termas, central térmica)
-export const CLEAR = [[61, 86, -89, -62], [79, 104, -85, -61], [18, 38, 44, 64]];
+export const CLEAR = [[61, 86, -89, -62], [79, 104, -85, -61], [24, 42, 42, 62]];
 
 const slab = (w, cx, cz, sx, sz, color) => {
   let lo = 1e9, hi = -1e9;
@@ -54,9 +54,9 @@ export function buildSalto(w) {
     }
   });
   // ---------- Casas del barrio donde Capi cambia lamparitas por LED ----------
-  [[5, 41], [13, 49], [-3, 57]].forEach(([hx, hz], i) => { const h = w.houses.find(q => Math.abs(q.x - hx) < 2 && Math.abs(q.z - hz) < 2); if (h) w.addInter('led:' + i, h.x, h.z + h.d / 2 + 1.3, { console: false, h: 4.3, r: 3 }); });
+  [[-28, 114], [-20, 122], [-36, 130]].forEach(([hx, hz], i) => { const h = w.houses.find(q => Math.abs(q.x - hx) < 2 && Math.abs(q.z - hz) < 2); if (h) w.addInter('led:' + i, h.x, h.z + h.d / 2 + 1.3, { console: false, h: 4.3, r: 3 }); });
   // ---------- Homenaje junto a la represa ----------
-  sign(w, 'HOMENAJE A SALTO GRANDE', 35.5, w.groundAt(35.5, -38), -38, 0.25, 7.6, 1.2, { bg: '#12325a', border: '#5ad1ff' });
+  sign(w, 'HOMENAJE A SALTO GRANDE', -55, w.groundAt(-55, -107.5), -107.5, 0, 7.6, 1.2, { bg: '#12325a', border: '#5ad1ff' });
 }
 
 const tri = pts => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.computeVertexNormals(); return g; };
@@ -101,11 +101,11 @@ export class Vida {
       const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 5.4, 5), new THREE.MeshStandardMaterial({ color: 0x7b6a55 })); mast.position.set(0, 3.1, 0.3); g.add(mast);
       g.add(new THREE.Mesh(tri([0, 0.95, 0.15, 0, 5.6, 0.25, 0, 0.95, -2.5]), S)); g.add(new THREE.Mesh(tri([0, 0.95, 0.5, 0, 4.6, 0.4, 0, 0.95, 2.7]), Cm));
       g.traverse(o => { if (o.isMesh) o.castShadow = true; }); sc.add(g); return g; };
-    this.boats = [[-66, 112, 34, 6, 0xe6007e, 0.5], [46, 121, 36, 6, 0x2ed3c6, 2.6], [92, 112, 18, 4.5, 0xffc420, 4.4]].map(([cx, cz, rx, rz, col, a], i) => ({ g: boat(col), cx, cz, rx, rz, a, sp: (i % 2 ? -1 : 1) * (1.6 + i * 0.3), i }));
+    this.boats = [[-124, 14, 6, 34, 0xe6007e, 0.5], [-126, 128, 7, 40, 0x2ed3c6, 2.6], [-142, -128, 30, 8, 0xffc420, 4.4]].map(([cx, cz, rx, rz, col, a], i) => ({ g: boat(col), cx, cz, rx, rz, a, y: w.waterAt(cx, cz), sp: (i % 2 ? -1 : 1) * (1.6 + i * 0.3), i }));
     // ---------- Luciérnagas y reflejos de estrellas en el agua ----------
     this.flies = []; for (const [fx, fz, r, k] of [[FAM[0], FAM[1], 13, 12], [NAR[0], NAR[1], 11, 8], [-44, 44, 13, 8], [34, 27, 9, 6]]) for (let i = 0; i < k; i++) { const a = R() * 6.283, d = Math.sqrt(R()) * r, x = fx + Math.cos(a) * d, z = fz + Math.sin(a) * d; this.flies.push({ x, z, y: Math.max(w.groundAt(x, z), w.waterAt(x, z)) + 0.9 + R() * 1.3, ph: R() * 6.283, sp: 0.6 + R() * 0.8 }); }
-    this.glints = []; for (let i = 0; i < 46; i++) this.glints.push({ x: lerp(-122, 106, R()), z: lerp(98, 123, R()), y: 0.06, ph: R() * 6.283 });
-    for (let i = 0; i < 60 && this.glints.length < 62; i++) { const x = lerp(-30, 30, R()), z = lerp(-100, -60, R()); if (w.waterAt(x, z) === RES && w.terrainAt(x, z) < RES - 0.6) this.glints.push({ x, z, y: RES + 0.06, ph: R() * 6.283 }); }
+    this.glints = []; for (let i = 0; i < 46; i++) this.glints.push({ x: lerp(-152, -95, R()), z: lerp(-88, 204, R()), y: 0.06, ph: R() * 6.283 });
+    for (let i = 0; i < 60 && this.glints.length < 62; i++) { const x = lerp(-185, -95, R()), z = lerp(-148, -106, R()); if (w.waterAt(x, z) === RES && w.terrainAt(x, z) < RES - 0.6) this.glints.push({ x, z, y: RES + 0.06, ph: R() * 6.283 }); }
     // ---------- Arcoíris ----------
     this.rainbow = new THREE.Mesh(new THREE.PlaneGeometry(96, 48).translate(0, 24, 0), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide, fog: false, uniforms: { uA: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -119,12 +119,12 @@ export class Vida {
     this.mistMats = [0.62, 0.42].map(o => new THREE.MeshBasicMaterial({ map: mtex, color: 0xf2f6f8, transparent: true, opacity: 0, depthWrite: false, fog: false, userData: { o } }));
     const pg = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), wet = (x, z) => w.terrainAt(x, z) < w.waterAt(x, z) - 0.25;
     this.mist = []; const bank = (x, z, sx, sz, layer) => { if (!wet(x, z)) return; const m = new THREE.Mesh(pg, this.mistMats[layer]); const y = w.waterAt(x, z) + 0.45 + layer * 0.9; m.position.set(x, y, z); m.scale.set(sx, 1, sz); m.rotation.y = R() * 6.283; m.renderOrder = 8; m.visible = false; sc.add(m); this.mist.push({ m, hx: x, hz: z, ph: R() * 6.283, sp: 0.6 + R() * 0.8 }); };
-    for (let i = 0; i < 26; i++) for (const L of [0, 1]) bank(lerp(-118, 100, R()), lerp(96, 121, R()), 18 + R() * 16, 10 + R() * 8, L);   // el río frente a la rambla
+    for (let i = 0; i < 26; i++) for (const L of [0, 1]) bank(lerp(-150, -96, R()), lerp(-86, 204, R()), 10 + R() * 8, 18 + R() * 16, L);   // el río Uruguay frente a la costanera
     for (let s = 0; s < CHANNEL.length - 1; s++) { const [ax, az] = CHANNEL[s], [bx, bz] = CHANNEL[s + 1], n = Math.max(2, Math.round(Math.hypot(bx - ax, bz - az) / 9)); for (let k = 0; k < n; k++) { const t = (k + R() * 0.6) / n; for (const L of [0, 1]) bank(lerp(ax, bx, t) + (R() - 0.5) * 6, lerp(az, bz, t) + (R() - 0.5) * 5, 14 + R() * 10, 9 + R() * 6, L); } }
-    for (let i = 0; i < 16; i++) bank(lerp(-26, 26, R()), lerp(-104, -60, R()), 16 + R() * 12, 10 + R() * 8, i % 2);   // el embalse
+    for (let i = 0; i < 16; i++) bank(lerp(-185, -98, R()), lerp(-146, -108, R()), 16 + R() * 12, 10 + R() * 8, i % 2);   // el lago de Salto Grande
   }
 
-  // sky: arco vertical sobre el embalse (tomas con horizonte). Si no, acompaña a la cámara y se ve desde arriba.
+  // sky: arco vertical sobre el lago (tomas con horizonte). Si no, acompaña a la cámara y se ve desde arriba.
   showRainbow(t = 55, sky = false) { this.rainbowT = t; this.rainbowMax = t; this.rainbowSky = sky; this.rbInit = true; }
 
   update(dt, st) {
@@ -159,10 +159,10 @@ export class Vida {
     }
     // Veleros
     for (const b of this.boats) {
-      b.a += b.sp * dt / b.rx; const x = b.cx + Math.cos(b.a) * b.rx, z = b.cz + Math.sin(b.a) * b.rz, s = Math.sign(b.sp);
-      b.g.position.set(x, -0.12 + Math.sin(t * 1.3 + b.i * 2) * 0.09, z); b.g.rotation.set(Math.sin(t * 1.1 + b.i) * 0.04, Math.atan2(-Math.sin(b.a) * b.rx * s, Math.cos(b.a) * b.rz * s), 0.09 + Math.sin(t * 0.8 + b.i * 1.7) * 0.05);
-      if (Math.random() < 5 * dt) st.fx.soft.emit(x + (Math.random() - 0.5) * 0.8, 0.08, z + (Math.random() - 0.5) * 0.8, 0, 0.05, 0, 1.3, 0.35, 1.0, 0xffffff, 0.5, 0, 1);
-      if (night > 0.4) st.fx.glow.sprite(x, 5.7, z, 1.3, 0xffd98a, 0.8 * night);
+      b.a += b.sp * dt / Math.max(b.rx, b.rz); const x = b.cx + Math.cos(b.a) * b.rx, z = b.cz + Math.sin(b.a) * b.rz, s = Math.sign(b.sp);
+      b.g.position.set(x, b.y - 0.12 + Math.sin(t * 1.3 + b.i * 2) * 0.09, z); b.g.rotation.set(Math.sin(t * 1.1 + b.i) * 0.04, Math.atan2(-Math.sin(b.a) * b.rx * s, Math.cos(b.a) * b.rz * s), 0.09 + Math.sin(t * 0.8 + b.i * 1.7) * 0.05);
+      if (Math.random() < 5 * dt) st.fx.soft.emit(x + (Math.random() - 0.5) * 0.8, b.y + 0.08, z + (Math.random() - 0.5) * 0.8, 0, 0.05, 0, 1.3, 0.35, 1.0, 0xffffff, 0.5, 0, 1);
+      if (night > 0.4) st.fx.glow.sprite(x, b.y + 5.7, z, 1.3, 0xffd98a, 0.8 * night);
     }
     // Noche: luciérnagas y estrellas reflejadas
     if (night > 0.45 && storm < 0.5) {

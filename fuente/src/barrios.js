@@ -1,14 +1,14 @@
-// Ciudad ampliada: Barrio Norte y costanera, edificios con aire salteño, puerto con faro y lancha,
-// la otra orilla y el Barrio Jardín de casas solares. Todo se arma con lotes fusionados para no cargar la PC.
+// Ciudad ampliada: Barrio Norte y costanera, Teatro Larrañaga, puerto con faro y lancha sobre el río Uruguay,
+// Concordia en la otra orilla y el Barrio Jardín de casas solares. Todo se arma con lotes fusionados para no cargar la PC.
 import * as THREE from 'three';
-import { POS, CITY_Y, B, terrainH, farD } from './terrain.js';
+import { POS, CITY_Y, B, terrainH, farD, westBank } from './terrain.js';
 import { C, Batch, textTex, canvasTex } from './world.js';
 import { sign, flag, building, PAL } from './sectors.js';
 import { rng, clamp, lerp } from './util.js';
 
 const Y = 2.2;
 // Rectángulos donde la flora al azar no debe plantar (edificios nuevos)
-export const CLEAR3 = [[-84, -8, -9, 12], [-17, 5, -22, -7], [4, 46, -34, 10], [-12, 40, 66, 90], [-160, 130, 140, 178]];
+export const CLEAR3 = [[-84, -8, -9, 12], [-17, 5, -22, -7], [4, 46, -34, 10], [-38, -16, 98, 134]];
 
 // Prismas y cúpulas ya orientados (se escalan en x, y, z del mundo)
 const TRI_Z = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2);   // techo a dos aguas, cumbrera a lo largo de z
@@ -73,7 +73,7 @@ function norte(w, R) {
   for (let x = -76; x < -11; x += 3.2) b.boxB(x, 2.1, -1, 1.4, 0.02, 0.14, 0xe9e2c8);
   // baranda sobre el río, con bajadas a la orilla y la salida al puente
   wall(w, -83.4, -83.0, -7.8, 11);
-  wall(w, -83.4, -72, -7.95, -7.6); wall(w, -68.8, -49.4, -7.95, -7.6); wall(w, -42.2, -30, -7.95, -7.6); wall(w, -26.8, -10, -7.95, -7.6);
+  wall(w, -83.4, -73, -7.95, -7.6); wall(w, -67.8, -49.4, -7.95, -7.6); wall(w, -42.2, -31, -7.95, -7.6); wall(w, -25.4, -10, -7.95, -7.6);
   for (let x = -80; x <= -14; x += 8) { if (x > -50 && x < -40) continue; w.lamp(x, -7.45, 0, Y); }
   for (let x = -76; x <= -16; x += 12) { b.boxB(x, Y, -3.45, 2.2, 0.45, 0.6, C.wood); plant(w, 'palm', x + 6, -3.5, 0.9 + R() * 0.2, Y); }
   for (let x = -80; x <= -16; x += 7) { if (x > -51 && x < -40) continue; plant(w, R() < 0.7 ? 'ceibo' : 'native', x + (R() - 0.5) * 2, -10.6 - R() * 2.4, 0.85 + R() * 0.3); }
@@ -162,24 +162,34 @@ function mercado(w, cx, cz) {
 
 // ================= TEATRO Y CATEDRAL =================
 function teatro(w) {
-  const [cx, cz] = POS.teatro, cb = w.cityBatch, b = w.batch, col = 0xead7ae, trim = 0xfaf4e6, H = 7.6;
-  const x0 = cx - 5.4, x1 = cx + 5.4, z0 = cz - 4.6, z1 = cz + 3.8;
-  cb.boxB(cx, Y, (z0 + z1) / 2, 10.8, H, z1 - z0, col); cb.boxB(cx, Y, (z0 + z1) / 2, 11, 0.7, z1 - z0 + 0.2, 0xb9a47a);
-  cb.boxB(cx, Y + H, (z0 + z1) / 2, 11.2, 0.4, z1 - z0 + 0.4, trim); cb.boxB(cx, Y + H + 0.4, cz - 1, 7.4, 1.3, 5.4, col); cb.boxB(cx, Y + H + 1.7, cz - 1, 7.7, 0.2, 5.7, trim);
-  // pórtico de columnas con frontón
-  const zp = z1 + 0.9;
-  b.boxB(cx, Y, zp - 0.25, 10.4, 0.3, 2.2, 0xe6dccb);
-  for (let i = 0; i < 6; i++) { const x = cx - 4.5 + i * 1.8; b.cyl(x, Y + 0.3, zp, 0.3, 0.34, 4.9, trim, 10); b.boxB(x, Y + 0.3, zp, 0.8, 0.22, 0.8, trim); b.boxB(x, Y + 5.0, zp, 0.78, 0.25, 0.78, trim); w.addCircle(x, zp, 0.35); }
-  cb.boxB(cx, Y + 5.25, zp - 0.2, 10.6, 1.0, 2.0, trim); cb.boxB(cx, Y + 6.25, zp - 0.2, 10.9, 0.18, 2.2, 0xd8c79f);
-  gable(cb, cx, Y + 6.43, zp - 0.2, 10.9, 1.8, 2.2, col);
-  cb.add(new THREE.CircleGeometry(0.5, 14), 0xb9a47a, cx, Y + 7.0, zp + 0.92, 1, 1, 1, 0, 0, 0, 0);
-  plaque(w, 'TEATRO', cx, Y + 5.75, zp + 0.82, 0, 4.4, 0.72, { bg: '#7a1f2b', fg: '#ffe9a8', border: '#e8c66a', glow: 0.45 });
-  // puertas y ventanas en arco
-  for (let i = 0; i < 3; i++) b.boxB(cx - 2.4 + i * 2.4, Y + 0.3, z1 + 0.04, 1.2, 2.6, 0.08, 0x5a2a1e);
-  for (const fx of [-1, 1]) for (let i = 0; i < 3; i++) { const z = z0 + 1.6 + i * 2.6; w.winBatch[1].add(new THREE.PlaneGeometry(0.9, 2.0), 0xffffff, cx + fx * 5.45, Y + 4.4, z, 1, 1, 1, 0, fx * Math.PI / 2, 0, 0); }
-  for (let i = -2; i <= 2; i++) w.winBatch[1].add(new THREE.PlaneGeometry(0.8, 1.5), 0xffffff, cx + i * 2.0, Y + 6.1, z1 + 0.04, 1, 1, 1, 0, 0, 0, 0);
-  for (const sx of [-1, 1]) { b.cyl(cx + sx * 5.0, Y + 0.3, zp + 0.5, 0.08, 0.1, 2.4, 0x2a2a2e, 6); b.sph(cx + sx * 5.0, Y + 2.85, zp + 0.5, 0.24, 0xffe8a8); w.addCircle(cx + sx * 5.0, zp + 0.5, 0.15); }
-  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 1.9); w.addOcc(cx - 5.3, cx + 5.3, zp - 1.2, zp + 0.8, Y + 8.2);
+  // Teatro Larrañaga (1882): ocupa toda su manzana y mira al sur, a la Plaza Artigas. Cuerpo neoclásico, pórtico de seis columnas,
+  // frontón con el nombre y, atrás, la caja escénica más alta.
+  const [cx, cz] = POS.teatro, cb = w.cityBatch, b = w.batch, col = 0xead7ae, trim = 0xfaf4e6, base = 0xb9a47a, H = 9.4;
+  const x0 = cx - 6.0, x1 = cx + 6.0, z0 = cz - 4.9, z1 = cz + 3.2;
+  cb.boxB(cx, Y, (z0 + z1) / 2, x1 - x0, H, z1 - z0, col); cb.boxB(cx, Y, (z0 + z1) / 2, x1 - x0 + 0.2, 0.9, z1 - z0 + 0.2, base);
+  cb.boxB(cx, Y + H, (z0 + z1) / 2, x1 - x0 + 0.4, 0.45, z1 - z0 + 0.4, trim);
+  for (const k of [-1, 1]) cb.boxB(cx + k * 5.75, Y + 0.9, (z0 + z1) / 2, 0.5, H - 0.9, z1 - z0 + 0.12, trim);   // pilastras de esquina
+  cb.boxB(cx, Y + 4.6, (z0 + z1) / 2, x1 - x0 + 0.14, 0.22, z1 - z0 + 0.14, trim);                         // cornisa intermedia
+  // caja escénica (detrás) y cúpula baja de la sala
+  cb.boxB(cx, Y + H + 0.45, z0 + 2.3, 9.4, 3.4, 4.0, col); cb.boxB(cx, Y + H + 3.85, z0 + 2.3, 9.8, 0.3, 4.4, trim);
+  cb.cyl(cx, Y + H + 0.45, cz + 0.4, 2.6, 2.8, 0.7, trim, 16); cb.add(DOME, 0x9fb7b0, cx, Y + H + 1.15, cz + 0.4, 2.55, 1.2, 2.55);
+  // pórtico de columnas con frontón y escalinata
+  const zp = z1 + 1.15;
+  b.boxB(cx, Y, zp - 0.05, 12.4, 0.25, 2.6, 0xe6dccb); b.boxB(cx, Y, zp + 1.25, 11.0, 0.12, 0.9, 0xe6dccb);
+  for (let i = 0; i < 6; i++) { const x = cx - 5.0 + i * 2.0; b.cyl(x, Y + 0.25, zp, 0.34, 0.38, 6.1, trim, 10); b.boxB(x, Y + 0.25, zp, 0.9, 0.25, 0.9, trim); b.boxB(x, Y + 6.35, zp, 0.86, 0.28, 0.86, trim); w.addCircle(x, zp, 0.4); }
+  cb.boxB(cx, Y + 6.63, zp - 0.3, 12.0, 1.2, 2.3, trim); cb.boxB(cx, Y + 7.83, zp - 0.3, 12.3, 0.2, 2.5, 0xd8c79f);
+  gable(cb, cx, Y + 8.03, zp - 0.3, 12.3, 2.1, 2.5, col);
+  cb.add(new THREE.CircleGeometry(0.55, 14), base, cx, Y + 8.75, zp + 0.97, 1, 1, 1, 0, 0, 0, 0);
+  plaque(w, 'TEATRO LARRAÑAGA', cx, Y + 7.25, zp + 0.88, 0, 6.6, 0.8, { bg: '#7a1f2b', fg: '#ffe9a8', border: '#e8c66a', glow: 0.5 });
+  // puertas, balcón y ventanas en arco
+  for (let i = 0; i < 3; i++) b.boxB(cx - 3 + i * 3, Y + 0.25, z1 + 0.04, 1.4, 3.0, 0.08, 0x5a2a1e);
+  b.boxB(cx, Y + 4.4, z1 + 0.35, 8.4, 0.16, 0.7, trim); for (let x = cx - 4; x <= cx + 4; x += 0.5) b.boxB(x, Y + 4.56, z1 + 0.66, 0.06, 0.7, 0.06, trim);
+  for (let i = -1; i <= 1; i++) { w.winBatch[1].add(new THREE.PlaneGeometry(1.1, 2.0), 0xffffff, cx + i * 3, Y + 5.8, z1 + 0.04, 1, 1, 1, 0, 0, 0, 0); w.winBatch[1].add(new THREE.CircleGeometry(0.55, 10, 0, Math.PI), 0xffffff, cx + i * 3, Y + 6.8, z1 + 0.04, 1, 1, 1, 0, 0, 0, 0); }
+  for (const fx of [-1, 1]) for (let i = 0; i < 3; i++) { const z = z0 + 1.6 + i * 2.5; w.winBatch[1].add(new THREE.PlaneGeometry(0.9, 2.0), 0xffffff, cx + fx * 6.05, Y + 5.8, z, 1, 1, 1, 0, fx * Math.PI / 2, 0, 0); w.winBatch[1].add(new THREE.PlaneGeometry(0.9, 1.4), 0xffffff, cx + fx * 6.05, Y + 2.3, z, 1, 1, 1, 0, fx * Math.PI / 2, 0, 0); }
+  for (const sx of [-1, 1]) { const x = cx + sx * 6.3, z = zp + 1.4; b.cyl(x, Y, z, 0.08, 0.1, 2.6, 0x2a2a2e, 6); b.sph(x, Y + 3.0, z, 0.26, 0xffe8a8); w.addCircle(x, z, 0.15); }
+  // cartelera de funciones
+  plaque(w, 'HOY · FUNCIÓN 20:30', cx + 4.5, Y + 1.7, z1 + 0.1, 0, 1.9, 0.5, { bg: '#2a1a12', fg: '#ffd166', border: '#e8c66a', glow: 0.6 });
+  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 4.2); w.addOcc(cx - 6.2, cx + 6.2, zp - 1.4, zp + 0.9, Y + 10.2);
 }
 
 function catedral(w) {
@@ -230,51 +240,80 @@ function cancha(w) {
   w.dyn.cancha = { cx, cz, y, W, D };
 }
 
-// ================= PUERTO, FARO Y COSTANERA ESTE =================
+// ================= PUERTO DE SALTO, PUERTO DEPORTIVO Y FARO (costanera oeste, sobre el río Uruguay) =================
 function puerto(w, R) {
-  const b = w.batch, [px, pz] = POS.puerto, Mu = POS.muelle, gy = w.terrainAt(px, pz);
-  // costanera este: vereda con farolas y palmeras entre la terminal de ómnibus y el puerto
-  b.boxB(15, gy - 0.4, 74, 50, 0.52, 2.4, C.granite); w.addPlatform(-10, 40, 72.8, 75.2, gy + 0.12);
-  for (let x = -8; x <= 38; x += 4) b.boxB(x, gy + 0.12, 74, 0.12, 0.02, 2.3, 0xc38e80);
-  for (let x = -6; x <= 38; x += 11) w.lamp(x, 75.4, Math.PI, gy);
-  for (const x of [-9, 40.5]) plant(w, 'palm', x, 76.2, 1.0);
+  const b = w.batch, [px, pz] = POS.puerto, Mu = POS.muelle, gy = Y, cb = w.cityBatch;
+  // explanada del puerto: un muelle de piedra que se mete en el río a la altura de la costanera
+  const DX0 = -96, DX1 = -83.4, DZ0 = 38, DZ1 = 60;
+  b.boxB((DX0 + DX1) / 2, -3, (DZ0 + DZ1) / 2, DX1 - DX0, 5.2, DZ1 - DZ0, 0xb9b1a2); b.boxB((DX0 + DX1) / 2, 2.2, (DZ0 + DZ1) / 2, DX1 - DX0 + 0.2, 0.02, DZ1 - DZ0 + 0.2, C.granite);
+  w.addPlatform(DX0, DX1, DZ0, DZ1, CITY_Y);
+  for (let z = DZ0 + 2; z < DZ1; z += 4) b.boxB(DX0 + 6, gy, z, 12, 0.02, 0.14, 0xc38e80);
+  // baranda del borde, con la boca del muelle de pasajeros
+  const rail = (x0, x1, z0, z1) => { b.boxB((x0 + x1) / 2, gy, (z0 + z1) / 2, x1 - x0, 0.9, z1 - z0, 0x3d4650); w.addSolid(x0, x1, z0, z1, gy + 0.95); };
+  rail(DX0, DX0 + 0.12, DZ0, Mu.z - 1.8); rail(DX0, DX0 + 0.12, Mu.z + 1.8, DZ1); rail(DX0, -84, DZ0 - 0.12, DZ0); rail(DX0, -84, DZ1, DZ1 + 0.12);
+  for (const [x, z] of [[DX0 + 0.6, 40], [DX0 + 0.6, 55], [DX0 + 0.6, 58.6]]) { b.cyl(x, gy, z, 0.22, 0.26, 0.5, 0x2a2e34, 8); w.addCircle(x, z, 0.3); }   // bolardos
   // edificio del puerto con techo solar
-  const H = 3.6, cb = w.cityBatch;
+  const H = 3.6, x0 = px - 4.5, x1 = px + 4.5, z0 = pz - 2.5, z1 = pz + 2.5;
   cb.boxB(px, gy, pz, 9, H, 5, 0xf5f1e8); cb.boxB(px, gy + 2.3, pz, 9.06, 0.5, 5.06, C.celeste); cb.boxB(px, gy + H, pz, 9.4, 0.25, 5.4, 0xdad4c6);
   panels(b, px - 3.6, px + 3.6, pz - 1.6, pz + 1.2, gy + H + 0.25);
-  cb.boxB(px + 3.4, gy + H, pz + 1.4, 1.8, 1.8, 1.8, 0xf5f1e8); w.glassBatch.box(px + 3.4, gy + H + 1.2, pz + 1.4, 1.84, 0.7, 1.84, 0xffffff);
-  b.boxB(px - 1.5, gy, pz + 2.53, 1.4, 2.2, 0.08, 0x2c3e50); b.boxB(px + 1.5, gy, pz + 2.53, 1.4, 2.2, 0.08, 0x2c3e50);
-  for (const x of [px - 3.4, px + 1.2, px + 3.2]) w.winBatch[2].add(new THREE.PlaneGeometry(1.2, 0.9), 0xffffff, x, gy + 1.5, pz - 2.54, 1, 1, 1, 0, Math.PI, 0, 0);
-  w.addSolid(px - 4.5, px + 4.5, pz - 2.5, pz + 2.5); w.addOcc(px - 4.5, px + 4.5, pz - 2.5, pz + 2.5, gy + H + 2);
-  plaque(w, 'PUERTO · LANCHA A LA OTRA ORILLA', px, gy + 3.0, pz + 2.6, 0, 7.6, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
-  plaque(w, 'PUERTO DE SALTO', px - 1.0, gy + 3.0, pz - 2.6, Math.PI, 5.2, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
-  b.boxB(px - 1.0, gy, pz - 2.53, 1.6, 2.2, 0.08, 0x2c3e50);
-  flag(w, px + 6.2, gy, pz - 1.2, 2.4, 1.6, 7); w.addCircle(px + 6.2, pz - 1.2, 0.3);
-  // muelle de pasajeros: tablones sobre pilotes, baja suave desde la costa
-  const top = (x, z) => lerp(gy + 0.08, 1.35, clamp((z - 82) / 5, 0, 1));
-  w.addPlatform(Mu.x - 1.7, Mu.x + 1.7, Mu.z0, Mu.z1, top);
-  for (let z = Mu.z0; z < Mu.z1; z += 1) { const t0 = top(0, z), t1 = top(0, z + 1); b.box(Mu.x, (t0 + t1) / 2 - 0.15, z + 0.5, 3.4, 0.3, 1.02, (z % 2) ? C.wood : 0x7a5634, 0, -Math.atan2(t1 - t0, 1)); }
-  for (let z = 84; z <= Mu.z1; z += 4) for (const sx of [-1.55, 1.55]) b.cyl(Mu.x + sx, -2.6, z, 0.17, 0.17, 3.9, 0x6a4a2f, 6);
-  for (const sx of [-1, 1]) for (let z = 82; z <= Mu.z1 - 0.5; z += 2) { if (sx > 0 && z > 99) continue; b.boxB(Mu.x + sx * 1.62, top(0, z), z, 0.08, 1.0, 0.08, 0xf2efe8); }
-  for (const sx of [-1, 1]) { const zEnd = sx > 0 ? 99 : Mu.z1 - 0.5; const n = Math.ceil((zEnd - 82) / 1); for (let k = 0; k < n; k++) { const z = 82 + k, t0 = top(0, z), t1 = top(0, z + 1); b.box(Mu.x + sx * 1.62, (t0 + t1) / 2 + 0.98, z + 0.5, 0.07, 0.07, 1.02, 0xf2efe8, 0, -Math.atan2(t1 - t0, 1)); } w.addSolid(Mu.x + sx * 1.62 - 0.06, Mu.x + sx * 1.62 + 0.06, 82, zEnd, 3.0); }
+  cb.boxB(px - 3.4, gy + H, pz + 1.4, 1.8, 1.8, 1.8, 0xf5f1e8); w.glassBatch.box(px - 3.4, gy + H + 1.2, pz + 1.4, 1.84, 0.7, 1.84, 0xffffff);
+  b.boxB(px - 1.5, gy, z1 + 0.03, 1.4, 2.2, 0.08, 0x2c3e50); b.boxB(px + 1.5, gy, z1 + 0.03, 1.4, 2.2, 0.08, 0x2c3e50);
+  for (const z of [pz - 1.2, pz + 1.2]) w.winBatch[2].add(new THREE.PlaneGeometry(1.2, 0.9), 0xffffff, x1 + 0.04, gy + 1.5, z, 1, 1, 1, 0, Math.PI / 2, 0, 0);
+  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, gy + H + 2);
+  plaque(w, 'PUERTO · LANCHA A CONCORDIA', px, gy + 3.0, z1 + 0.1, 0, 7.6, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
+  plaque(w, 'PUERTO DE SALTO', x1 + 0.1, gy + 3.0, pz, Math.PI / 2, 4.6, 0.62, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
+  flag(w, -85.2, gy, 45.2, 2.4, 1.6, 7); w.addCircle(-85.2, 45.2, 0.3);
+  // muelle de pasajeros: tablones sobre pilotes hacia el oeste, baja suave desde la explanada
+  const MZ = Mu.z, top = (x) => lerp(gy + 0.02, 1.35, clamp((DX0 - x) / 5, 0, 1));
+  w.addPlatform(Mu.x1, Mu.x0 + 0.4, MZ - 1.7, MZ + 1.7, (x) => top(x));
+  for (let x = Mu.x0; x > Mu.x1; x -= 1) { const t0 = top(x), t1 = top(x - 1); b.box(x - 0.5, (t0 + t1) / 2 - 0.15, MZ, 1.02, 0.3, 3.4, (Math.round(x) % 2) ? C.wood : 0x7a5634, 0, 0, -Math.atan2(t1 - t0, 1)); }
+  for (let x = Mu.x0 - 3; x >= Mu.x1; x -= 4) for (const sz of [-1.55, 1.55]) b.cyl(x, -2.6, MZ + sz, 0.17, 0.17, 3.9, 0x6a4a2f, 6);
+  for (const sz of [-1, 1]) {
+    const xEnd = sz > 0 ? Mu.x1 + 8 : Mu.x1 + 0.5;
+    for (let x = Mu.x0 - 1; x >= xEnd; x -= 2) b.boxB(x, top(x), MZ + sz * 1.62, 0.08, 1.0, 0.08, 0xf2efe8);
+    b.box((Mu.x0 - 1 + xEnd) / 2, 1.35 + 0.98, MZ + sz * 1.62, Mu.x0 - 1 - xEnd, 0.06, 0.06, 0xf2efe8);
+    w.addSolid(xEnd, Mu.x0 - 6, MZ + sz * 1.62 - 0.06, MZ + sz * 1.62 + 0.06, 2.4);
+  }
   // refugio al final del muelle
-  for (const [sx, sz] of [[-1.3, 102.5], [-1.3, 106], [1.3, 102.5], [1.3, 106]]) b.boxB(Mu.x + sx, 1.35, sz, 0.12, 2.5, 0.12, C.steelD);
-  b.box(Mu.x, 3.95, 104.25, 3.4, 0.14, 4.4, C.celeste); b.boxB(Mu.x - 1.0, 1.35, 104.25, 0.5, 0.45, 2.6, C.wood);
-  w.addInter('lancha:0', Mu.x + 0.6, 104.2, { console: false, y: 1.35, h: 4.6 });
+  for (const [sx, sz] of [[-1.6, -1.3], [2, -1.3], [-1.6, 1.3], [2, 1.3]]) b.boxB(Mu.x1 + 2.4 + sx, 1.35, MZ + sz, 0.12, 2.5, 0.12, C.steelD);
+  b.box(Mu.x1 + 2.6, 3.95, MZ, 4.4, 0.14, 3.4, C.celeste); b.boxB(Mu.x1 + 2.6, 1.35, MZ - 1.0, 2.6, 0.45, 0.5, C.wood);
+  w.addInter('lancha:0', Mu.x1 + 2.6, MZ + 0.6, { console: false, y: 1.35, h: 4.6 });
   // escollera y faro
-  const [fx, fz] = POS.faro;
-  b.boxB(fx, -1.2, 91, 2.6, 2.8, 17.4, 0x9c968c); w.addPlatform(fx - 1.3, fx + 1.3, 82, 99.4, 1.62);
-  for (let z = 82.5; z < 99; z += 1.6) for (const sx of [-1, 1]) b.add(new THREE.IcosahedronGeometry(0.75 + R() * 0.4, 0), 0x8a857c, fx + sx * (1.6 + R() * 0.4), 0.2 + R() * 0.6, z + R() * 0.5, 1, 0.7, 1, 0, R() * 6, 0, 0.05);
+  const [fx, fz] = POS.faro, EX0 = fx + 1.5, EX1 = -88;
+  b.boxB((EX0 + EX1) / 2, -1.2, fz, EX1 - EX0, 2.8, 2.6, 0x9c968c); w.addPlatform(EX0, EX1, fz - 1.3, fz + 1.3, 1.62);
+  for (let x = EX1 - 0.5; x > EX0; x -= 1.6) for (const sz of [-1, 1]) b.add(new THREE.IcosahedronGeometry(0.75 + R() * 0.4, 0), 0x8a857c, x - R() * 0.5, 0.2 + R() * 0.6, fz + sz * (1.6 + R() * 0.4), 1, 0.7, 1, 0, R() * 6, 0, 0.05);
+  b.add(new THREE.CylinderGeometry(1.4, 1.8, 1, 8), 0x9c968c, EX1 + 0.6, 1.25, fz, 1, 0.8, 1);   // remate de la escollera en la orilla
   b.cyl(fx, -1.2, fz, 2.7, 3.1, 2.82, 0x9c968c, 12); w.addPlatform(fx - 2.6, fx + 2.6, fz - 2.6, fz + 2.6, 1.62);
   for (let k = 0; k < 6; k++) b.cyl(fx, 1.62 + k * 1.3, fz, 0.95 - k * 0.04, 1.0 - k * 0.04, 1.3, k % 2 ? 0xd62828 : 0xf5f1e8, 12);
   b.cyl(fx, 9.42, fz, 1.25, 1.25, 0.16, 0x3d4650, 12); w.glassBatch.add(new THREE.CylinderGeometry(0.62, 0.62, 1.1, 10), 0xffffff, fx, 10.13, fz);
   b.add(new THREE.ConeGeometry(0.8, 0.9, 10), 0xd62828, fx, 11.15, fz); b.cyl(fx, 11.6, fz, 0.04, 0.04, 0.8, 0x3d4650, 5);
   w.addCircle(fx, fz, 1.15);
   w.dyn.faro = { x: fx, y: 10.13, z: fz };
-  // feria de la costanera (sólo de mañana)
+  // puerto deportivo: dos muelles de madera (en la punta de las calles) con veleros amarrados entre ellos
+  const PZ = [69, 77.6], PX0 = -86.2, PX1 = -104;
+  for (const z of PZ) {
+    b.boxB(-84.8, 1.25 - 0.9, z, 2.8, 0.9, 3.0, C.granite); w.addPlatform(-86.2, -83.4, z - 1.5, z + 1.5, 1.7);   // bajada de la costanera
+    b.boxB((PX0 + PX1) / 2, 0.95, z, PX0 - PX1, 0.3, 2.4, C.wood); w.addPlatform(PX1, PX0, z - 1.2, z + 1.2, 1.25);
+    for (let x = PX0 - 2; x >= PX1; x -= 5) for (const sz of [-1.1, 1.1]) b.cyl(x, -2.6, z + sz, 0.16, 0.16, 4, 0x6a4a2f, 6);
+  }
+  b.boxB(PX1 - 1.1, 0.95, (PZ[0] + PZ[1]) / 2, 2.2, 0.3, PZ[1] - PZ[0] + 2.4, C.wood); w.addPlatform(PX1 - 2.2, PX1, PZ[0] - 1.2, PZ[1] + 1.2, 1.25);
+  w.dyn.boats = [];
+  const sails = [0xffffff, 0xffd166, 0xef476f, 0x8ecae6, 0xffffff, 0x90be6d];
+  [[-95, 71.3], [-100.5, 71.3], [-97, 75.3], [-102, 75.3], [-96.5, 81.4], [-99, 66.6]].forEach((p, i) => {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.8, vertexColors: true });
+    const bb = new Batch();
+    bb.box(0, 0.25, 0, 1.3, 0.6, 3.6, 0xf4f1ea); bb.box(0, 0.05, 0, 1.0, 0.3, 3.0, i % 2 ? 0x1d6fb8 : 0xc0392b); bb.box(0, 0.7, -0.3, 0.9, 0.4, 1.2, 0xe8e2d2);
+    bb.cyl(0, 0.5, 0.4, 0.05, 0.05, 4.2, 0x8a8f96, 5);
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([0, 4.5, 0.45, 0, 1.1, 0.45, 0, 1.1, -1.7, 0, 4.5, 0.45, 0, 1.1, -1.7, 0, 1.1, 0.45], 3)); sg.computeVertexNormals();
+    bb.add(sg, sails[i], 0, 0, 0, 1, 1, 1, 0, 0, 0, 0);
+    const m = bb.mesh(mat); m.castShadow = true; g.add(m); g.position.set(p[0], 0, p[1]); g.rotation.y = (i % 2 ? -1 : 1) * Math.PI / 2 + 0.06 * i; w.scene.add(g); w.dyn.boats.push(g);
+  });
+  w.updaters.push((dt) => w.dyn.boats.forEach((g, i) => { g.position.y = Math.sin(w.time * 1.3 + i) * 0.12 - 0.05; g.rotation.z = Math.sin(w.time * 1.1 + i * 2) * 0.05; }));
+  plaque(w, 'PUERTO DEPORTIVO', -82.7, gy + 2.4, 73.3, Math.PI / 2, 3.6, 0.5, { bg: '#0b4f7a', fg: '#ffffff', border: '#9be7ff' });
+  // feria del puerto (sólo de mañana), sobre la explanada
   const fb = new Batch(), stalls = [], cols = [[0xe5484d, 0xffffff], [0x2a9d8f, 0xffffff], [0xffc420, 0xe5484d], [0x6a2c91, 0xffffff]];
-  [26, 29.2, 32.4, 35.6].forEach((x, i) => {
-    const z = 75.8, y = w.terrainAt(x, z);
+  [-94.2, -91, -87.8, -84.6].forEach((x, i) => {
+    const z = 57.4, y = gy;
     fb.boxB(x, y, z, 2.2, 0.85, 0.9, 0x8a623c); fb.boxB(x, y + 0.85, z, 2.3, 0.06, 1.0, 0xc9a36b);
     for (const [sx, sz] of [[-1.05, -0.45], [1.05, -0.45], [-1.05, 0.45], [1.05, 0.45]]) fb.boxB(x + sx, y, z + sz, 0.06, 2.2, 0.06, 0x6b4a2f);
     for (let k = 0; k < 5; k++) fb.box(x - 1.0 + k * 0.5, y + 2.25, z, 0.5, 0.06, 1.4, cols[i][k % 2], 0, 0.18);
@@ -282,42 +321,45 @@ function puerto(w, R) {
     stalls.push({ x, z });
   });
   const feria = new THREE.Group(), fm = fb.mesh(w.mats.solid); fm.castShadow = true; feria.add(fm);
-  ['FRUTAS', 'VERDURAS', 'MIEL Y QUESOS', 'ARTESANÍAS'].forEach((t, i) => { const tx = textTex(t, { w: 512, h: 108, bg: '#8a5a2b', fg: '#fff7e6', size: 58 }), m = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.42), new THREE.MeshStandardMaterial({ map: tx, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.3 })); m.position.set(stalls[i].x, w.terrainAt(stalls[i].x, 75.8) + 1.95, 75.8 - 0.52); m.rotation.y = Math.PI; feria.add(m); });
-  w.scene.add(feria); w.dyn.feria = { group: feria, stalls };
+  ['FRUTAS', 'VERDURAS', 'MIEL Y QUESOS', 'ARTESANÍAS'].forEach((t, i) => { const tx = textTex(t, { w: 512, h: 108, bg: '#8a5a2b', fg: '#fff7e6', size: 58 }), m = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.42), new THREE.MeshStandardMaterial({ map: tx, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.3 })); m.position.set(stalls[i].x, gy + 1.95, stalls[i].z - 0.52); m.rotation.y = Math.PI; feria.add(m); });
+  w.scene.add(feria); w.dyn.feria = { group: feria, stalls, walk: { z: 55.2, x0: -95.4, x1: -84 } };
   stalls.forEach(s => w.addSolid(s.x - 1.15, s.x + 1.15, s.z - 0.5, s.z + 0.5, 3.0));
-  const fsign = plaque(w, 'FERIA DEL PUERTO · DE MAÑANA', 30.8, gy + 3.25, 76.5, Math.PI, 6.2, 0.6, { bg: '#2f7d32', fg: '#ffffff', border: '#ffd166' }); feria.attach(fsign);
+  const fsign = plaque(w, 'FERIA DEL PUERTO · DE MAÑANA', -89.4, gy + 3.25, 58.3, Math.PI, 6.2, 0.6, { bg: '#2f7d32', fg: '#ffffff', border: '#ffd166' }); feria.attach(fsign);
 }
 
-// ================= LA OTRA ORILLA =================
+// ================= CONCORDIA (ARGENTINA), EN LA ORILLA OCCIDENTAL =================
 function orilla(w, R) {
   const b = w.batch, O = POS.orilla, cols = [0xf2e4c4, 0xe9bba6, 0xd9c6a0, 0xa9cfe0, 0xf5f1e8, 0xe2b25c], roofs = [0xb5533c, 0xa9462f, 0xc86a4a, 0x8f9aa3];
-  // muelle de la otra orilla
-  const top = (x, z) => lerp(1.35, w.terrainAt(O.x, O.z1) + 0.06, clamp((z - 146) / 6, 0, 1));
-  w.addPlatform(O.x - 1.7, O.x + 1.7, O.z0, O.z1 + 1, top);
-  for (let z = O.z0; z < O.z1 + 1; z += 1) { const t0 = top(0, z), t1 = top(0, z + 1); b.box(O.x, (t0 + t1) / 2 - 0.15, z + 0.5, 3.4, 0.3, 1.02, (z % 2) ? C.wood : 0x7a5634, 0, -Math.atan2(t1 - t0, 1)); }
-  for (let z = O.z0; z <= O.z1; z += 4) for (const sx of [-1.55, 1.55]) b.cyl(O.x + sx, -2.6, z, 0.17, 0.17, 3.9, 0x6a4a2f, 6);
-  w.addInter('lancha:1', O.x + 0.6, O.z0 + 2.2, { console: false, y: 1.35, h: 4.6 });
-  const gy = w.terrainAt(O.x, O.z1 + 3);
-  sign(w, 'LA OTRA ORILLA', O.x - 4.5, gy, O.z1 + 3.5, Math.PI, 5.6, 1.0, { bg: '#4a8fc8', border: '#ffffff' });
-  argFlag(w, O.x + 4.2, gy, O.z1 + 3.2, 2.4, 1.6, 7);
-  // rambla con palmeras y bancos
-  for (let x = -150; x <= 124; x += 2) { const z = 148 + 3 * Math.sin(x * 0.035 + 1) + 1.6 * Math.sin(x * 0.11) + 5.2, y = w.terrainAt(x, z); if (Math.abs(x - O.x) > 3) b.boxB(x, y - 0.3, z, 2.05, 0.38, 2.6, 0xd8c8a8); }
-  for (let x = -146; x <= 120; x += 12) { if (Math.abs(x - O.x) < 6) continue; const z = 148 + 3 * Math.sin(x * 0.035 + 1) + 1.6 * Math.sin(x * 0.11) + 7.2; plant(w, R() < 0.6 ? 'palm' : 'ceibo', x, z, 0.9 + R() * 0.2); }
-  // casas y edificios bajos
-  for (let i = 0; i < 70; i++) {
-    const x = lerp(-150, 124, R()), z = 158 + R() * 15, fd = farD(x, z);
-    if (fd < 9 || Math.abs(x - O.x) < 7 || Math.abs(x - 40) < 6 && z < 168) continue;
-    const y = w.terrainAt(x, z), tall = R() < 0.22;
+  const OZ = O.z, shore = O.x1, top = (x) => lerp(1.35, w.terrainAt(shore, OZ) + 0.06, clamp((O.x0 - 4 - x) / 6, 0, 1));
+  // muelle de Concordia, enfrente del de Salto
+  w.addPlatform(shore - 1, O.x0, OZ - 1.7, OZ + 1.7, (x) => top(x));
+  for (let x = O.x0; x > shore - 1; x -= 1) { const t0 = top(x), t1 = top(x - 1); b.box(x - 0.5, (t0 + t1) / 2 - 0.15, OZ, 1.02, 0.3, 3.4, (Math.round(x) % 2) ? C.wood : 0x7a5634, 0, 0, -Math.atan2(t1 - t0, 1)); }
+  for (let x = O.x0; x >= O.x0 - 10; x -= 4) for (const sz of [-1.55, 1.55]) b.cyl(x, -2.6, OZ + sz, 0.17, 0.17, 3.9, 0x6a4a2f, 6);
+  w.addInter('lancha:1', O.x0 - 2.2, OZ + 0.6, { console: false, y: 1.35, h: 4.6 });
+  const gx = shore - 3.5, gy = w.terrainAt(gx, OZ);
+  sign(w, 'CONCORDIA · ARGENTINA', gx, gy, OZ - 4.5, Math.PI / 2, 6.4, 1.0, { bg: '#4a8fc8', border: '#ffffff' });
+  argFlag(w, gx + 0.2, gy, OZ + 4.2, 2.4, 1.6, 7);
+  // costanera de Concordia, con palmeras
+  for (let z = -86; z <= 206; z += 2) { const x = westBank(z) - 5.2, y = w.terrainAt(x, z); if (Math.abs(z - OZ) > 3) b.boxB(x, y - 0.3, z, 2.6, 0.38, 2.05, 0xd8c8a8); }
+  for (let z = -82; z <= 202; z += 12) { if (Math.abs(z - OZ) < 6) continue; plant(w, R() < 0.6 ? 'palm' : 'ceibo', westBank(z) - 7.2, z, 0.9 + R() * 0.2); }
+  // calles de Concordia: una avenida paralela a la costanera y transversales hasta el borde de la maqueta
+  const av = []; for (let z = -78; z <= 206; z += 8) av.push([westBank(z) - 15, z]); w.road(av, 3.2, C.asphalt);
+  for (const z of [-40, 8, OZ, 92, 140, 186]) w.road([[westBank(z) - 8.4, z], [westBank(z) - 15, z], [-196, z], [-229, z]], z === OZ ? 3.2 : 2.6, C.asphalt);
+  // casas y edificios bajos de la ciudad vecina
+  for (let i = 0; i < 130; i++) {
+    const z = lerp(-80, 204, R()), x = lerp(-226, -168, R()), fd = farD(x, z);
+    if (fd < 9 || (Math.abs(z - OZ) < 7 && x > -176) || (Math.abs(z - 40) < 6 && Math.abs(x + 182) < 6) || w.nearRoad(x, z, 4.4)) continue;
+    const y = w.terrainAt(x, z), tall = R() < 0.22 && x > -200;
     if (tall) { const h = 5 + R() * 6, bw = 3.6 + R() * 2, bd = 3.6 + R() * 2; b.boxB(x, y - 0.3, z, bw, h + 0.3, bd, cols[Math.floor(R() * cols.length)]); b.boxB(x, y + h, z, bw + 0.2, 0.2, bd + 0.2, 0xf3ecdc); winGrid(w.nightBatch, x, z, bw, bd, y, h); }
-    else { w.houses.push({ x, y: y - 0.1, z, w: 3.6 + R(), d: 3.8 + R(), h: 2.4, rh: 1.4, c: cols[Math.floor(R() * cols.length)], rc: roofs[Math.floor(R() * roofs.length)], ry: (R() - 0.5) * 0.3 }); const q = new THREE.PlaneGeometry(0.7, 0.8); w.nightBatch.add(q, 0xffffff, x, y + 1.3, z - 1.95, 1, 1, 1, 0, Math.PI, 0, 0); }
-    if (R() < 0.5) plant(w, R() < 0.5 ? 'native' : 'jaca', x + 3, z + (R() - 0.5) * 3, 0.8 + R() * 0.3);
+    else { w.houses.push({ x, y: y - 0.1, z, w: 3.6 + R(), d: 3.8 + R(), h: 2.4, rh: 1.4, c: cols[Math.floor(R() * cols.length)], rc: roofs[Math.floor(R() * roofs.length)], ry: (R() - 0.5) * 0.3 }); const q = new THREE.PlaneGeometry(0.7, 0.8); w.nightBatch.add(q, 0xffffff, x + 2.0, y + 1.3, z, 1, 1, 1, 0, Math.PI / 2, 0, 0); }
+    if (R() < 0.5) plant(w, R() < 0.5 ? 'native' : 'jaca', x + (R() - 0.5) * 3, z + 3, 0.8 + R() * 0.3);
   }
-  // iglesia con campanario, visible desde Salto
-  const cx = 40, cz = 164, cy = w.terrainAt(cx, cz);
-  b.boxB(cx, cy - 0.3, cz, 5, 5.3, 8, 0xf2e4c4); gable(b, cx, cy + 5, cz, 5.2, 1.8, 8.2, 0xb5533c);
-  b.boxB(cx, cy - 0.3, cz - 4.6, 2.2, 11.3, 2.2, 0xf2e4c4); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx, cy + 12.3, cz - 4.6, 1, 1, 1, 0, Math.PI / 4, 0);
-  w.nightBatch.add(new THREE.CircleGeometry(0.6, 12), 0xffffff, cx, cy + 3.5, cz - 4.02 - 1.7, 1, 1, 1, 0, Math.PI, 0, 0);
-  for (let i = 0; i < 70; i++) { const x = lerp(-156, 128, R()), z = 162 + R() * 15; if (farD(x, z) > 10 && Math.abs(x - O.x) > 6) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
+  // iglesia con campanario, que se ve desde la costanera de Salto (la torre mira al río)
+  const cx = -182, cz = 40, cy = w.terrainAt(cx, cz);
+  b.boxB(cx, cy - 0.3, cz, 8, 5.3, 5, 0xf2e4c4); gable(b, cx, cy + 5, cz, 5.2, 1.8, 8.2, 0xb5533c, true);
+  b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
+  w.nightBatch.add(new THREE.CircleGeometry(0.6, 12), 0xffffff, cx + 5.72, cy + 3.5, cz, 1, 1, 1, 0, Math.PI / 2, 0, 0);
+  for (let i = 0; i < 90; i++) { const x = lerp(-228, -164, R()), z = lerp(-84, 206, R()); if (farD(x, z) > 10 && !(Math.abs(z - OZ) < 6 && x > -178) && !w.nearRoad(x, z, 2.6)) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
 }
 // Bandera argentina en la otra orilla del río
 export function argFlag(w, x, y, z, fw, fh, mast) {

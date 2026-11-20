@@ -10,8 +10,8 @@ import { NAMES } from './ui.js';
 const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 21.5, x1: 29.5, z0: 37.5, z1: 44.5, g0: 24, g1: 27 };   // corral: tranquera sobre el lado norte
-const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-60, 74.5, 'la rambla oeste', 0.15], [8, 74.5, 'la rambla este', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-58, 78.2, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9] };
+const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-82.2, 28.6, 'la costanera', 0.15], [5.6, 72.6, 'el bulevar', 0.22]];
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
 const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
@@ -25,7 +25,7 @@ const WHO = {
   beto: { hi: 'Acá ando, esperando el pique. El río enseña a tener paciencia.', q: [['¿Qué se pesca por acá?', 'Bogas, bagres y, con suerte, algún dorado, que es el más peleador del río.'], ['¿La represa le cambia la vida al río?', 'Sí: aguas arriba se arma un lago y el agua corre distinto. Por eso las represas tienen que cuidar el caudal y a los peces.']] },
   sofi: { hi: '¡Pasá! El agua de las termas sale calentita todo el año.', q: [['¿Por qué el agua sale caliente?', 'Viene de muy hondo, del Acuífero Guaraní: ahí abajo las rocas la calientan antes de que suba.'], ['¿Eso también es energía renovable?', 'Es calor de la Tierra y se llama geotermia. Acá lo usamos para bañarnos, no para generar electricidad.']] },
   guia: { hi: '¡Hola, Capi! Estoy con un grupo de la escuela recorriendo la ciudad. Chicos, saluden al ingeniero.', q: [['¿Qué se aprende en Energimundo?', 'De dónde viene la energía, cómo llega hasta tu casa y cómo usarla mejor. Y se aprende jugando, como ahora.'], ['¿Qué puedo hacer yo por la energía?', 'Apagar lo que no usás, preferir lámparas LED y contarle a tu familia lo que aprendiste hoy.']] },
-  mamavieja: { hi: '¡Buenas, Capi! ¿Bailamos? La cuerda de tambores ya viene por la rambla.', q: [
+  mamavieja: { hi: '¡Buenas, Capi! ¿Bailamos? La cuerda de tambores ya viene por el bulevar.', q: [
     ['¿Quién sos?', 'Soy la Mama Vieja, uno de los personajes típicos del candombe. Bailo con el Gramillero y el Escobero delante de los tambores.'],
     ['¿Qué tambores lleva una cuerda?', 'Tres: el chico, que marca el ritmo más agudo; el repique, que se anima a improvisar; y el piano, el más grave, que es la base.'],
     ['¿Y qué tiene que ver con la energía?', 'Las noches de Carnaval la ciudad trasnocha: luces, escenarios y sonido. La red tiene que cubrir esa demanda cuando ya no hay sol, con agua, viento, biomasa y baterías.']] },
@@ -49,8 +49,8 @@ const WHO = {
 export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
-  lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Central Hidroeléctrica, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
-  valeria: { title: 'Leer 3 medidores', outfit: 'Control', ask: 'Necesito tres lecturas para el informe: los medidores de la Plaza Matriz, de la rambla oeste y de la rambla este. Son los postes blancos con reloj.', done: 'Lecturas recibidas. ¿Ves? La ciudad no gasta igual en todos lados ni a toda hora: por eso miramos la demanda todo el tiempo. Tomá, ya sos del equipo de control.' }
+  lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Represa de Salto Grande, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
+  valeria: { title: 'Leer 3 medidores', outfit: 'Control', ask: 'Necesito tres lecturas para el informe: los medidores de la Plaza Matriz, de la costanera y del bulevar. Son los postes blancos con reloj.', done: 'Lecturas recibidas. ¿Ves? La ciudad no gasta igual en todos lados ni a toda hora: por eso miramos la demanda todo el tiempo. Tomá, ya sos del equipo de control.' }
 };
 const SCENES = { valeria: ['despacho', '¿Puedo manejar la red un día entero?', 'Pasá al Centro de Control', 'Centro de Control'], mateo: ['torre', '¿Se puede subir a un molino?', 'Por dentro de la torre, hasta la góndola', 'Torre del aerogenerador'] };
 const ARCADE = [['sync', 'Sincronización de fase', 'Apretá en el momento justo'], ['crank', 'Freno del aerogenerador', 'Girá la manivela a toda velocidad'], ['gates', 'Compuerta del embalse', 'Regulá el paso del agua'], ['helio', 'Matriz solar', 'Limpiá y orientá los paneles'], ['route', 'Subestación', 'Armá el camino de la energía'], ['seq', 'Caldera de biomasa', 'Memorizá la secuencia de arranque'], ['rhythm', 'Compás de carga', 'Seguí el ritmo con las flechas'], ['led', 'Cambio a LED', 'Encontrá las lamparitas que gastan de más'], ['solar', 'Carga con sol', 'Cargá solo mientras brilla el sol'], ['cometa', 'Cometa en la rambla', 'Atrapá las ráfagas de viento'], ['cinta', 'Cinta de chips', 'Sacá lo que no es madera'], ['despacho', 'Centro de Control', 'Manejá la red durante un día entero'], ['torre', 'Torre del aerogenerador', 'Subí por dentro hasta la góndola']];
@@ -58,14 +58,14 @@ const ARCADE = [['sync', 'Sincronización de fase', 'Apretá en el momento justo
 // ---------- Construcciones (antes de fundir la geometría) ----------
 export function buildSocial(w) {
   const b = w.batch;
-  // Puesto de la feria en la rambla
-  const fx = 2, fz = 75.4, fy = w.groundAt(fx, fz);
+  // Puesto de la feria en el bulevar
+  const fx = -4, fz = 73.0, fy = w.groundAt(fx, fz);
   b.boxB(fx, fy, fz, 5.6, 1.0, 2.0, 0xb5532f); b.boxB(fx, fy + 1.0, fz, 5.8, 0.1, 2.2, 0xf6e7c8);
   for (const sx of [-2.7, 2.7]) for (const sz of [-1.0, 1.4]) b.boxB(fx + sx, fy, fz + sz, 0.14, 3.0, 0.14, 0x7b6a55);
   for (let i = 0; i < 6; i++) b.box(fx - 2.5 + i, fy + 3.05, fz + 0.2, 1.0, 0.14, 3.0, i % 2 ? 0xffffff : 0xe6007e);
   for (const sx of [-1.5, 1.5]) { b.boxB(fx + sx, fy + 1.1, fz - 0.2, 1.0, 1.3, 0.8, 0x23395d); w.screenBatch.box(fx + sx, fy + 1.95, fz + 0.22, 0.74, 0.5, 0.05, 0xffffff, 0, -0.2); b.boxB(fx + sx, fy + 2.4, fz - 0.2, 1.06, 0.2, 0.86, sx < 0 ? 0xffc420 : 0x2ed3c6); }
   w.addSolid(fx - 2.9, fx + 2.9, fz - 1.1, fz + 1.1); w.addOcc(fx - 2.9, fx + 2.9, fz - 1.1, fz + 1.5, fy + 3.2);
-  sign(w, 'FERIA DE LA RAMBLA', fx, fy + 1.0, fz - 1.5, 0, 6.4, 1.1, { bg: '#6a2c91', border: '#ffc420' });
+  sign(w, 'FERIA DEL BULEVAR', fx, fy + 1.0, fz - 1.5, 0, 6.4, 1.1, { bg: '#6a2c91', border: '#ffc420' });
   w.addInter('feria', fx, fz + 2.3, { console: false, h: 3.9, r: 3 });
   // Corral de Don Mateo
   const P = PEN, post = (x, z) => b.boxB(x, w.groundAt(x, z), z, 0.18, 1.15, 0.18, 0x7b5a3a), rail = (x0, z0, x1, z1) => { const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, y = w.groundAt(mx, mz), len = Math.hypot(x1 - x0, z1 - z0), ry = Math.atan2(x1 - x0, z1 - z0); for (const h of [0.45, 0.9]) b.box(mx, y + h, mz, 0.08, 0.1, len, 0x9a7650, ry); w.addSolid(Math.min(x0, x1) - 0.12, Math.max(x0, x1) + 0.12, Math.min(z0, z1) - 0.12, Math.max(z0, z1) + 0.12, y + 1.0); };

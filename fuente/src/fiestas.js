@@ -31,7 +31,7 @@ const PAL = {
 const LINES = {
   carnaval: {
     mateo: '¡Se oyen los tambores desde la cuchilla, m\'hijo! Chico, repique y piano: así suena el candombe.',
-    lucia: '¡Esta noche hay llamadas en la rambla! La flota eléctrica lleva a la gente al desfile sin echar humo.',
+    lucia: '¡Esta noche hay llamadas en el bulevar! La flota eléctrica lleva a la gente al desfile sin echar humo.',
     valeria: 'En Carnaval la ciudad trasnocha y la demanda de la noche sube. Hay que tener la red bien afinada.',
     guia: '¿Escuchás los tambores? El candombe nació de las comunidades afrodescendientes del Uruguay y hoy es Patrimonio Cultural Inmaterial de la Humanidad.',
     beto: 'Con tanto tambor no pica ni un bagre... ¡pero qué lindo que suena!'
@@ -304,7 +304,7 @@ export class Fiestas {
   // El momento fuerte de la fiesta, a pedido del modo guía
   kick() {
     const g = this.g, G = g.grid, k = this.mode, S = k && this.sets[k], c = g.capi.pos, play = g.mode === 'play'; if (!S) return;
-    if (k === 'carnaval') { G.hour = 19.5; S.parade.s = LL_START; this.cfT = 0.5; if (play) this.bring(-55, 71.3, 0, 0.18, 'Capi baja a la rambla para ver las llamadas…', '¡Ahí vienen las llamadas por la rambla! Mirá la cuerda de tambores.', 28, 0.3); }
+    if (k === 'carnaval') { G.hour = 19.5; S.parade.s = LL_START; this.cfT = 0.5; if (play) this.bring(-55, 71.3, 0, 0.18, 'Capi baja al bulevar para ver las llamadas…', '¡Ahí vienen las llamadas por el bulevar! Mirá la cuerda de tambores.', 28, 0.3); }
     if (k === 'patrimonio') { G.hour = 10.5; const T = S.tour; T.i = 0; T.wait = 2; T.x = TOUR[0][0]; T.z = TOUR[0][1]; T.vis.forEach(v => { v.x = T.x + v.o[0]; v.z = T.z + v.o[1]; }); if (play) this.bring(-38.4, 36.2, -0.6, 0.55, 'Capi va a la Plaza Matriz…', 'Arranca la visita guiada del Día del Patrimonio en la Plaza Matriz.', 26, 0.3); }
     if (k === 'fiestas') { G.hour = 23.9; this.count = 10.999; this.countN = 11; if (play) this.bring(-40.5, 46.5, Math.PI, 0.1, 'Capi va a la plaza a esperar el Año Nuevo…', '¡Se viene el Año Nuevo! Mirá los fuegos sobre el Barrio Norte.', 34, 0.5); }
     if (k === 'criolla') { G.hour = 15.5; this.trotT = 14; if (play) this.bring(61, 12.6, 2.3, -2.45, 'Capi sube a la cuchilla para la Semana Criolla…', '¡Arranca el desfile de tropillas en el ruedo de la cuchilla, al lado del rancho de Don Mateo!'); }

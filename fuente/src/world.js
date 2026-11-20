@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
-import { B, LAND, RES, terrainH, waterAt, coastD, channelD, resInside, CHANNEL, farD } from './terrain.js';
+import { B, LAND, RES, DAM_Z, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank } from './terrain.js';
 
 export const C = {
   cream: 0xf2e4c4, terra: 0xc8674a, ochre: 0xe2b25c, rose: 0xe9bba6, white: 0xf5f1e8, celeste: 0x8fcdea, concrete: 0xbdb5a8, concreteD: 0x9c958a,
@@ -164,7 +164,7 @@ export class World {
 
   // ---------- Relieve ----------
   buildTerrain() {
-    const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.25);   // celdas de 1,25 (el diorama es cuadrado)
+    const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.5);   // celdas de 1,5 (el diorama es cuadrado)
     this.N = N; this.cell = W / N;
     const g = new THREE.PlaneGeometry(W, D, N, N);
     g.rotateX(-Math.PI / 2); g.translate((B.minX + B.maxX) / 2, 0, (B.minZ + B.maxZ) / 2);
@@ -275,10 +275,13 @@ export class World {
     }]);
     this.waterMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, fog: true, depthWrite: false });
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ;
-    const g = new THREE.PlaneGeometry(W, D, 120, 120); g.rotateX(-Math.PI / 2);
-    const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + B.maxX) / 2, 0, (B.minZ + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
-    const rg = new THREE.PlaneGeometry(76, 54, 30, 22); rg.rotateX(-Math.PI / 2);
-    const res = new THREE.Mesh(rg, this.waterMat); res.position.set(0, RES, -83); res.renderOrder = 5; this.scene.add(res);
+    // río aguas abajo de la represa (cota 0); el lago de arriba lleva su propio espejo
+    const rz0 = DAM_Z - 4, g = new THREE.PlaneGeometry(W, B.maxZ - rz0, 120, 100); g.rotateX(-Math.PI / 2);
+    const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + B.maxX) / 2, 0, (rz0 + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
+    // Lago de Salto Grande: espejo elevado aguas arriba de la represa
+    const lx0 = B.minX, lx1 = eastBank(DAM_Z - 3) + 8, lz0 = B.minZ, lz1 = DAM_Z - 3;
+    const rg = new THREE.PlaneGeometry(lx1 - lx0, lz1 - lz0, 60, 20); rg.rotateX(-Math.PI / 2);
+    const res = new THREE.Mesh(rg, this.waterMat); res.position.set((lx0 + lx1) / 2, RES, (lz0 + lz1) / 2); res.renderOrder = 5; this.scene.add(res);
   }
 
   // ---------- Lluvia: trazos que caen alrededor de la cámara ----------
@@ -305,7 +308,7 @@ export class World {
   // ---------- Cielo, sol, luna, estrellas, nubes ----------
   buildSky() {
     const s = this.scene;
-    s.background = new THREE.Color(0x62bbf0); s.fog = new THREE.Fog(0xbfe3f5, 150, 620);
+    s.background = new THREE.Color(0x62bbf0); s.fog = new THREE.Fog(0xbfe3f5, 180, 720);
     this.hemi = new THREE.HemisphereLight(0xdff3ff, 0x6a8a55, 1.6); s.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xffffff, 3); this.sun.castShadow = true;
     const sh = this.sun.shadow; sh.mapSize.set(2048, 2048); sh.camera.left = -85; sh.camera.right = 85; sh.camera.top = 85; sh.camera.bottom = -85; sh.camera.near = 20; sh.camera.far = 420; sh.bias = -0.0006; sh.normalBias = 0.5;
@@ -333,8 +336,8 @@ export class World {
     s.fog.color.set(a[2]).lerp(_c2.set(b[2]), k);
     this.sun.color.set(a[3]).lerp(_c2.set(b[3]), k);
     const stm = this.storm || 0; s.background.lerp(_c2.set(0x566270), stm * 0.85); s.fog.color.lerp(_c2.set(0x66727f), stm * 0.85);
-    const smg = this.smogOn ? (this.smog || 0) : 0; s.fog.color.lerp(_c2.set(0x9a8f7c), smg * 0.6); s.background.lerp(_c2.set(0x9a9488), smg * 0.5); s.fog.near = lerp(150, 70, smg); s.fog.far = lerp(620, 430, smg);
-    const mst = this.mist || 0; s.fog.color.lerp(_c2.set(0xdfe7ec), mst * 0.45); s.background.lerp(_c2.set(0xcfdbe4), mst * 0.25); s.fog.near = Math.min(s.fog.near, lerp(150, 85, mst)); s.fog.far = Math.min(s.fog.far, lerp(620, 470, mst));
+    const smg = this.smogOn ? (this.smog || 0) : 0; s.fog.color.lerp(_c2.set(0x9a8f7c), smg * 0.6); s.background.lerp(_c2.set(0x9a9488), smg * 0.5); s.fog.near = lerp(180, 85, smg); s.fog.far = lerp(720, 500, smg);
+    const mst = this.mist || 0; s.fog.color.lerp(_c2.set(0xdfe7ec), mst * 0.45); s.background.lerp(_c2.set(0xcfdbe4), mst * 0.25); s.fog.near = Math.min(s.fog.near, lerp(180, 100, mst)); s.fog.far = Math.min(s.fog.far, lerp(720, 540, mst));
     const sInt = lerp(a[4], b[4], k) * (1 - 0.82 * stm) * (1 - 0.22 * smg), hInt = lerp(a[5], b[5], k) * (1 - 0.42 * stm) + (this.flash || 0) * 4;
     this.hemi.intensity = hInt; this.hemi.color.copy(s.fog.color).lerp(_c2.set(0xffffff), 0.35);
     this.hemi.groundColor.set(0x6a8a55).lerp(_c2.set(0x1a2440), this.night);
@@ -523,25 +526,52 @@ export class World {
   }
 }
 
+// Vista desplazada del mundo: un sector se arma con sus coordenadas de siempre (locales) y queda ubicado en otro lugar del mapa.
+// Lotes, colisiones, plataformas, consolas, árboles, farolas, caminos y mallas sueltas reciben el corrimiento (dx, dz).
+export function offsetWorld(w, dx, dz) {
+  const ob = base => { const o = Object.create(base); o.add = function (geo, color, x, y, z, ...r) { Batch.prototype.add.call(base, geo, color, x + dx, y, z + dz, ...r); return o; }; return o; };
+  const group = new THREE.Group(); group.position.set(dx, 0, dz); w.scene.add(group);
+  const over = {
+    dx, dz, scene: group,
+    batch: ob(w.batch), cityBatch: ob(w.cityBatch), glassBatch: ob(w.glassBatch), screenBatch: ob(w.screenBatch), winBatch: w.winBatch.map(ob),
+    terrainAt: (x, z) => w.terrainAt(x + dx, z + dz), groundAt: (x, z, y) => w.groundAt(x + dx, z + dz, y), waterAt: (x, z) => w.waterAt(x + dx, z + dz),
+    addPlatform: (x0, x1, z0, z1, top) => w.addPlatform(x0 + dx, x1 + dx, z0 + dz, z1 + dz, typeof top === 'function' ? (x, z) => top(x - dx, z - dz) : top),
+    addSolid: (x0, x1, z0, z1, top, walk) => w.addSolid(x0 + dx, x1 + dx, z0 + dz, z1 + dz, top, walk),
+    addCircle: (x, z, r) => w.addCircle(x + dx, z + dz, r),
+    addOcc: (x0, x1, z0, z1, y1) => w.addOcc(x0 + dx, x1 + dx, z0 + dz, z1 + dz, y1),
+    addInter: (id, x, z, o) => w.addInter(id, x + dx, z + dz, o),
+    tree: (type, x, z, s, y) => w.tree(type, x + dx, z + dz, s, y),
+    lamp: (x, z, ry, y) => w.lamp(x + dx, z + dz, ry, y),
+    road: (pts, width, color, lift) => w.road(pts.map(p => [p[0] + dx, p[1] + dz]), width, color, lift),
+    nearRoad: (x, z, d) => w.nearRoad(x + dx, z + dz, d),
+    trees: { push: (...a) => a.forEach(t => w.trees.push({ ...t, x: t.x + dx, z: t.z + dz })) },
+    houses: { push: (...a) => a.forEach(h => w.houses.push({ ...h, x: h.x + dx, z: h.z + dz })) },
+    lamps: { push: (...a) => a.forEach(l => w.lamps.push({ ...l, x: l.x + dx, z: l.z + dz })) }
+  };
+  return new Proxy(w, { get: (t, k) => (k in over ? over[k] : t[k]), set: (t, k, v) => { t[k] = v; return true; } });
+}
+
 // Color del suelo por zona, altura y pendiente.
 const cA = new THREE.Color(), cB = new THREE.Color();
 function groundColor(c, x, z, h, ny) {
-  const wl = waterAt(x, z), d = Math.min(coastD(x, z), Math.max(farD(x, z), 0) + (z > 120 ? 0 : 99));
+  const wl = waterAt(x, z), ar = westD(x, z), d = Math.max(coastD(x, z), ar);   // distancia a la orilla más cercana (positiva en tierra)
   if (h < wl - 0.15) { c.set(0x2c556b).lerp(cA.set(0xcdbb8c), smooth(wl - 3.4, wl - 0.1, h)); return; }
-  const banks = Math.min(channelD(x, z) - 8, 99), ri = resInside(x, z);
+  const banks = Math.min(channelD(x, z) - 8, 99);
   if ((d < 5.2 && h < 2.6) || h < wl + 0.5) { c.set(0xe8d6a4).lerp(cA.set(0xd8c08a), noise2(x * 0.4, z * 0.4)); return; }
   const g = fbm(x * 0.07, z * 0.07);
   c.set(0x5fb146).lerp(cA.set(0x8ed45c), g);
   if (x > 26) c.lerp(cA.set(0xb9d95e), smooth(0.5, 0.85, noise2(x * 0.13 + 9, z * 0.13)) * 0.6);
-  if (banks < 6 || ri > -9) c.lerp(cA.set(0x4c9a4a), 0.5);
+  if (banks < 6 || (d < 14 && z < DAM_Z)) c.lerp(cA.set(0x4c9a4a), 0.5);
   const inR = (x0, x1, z0, z1) => smooth(-3, 1, Math.min(x - x0, x1 - x, z - z0, z1 - z));
-  c.lerp(cA.set(0xd0c8b0), inR(-90, -35, -106, -58) * (0.85 + 0.15 * noise2(x, z)));
+  c.lerp(cA.set(0xd0c8b0), inR(-10, 45, -106, -58) * (0.85 + 0.15 * noise2(x, z)));   // parque solar
   c.lerp(cA.set(0xb89264), inR(42, 80, 51, 71) * 0.9);
   c.lerp(cA.set(0x6f9a52), inR(40, 108, 31, 50) * 0.7);
-  c.lerp(cA.set(0x8f9a8a), inR(-86, -6, 9, 78));
+  c.lerp(cA.set(0x8f9a8a), inR(-86, 22, 9, 95.5));                // ciudad
   c.lerp(cA.set(0x8f9a8a), inR(-86, -8, -8, 10));                 // Barrio Norte y costanera
   c.lerp(cA.set(0x7fb35a), inR(4, 44, -32, 9) * 0.55);            // Barrio Jardín: pasto cuidado
-  if (z > 120) c.lerp(cA.set(0x79b04f), 0.35);                    // la otra orilla
+  const fr = Math.max(inR(-72, -22, 140, 207), inR(22, 124, 160, 207) * (1 - inR(64, 86, 148, 168)));   // chacras del sur
+  if (fr > 0) { const k = ((Math.floor((x + 300) / 6.5) % 3) + 3) % 3; c.lerp(cA.set(k === 0 ? 0xa48a5c : k === 1 ? 0x9cc65a : 0x79ad48), fr * 0.7); }
+  if (ar > 0) c.lerp(cA.set(0x79b04f), 0.35);                     // Argentina, la otra orilla
   c.lerp(cA.set(0xcabd9a), inR(41, 57, 2, 15) * 0.9);
   if (ny < 0.82) c.lerp(cA.set(0x9c8a66), smooth(0.82, 0.6, ny));
 }

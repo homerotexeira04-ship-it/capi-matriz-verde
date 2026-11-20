@@ -28,6 +28,7 @@ export class NavGrid {
     if (!this.ok[b]) return false;
     const d = this.h[b] - this.h[a];
     if (d > 2.0 || d < -3.2) return false;
+    if (d > 0.75 && (this.deck[b] || this.deck[a])) return false;   // a un techo, muelle o coronamiento no se sube de un salto: hay que entrar por su rampa
     if (this.water[a] && this.deck[b]) return false;
     return true;
   }

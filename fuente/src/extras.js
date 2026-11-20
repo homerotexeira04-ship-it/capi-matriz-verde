@@ -27,30 +27,30 @@ export const OUTFITS = [
 // [x, z, altura extra, pista del lugar, dato]
 const SPARKS = [
   [-39.4, 44, 0, 'la fuente de la Plaza Matriz', 'La red eléctrica del Uruguay trabaja a 50 Hz: la corriente va y viene 50 veces por segundo, y todas las centrales tienen que ir al mismo compás.'],
-  [-58, 97, 0, 'la punta del muelle', 'El carpincho es el roedor más grande del mundo y un gran nadador. Por eso Capi cruza ríos y embalses sin problema.'],
-  [12, -48, 0, 'el techo de la sala de máquinas', 'Salto Grande, sobre el río Uruguay, es una represa binacional: la comparten Uruguay y Argentina, y tiene 14 turbinas.'],
-  [0, -78, 0.4, 'el medio del embalse', 'Sobre el río Negro hay tres represas en cadena: Rincón del Bonete, Baygorria y Palmar. El agua que turbina una la vuelve a aprovechar la siguiente.'],
+  [-104.6, 73.3, 0, 'la punta del puerto deportivo', 'El carpincho es el roedor más grande del mundo y un gran nadador. Por eso Capi cruza ríos y embalses sin problema.'],
+  [-102, -93, 0, 'el techo de la sala de máquinas uruguaya', 'Salto Grande, sobre el río Uruguay, es una represa binacional: la comparten Uruguay y Argentina, y tiene 14 turbinas.'],
+  [-128, -126, 0.4, 'el medio del lago de Salto Grande', 'Sobre el río Negro hay tres represas en cadena: Rincón del Bonete, Baygorria y Palmar. El agua que turbina una la vuelve a aprovechar la siguiente.'],
   [86.5, -15.5, 0, 'la cima de una cuchilla', 'La potencia del viento crece con el cubo de su velocidad: si sopla el doble de rápido, trae ocho veces más energía. Por eso los parques eólicos se instalan donde el viento es fuerte y parejo.'],
   [39.3, 30.4, 0, 'la sombra del ombú de Don Mateo', 'El tero es un símbolo del Uruguay: defiende su nido a los gritos, y hasta la selección de rugby se llama Los Teros.'],
-  [-66.5, -68, 0, 'el pasillo entre las matrices solares', 'Un panel con seguidor gira durante el día para mirar siempre al sol. Así produce más energía que uno fijo.'],
-  [-43, -79.4, 0, 'el fondo del banco de baterías', 'LFP quiere decir litio-ferrofosfato: un tipo de batería de litio muy segura, que aguanta miles de cargas y descargas. Por eso se usa para guardar energía de la red.'],
+  [13.5, -68, 0, 'el pasillo entre las matrices solares', 'Un panel con seguidor gira durante el día para mirar siempre al sol. Así produce más energía que uno fijo.'],
+  [37, -79.4, 0, 'el fondo del banco de baterías', 'LFP quiere decir litio-ferrofosfato: un tipo de batería de litio muy segura, que aguanta miles de cargas y descargas. Por eso se usa para guardar energía de la red.'],
   [93.15, 40.75, 0, 'el monte de eucaliptos', 'En Uruguay la biomasa para generar electricidad sale de residuos forestales, del licor negro de las plantas de celulosa y de la cáscara de arroz, entre otros.'],
   [-46, -27, 0, 'lo más alto del puente', 'El ceibo, de flores rojas, es la flor nacional del Uruguay. Crece a orillas de ríos y arroyos, como los que se ven desde este puente.'],
   // Ciudad ampliada
   [-20, 55.4, 0, 'la vereda de la terminal de bóvedas', 'Eladio Dieste fue un ingeniero uruguayo que inventó la cerámica armada: bóvedas finísimas de ladrillo. En Salto hizo la Terminal de Ómnibus de 1974, con voladizos de 14 metros, y la de la empresa Turlit.'],
-  [-52, 26.2, 0, 'las escalinatas del teatro', 'El Teatro Larrañaga de Salto se inauguró el 6 de octubre de 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Hoy es Monumento Histórico Nacional.'],
-  [17, 106.6, 0, 'la punta del muelle de pasajeros', 'Entre Salto y Concordia, en Argentina, cruza una lancha de pasajeros: el viaje por el río Uruguay dura unos 15 o 20 minutos. El servicio volvió en 2025.'],
+  [-4, 39.3, 0, 'las escalinatas del Teatro Larrañaga', 'El Teatro Larrañaga de Salto se inauguró el 6 de octubre de 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Hoy es Monumento Histórico Nacional.'],
+  [-116.2, 47.5, 0, 'la punta del muelle de pasajeros', 'Entre Salto y Concordia, en Argentina, cruza una lancha de pasajeros: el viaje por el río Uruguay dura unos 15 o 20 minutos. El servicio volvió en 2025.'],
   [24.5, -2.1, 0, 'la calle del Barrio Jardín', 'Desde 2010 una casa uruguaya puede poner paneles solares, conectarse a la red de UTE y venderle la energía que le sobra. Se llama microgeneración.'],
   [-46.8, 9.4, 0, 'el patio de la escuela', 'En 2007 Uruguay empezó el Plan Ceibal: una computadora portátil para cada niño y cada maestro de las escuelas públicas del país.'],
   [-68, -3.1, 0, 'la puerta de emergencias del hospital', 'Un hospital no se puede quedar sin luz: tiene generadores y baterías que arrancan solos si se corta la red. Por eso la ciudad pide energía aun de madrugada.'],
   [-36, 6, 0, 'el pasillo del mercado', 'Las frutas y verduras de la zona viajan pocos kilómetros hasta el mercado. Menos viaje es menos combustible gastado en camiones.'],
-  [34, 98.6, 0, 'la escollera del faro', 'El puente sobre la represa de Salto Grande une Salto con Concordia desde 1982. Por arriba pasan autos y camiones, y tiene también vía de tren.'],
+  [-150, -100.2, 0, 'el puente sobre la represa', 'El puente sobre la represa de Salto Grande une Salto con Concordia desde 1982. Por arriba pasan autos y camiones, y tiene también vía de tren.'],
   [-6, -8.4, 0, 'el borde de la cancha del barrio', 'Un motor eléctrico convierte en movimiento casi toda la energía que recibe; un motor a nafta pierde la mayor parte en calor. Por eso los autos eléctricos gastan mucha menos energía.'],
   // Energimundo
-  [50.8, -72, 0, 'la plaza del Cronomundo', 'El Cronomundo de Energimundo es un reloj de sol: la sombra marca la hora solar en números romanos, de 5 en 5 minutos, y sobre otra escala marca también la fecha.'],
-  [55.5, -57.6, 0, 'la vuelta del domo', 'Un domo geodésico es una cúpula armada con triángulos: reparte el peso por toda la estructura y cubre mucho espacio con poco material. El de Energimundo funciona como cine.'],
-  [57.6, -68.4, 0, 'las bicicletas del escenario', 'En el escenario a pedal de Energimundo el público pedalea bicicletas generadoras: con las piernas se produce la electricidad del espectáculo.'],
-  [49.2, -91.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.']
+  [-63.2, -70, 0, 'la plaza del Cronomundo', 'El Cronomundo de Energimundo es un reloj de sol: la sombra marca la hora solar en números romanos, de 5 en 5 minutos, y sobre otra escala marca también la fecha.'],
+  [-58.5, -55.6, 0, 'la vuelta del domo', 'Un domo geodésico es una cúpula armada con triángulos: reparte el peso por toda la estructura y cubre mucho espacio con poco material. El de Energimundo funciona como cine.'],
+  [-56.4, -66.4, 0, 'las bicicletas del escenario', 'En el escenario a pedal de Energimundo el público pedalea bicicletas generadoras: con las piernas se produce la electricidad del espectáculo.'],
+  [-64.8, -89.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.']
 ];
 
 export class Extras {
@@ -64,7 +64,7 @@ export class Extras {
       // Silueta que se ve a través de árboles y techos cuando Capi anda cerca
       const ghost = new THREE.MeshBasicMaterial({ color: 0xfff3a8, fog: false, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
       const gm = new THREE.Mesh(geo, ghost); gm.renderOrder = 30; gm.visible = false; g.add(gm);
-      const y = Math.max(w.groundAt(x, z), z < -56 ? (w.terrainAt(x, z) < RES ? RES : 0) : 0) + 1.5 + dy; g.position.set(x, y, z); game.scene.add(g);
+      const y = Math.max(w.groundAt(x, z), w.waterAt(x, z)) + 1.5 + dy; g.position.set(x, y, z); game.scene.add(g);
       return { i, x, y, z, place, text, group: g, ghost, gm };
     });
     // Interfaz

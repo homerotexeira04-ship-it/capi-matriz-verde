@@ -9,7 +9,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Historia corta:** 5 misiones, unos 10 minutos.
 - **Historia larga:** 7 misiones, unos 20 minutos. Suma la misión de ahorro (cambiar lamparitas por LED y cargar los ómnibus con sol), la sudestada y una decisión de año seco.
 - 11 minijuegos, 23 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante y un código QR para seguir jugando en casa.
-- **Feria de minijuegos:** botón "Minijuegos" en la pantalla de inicio y puesto de feria en la rambla, para jugar cualquier minijuego suelto sin empezar una historia.
+- **Feria de minijuegos:** botón "Minijuegos" en la pantalla de inicio y puesto de feria en el bulevar, para jugar cualquier minijuego suelto sin empezar una historia.
 - **Dos escenas grandes:** el Centro de Control, donde se maneja la red durante un día entero, y la subida por dentro de la torre de un aerogenerador. Se entra hablando con la Ing. Valeria y con Don Mateo, o desde la feria.
 - **Modo escuela** (botón en la portada): se elige una energía y se juega solo esa misión, en nivel Explorador o Ingeniero. Hay siete: eólica, hidráulica, solar y baterías, biomasa y transporte eléctrico, ahorro y eficiencia, clima y matriz diversificada (la sudestada) y la red completa (la hora pico). Al terminar hay una medalla con tres cosas que se aprendieron, un atuendo nuevo para Capi (eólico, hidro, solar, biomasa o guardián) y un certificado con el nombre del alumno o de la clase. Las medallas quedan guardadas en la computadora y se pueden borrar desde el mismo menú.
 - **Personajes:** cada uno responde preguntas y Don Mateo, Lucía y Valeria piden favores cortos (arrear ovejas, avisar a pasajeros, leer medidores) que dan atuendos nuevos. Hay personajes en el naranjal, el muelle, las termas y un grupo escolar en la plaza. Los vecinos muestran globitos según cómo anda la red.
@@ -21,25 +21,30 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Neblina sobre el río al amanecer**, que se levanta a media mañana.
 - **Modo guía** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Cómo abrirlo está en las instrucciones de la carpeta del kiosco.
 - **Modo festivo** (se elige desde el modo guía y queda guardado en la PC), con cinco fiestas:
-  - **Carnaval:** banderines, estandartes de comparsa y llamadas por la rambla al caer la tarde: el estandarte, dos bailarinas y la cuerda de tambores dan vueltas por el tramo abierto de la rambla, y el minimapa marca dónde están. La Mama Vieja, el Gramillero y el Escobero bailan en la plaza.
+  - **Carnaval:** banderines, estandartes de comparsa y llamadas por el bulevar al caer la tarde: el estandarte, dos bailarinas y la cuerda de tambores dan vueltas por el tramo abierto del bulevar, y el minimapa marca dónde están. La Mama Vieja, el Gramillero y el Escobero bailan en la plaza.
   - **Semana Criolla:** en la cuchilla, junto al rancho de Don Mateo: ruedo con desfile de tropillas, fogón con parrilla, caballos en el palenque, puestos de artesanías y un payador que canta una décima sobre la energía.
   - **Día del Patrimonio:** banderines celestes y blancos, arco de bienvenida y una visita guiada con Marta, que recomienda lugares para conocer en Salto.
   - **Museos en la Noche:** luminarias en la plaza, una proyección de luces en la torre y un puesto con una bicicleta generadora (minijuego) a cargo de Nico.
   - **Fin de año:** luces que titilan, arbolito con luces LED, Papá Noel y fuegos artificiales de noche.
   - Los personajes saludan con algo de la fiesta, y el de cada fiesta le regala a Capi un **accesorio** para el vestuario: antifaz, pañuelo criollo, escarapela, farol o gorro navideño.
   - Desde el modo guía, "¡Empezar la fiesta ahora!" lleva a Capi hasta el lugar de la fiesta, con la cámara lista, y arranca el momento fuerte: las llamadas, el desfile de tropillas, la visita guiada, la proyección o la cuenta regresiva de Año Nuevo.
-- **Diorama ampliado,** con más río y la otra orilla a la vista:
-  - **Barrio Norte y Costanera Norte:** una fila nueva de manzanas entre la ciudad y el canal, con hospital (luces toda la noche y ambulancia), escuela con chicos de túnica y moña en el recreo, y un mercado con techo de bóveda de chapa. Sobre el río hay un paseo con bancos, palmeras, ceibos, bicisenda y una cancha de fútbol de barrio con torres de luz.
-  - **Edificios con aire salteño:** un teatro de columnas inspirado en el Teatro Larrañaga, una catedral con campanarios y cúpula, y la terminal de ómnibus techada con bóvedas de ladrillo en homenaje a Eladio Dieste.
-  - **Puerto y faro:** costanera este, edificio del puerto con techo solar, muelle de pasajeros con pescadores, kayaks, escollera con faro (de noche gira el haz) y una feria del puerto que se arma de mañana.
-  - **Lancha a la otra orilla:** desde la punta del muelle se cruza en lancha hasta la otra orilla del río Uruguay, y se vuelve igual.
+- **Geografía como en la realidad:** el río Uruguay corre de norte a sur por el oeste de la maqueta. Al norte, la represa de Salto Grande lo cruza de orilla a orilla y aguas arriba queda el lago. Salto está en la orilla oriental (Uruguay) y Concordia enfrente, en la occidental (Argentina).
+  - **Represa binacional:** vertedero con compuertas en el medio, la central uruguaya en la margen este y la argentina en la oeste, cada una con su bandera, puesto de aduana en cada cabecera y, sobre el coronamiento, la ruta y la vía del tren que unen Salto con Concordia. Se puede cruzar caminando a Argentina.
+  - **Concordia:** costanera con palmeras, avenida y calles, casas, edificios, una iglesia que se ve desde Salto y el muelle de la lancha.
+  - **Al sur de la ciudad, campo salteño:** naranjales con cortinas de eucaliptos, un packing de citrus, chacras, un tambo con molino de viento y montes nativos.
+- **Ciudad más grande:** dos columnas de manzanas nuevas hacia el este y una fila nueva al sur del bulevar, con el Barrio Sur de casitas (donde se cambian las lamparitas por LED) sobre la ruta que sale de la ciudad.
+  - **Teatro Larrañaga a la vista:** más grande, ocupa toda su manzana y mira a la Plaza Artigas, con el monumento al prócer, canteros, bancos y faroles.
+  - **Barrio Norte y Costanera Norte:** una fila nueva de manzanas entre la ciudad y el arroyo, con hospital (luces toda la noche y ambulancia), escuela con chicos de túnica y moña en el recreo, y un mercado con techo de bóveda de chapa. Sobre el río hay un paseo con bancos, palmeras, ceibos, bicisenda y una cancha de fútbol de barrio con torres de luz.
+  - **Edificios con aire salteño:** el Teatro Larrañaga, una catedral con campanarios y cúpula, y la terminal de ómnibus techada con bóvedas de ladrillo en homenaje a Eladio Dieste.
+  - **Puerto de Salto sobre la costanera:** explanada con el edificio del puerto y techo solar, muelle de pasajeros con pescadores, kayaks, escollera con faro (de noche gira el haz), puerto deportivo con veleros y una feria del puerto que se arma de mañana.
+  - **Lancha a Concordia:** desde la punta del muelle se cruza el río Uruguay en lancha hasta el muelle de Concordia, y se vuelve igual.
   - **Barrio Jardín:** casas con paneles solares mirando al norte, autos eléctricos enchufados y una huerta comunitaria.
   - **Vida urbana:** autos eléctricos que frenan en los semáforos y ante Capi, ciclistas por la bicisenda, chicos jugando al fútbol y vecinos en la huerta, el mercado y la feria.
   - Tres paradas de ómnibus nuevas: Barrio Norte, Puerto y Barrio Jardín.
-- **Energimundo junto a la represa,** armado a partir de fotos del lugar, en la margen oriental de la central:
+- **Energimundo junto a la represa,** armado a partir de fotos del lugar, del lado uruguayo:
   - El edificio bajo con la franja roja, la caja de vidrio de la entrada con el isotipo y las seis luces de colores, el pórtico con el cartel, las letras gigantes sobre el pasto y las banderas de Uruguay y Argentina.
   - **Cronomundo:** el reloj de sol de acero corten, con el eje paralelo al de la Tierra. Con la tecla E, Capi lee la hora solar que marca la sombra.
-  - **Domo geodésico:** con la tecla E se ve una función de cine de unos 30 segundos sobre el viaje de la energía, del Sol al viento, el agua y las plantas.
+  - **Domo geodésico:** con la tecla E se ve una función de unos 40 segundos que cuenta la historia del universo como si entrara en un año (el Big Bang el 1 de enero, los seres humanos en los últimos minutos del 31 de diciembre) y termina con el cuidado del ambiente.
   - **Escenario a pedal:** las bicicletas generadoras son un minijuego; si Capi pedalea bien, el escenario se prende con luces y música.
   - Cafetería con mesas y sombrillas, estacionamiento, sendero con las seis estaciones de energía (solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica) y parada de ómnibus propia (tecla 0 en el menú de paradas).
   - Cuatro chispas de saber en el predio y una toma del museo en la demostración de la pantalla de inicio.
@@ -49,7 +54,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Cursor propio:** una flecha amarilla como el casco de Capi, con el rayo de Energimundo. Cambia sobre lo que se puede usar, sobre el piso (clic para caminar) y al girar la cámara. Con letra grande también se agranda.
 - El aire del diorama se ve gris mientras la red usa respaldo fósil y se limpia a medida que sube el porcentaje renovable.
 - **Festejos de Capi:** cada misión cierra con un festejo propio (cometa, chapuzón, lentes de sol, bandera a cuadros, lamparita LED o paraguas). La primera vez que la red llega al 100 % renovable caen papelitos con los colores de Energimundo, y la ceremonia final termina con una cuerda de tambores y todo el elenco bailando candombe en el escenario.
-- **Una ciudad con vida:** los vecinos siguen la hora del día (mate en los bancos al mediodía, corredores y ciclistas en la rambla, fútbol en la playa, casi nadie en la calle de noche), abren el paraguas con la tormenta, festejan cuando vuelve la luz al barrio y saludan a Capi. La Ing. Valeria y Don Mateo se mueven por su lugar de trabajo, Lucía sale a manejar un ómnibus, los teros defienden su nido a los gritos y Pampa, el perro de Don Mateo, acompaña a Capi un rato.
+- **Una ciudad con vida:** los vecinos siguen la hora del día (mate en los bancos al mediodía, corredores en el bulevar y ciclistas en la costanera, fútbol en el pasto, casi nadie en la calle de noche), abren el paraguas con la tormenta, festejan cuando vuelve la luz al barrio y saludan a Capi. La Ing. Valeria y Don Mateo se mueven por su lugar de trabajo, Lucía sale a manejar un ómnibus, los teros defienden su nido a los gritos y Pampa, el perro de Don Mateo, acompaña a Capi un rato.
 
 ## Controles
 

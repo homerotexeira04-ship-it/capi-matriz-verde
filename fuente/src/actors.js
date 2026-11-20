@@ -148,7 +148,7 @@ export class Actors {
         return;
       }
       if (c.kind === 'rambla') { if (moving) c.x += c.dir * c.speed * dt; if (c.x > -13) c.dir = -1; if (c.x < -81) c.dir = 1; g.position.set(c.x, CITY_Y, c.z); g.rotation.y = damp(g.rotation.y, c.dir > 0 ? Math.PI / 2 : -Math.PI / 2, 6, dt); }
-      else if (c.kind === 'west') { if (moving) c.z += c.dir * c.speed * dt; if (c.z > 70) c.dir = -1; if (c.z < 14) c.dir = 1; g.position.set(c.x, CITY_Y, c.z); g.rotation.y = damp(g.rotation.y, c.dir > 0 ? 0 : Math.PI, 6, dt); }
+      else if (c.kind === 'west') { if (moving) c.z += c.dir * c.speed * dt; if (c.z > 90) c.dir = -1; if (c.z < 14) c.dir = 1; g.position.set(c.x, CITY_Y, c.z); g.rotation.y = damp(g.rotation.y, c.dir > 0 ? 0 : Math.PI, 6, dt); }
       else { if (moving) c.a += c.speed * dt; g.position.set(POS.plaza[0] + Math.cos(c.a) * 5.2, CITY_Y, POS.plaza[1] + Math.sin(c.a) * 5.2); g.rotation.y = -c.a; }
       const ph = t * 6 * c.speed + c.phase, sw = moving ? Math.sin(ph) * 0.6 : 0;
       c.legL.rotation.x = sw; c.legR.rotation.x = -sw;

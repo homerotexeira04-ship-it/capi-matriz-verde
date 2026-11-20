@@ -17,7 +17,7 @@ function loopPoint(s, out) {   // mismo circuito que los ómnibus
   return out;
 }
 const BENCH_R = [[-76, 74.6], [-40, 74.6], [-28, 74.6], [-16, 74.6]], BENCH_P = [[-39.4, 44, -Math.PI / 2], [-48.6, 44, Math.PI / 2]];
-const NESTS = [[18, 30], [56, 30]], PAMPA = [36, 30];
+const NESTS = [[29, 50], [56, 30]], PAMPA = [36, 30];
 const ROUTES = {
   valeria: { pts: [[-20, 27.8, 7], [-16.5, 26.2, 6], [-20, 27.8, 7], [-24.5, 26.5, 6]], speed: 1.2 },
   mateo: { pts: [[35.2, 28.4, 20, 'sit'], [38.2, 23.2, 10, 'look']], speed: 1.0 }
@@ -33,10 +33,10 @@ export class Vecinos {
     const umbrella = col => { const u = new THREE.Group(); const top = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.32, 8, 1, true), M(col, { side: THREE.DoubleSide })); top.rotation.x = Math.PI; top.position.y = -1.05; u.add(top); const h = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.0, 4), M(0x333333)); h.position.y = -0.55; u.add(h); u.visible = false; return u; };
     A.citizens.forEach((c, i) => { c.umb = umbrella(umbCols[i % 5]); c.umb.position.set(0, -0.7, 0); c.armR.add(c.umb); c.waveCool = 0; c.waveT = 0; c.sit = null; c.home = { x: c.x, z: c.z }; });
     const add = (o, x, z) => { const p = makePerson(o); p.group.position.set(x, w.groundAt(x, z), z); sc.add(p.group); return p; };
-    // corredores en la rambla
+    // corredores en el bulevar
     this.joggers = [0, 1].map(i => Object.assign(add({ skin: i ? 0xc58b62 : 0xf1c9a5, shirt: i ? 0x2ed3c6 : 0xff8fab, pants: 0x23395d, hair: i ? 0x1a1412 : 0x8a5a33, pony: !i, hat: i ? 'gorra' : null, hatColor: 0xffffff }, -70 + i * 30, 73.6), { x: -70 + i * 30, dir: i ? -1 : 1, sp: 3.1 + i * 0.4 }));
-    // chicos jugando al fútbol en la playa
-    this.kids = [-45, -39.5, -34].map((x, i) => Object.assign(add({ skin: [0xe0ac86, 0xc58b62, 0xf1c9a5][i], shirt: [0x75aadb, 0xffffff, 0xe6007e][i], pants: 0x23395d, hair: [0x2a1c12, 0x5a3a1a, 0x1a1412][i], scale: 0.6 }, x, 78.4), { hx: x, x, z: 78.4, kick: 0 }));
+    // chicos jugando al fútbol en el pasto, al sur de la ciudad
+    this.kids = [-66, -60.5, -55].map((x, i) => Object.assign(add({ skin: [0xe0ac86, 0xc58b62, 0xf1c9a5][i], shirt: [0x75aadb, 0xffffff, 0xe6007e][i], pants: 0x23395d, hair: [0x2a1c12, 0x5a3a1a, 0x1a1412][i], scale: 0.6 }, x, 99), { hx: x, x, z: 99, kick: 0 }));
     this.ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 1), M(0xf4f4f4)); this.ball.castShadow = true; sc.add(this.ball); this.pass = { a: 0, b: 1, t: 0, d: 1.1 };
     // ciclistas por el circuito de la ciudad
     const bike = (col, rider) => { const gr = new THREE.Group(); for (const z of [-0.55, 0.55]) { const wh = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.05, 5, 14), M(0x1c1e22)); wh.rotation.y = Math.PI / 2; wh.position.set(0, 0.36, z); gr.add(wh); }
@@ -112,7 +112,7 @@ export class Vecinos {
         this.reactPose(c, dt, cp, party); return;
       }
       if (c.kind === 'rambla') { if (moving) c.x += c.dir * sp * dt; if (c.x > -13) c.dir = -1; if (c.x < -81) c.dir = 1; gr.position.set(c.x, CITY_Y, c.z); if (moving) gr.rotation.y = damp(gr.rotation.y, c.dir > 0 ? Math.PI / 2 : -Math.PI / 2, 6, dt); }
-      else if (c.kind === 'west') { if (moving) c.z += c.dir * sp * dt; if (c.z > 70) c.dir = -1; if (c.z < 14) c.dir = 1; gr.position.set(c.x, CITY_Y, c.z); if (moving) gr.rotation.y = damp(gr.rotation.y, c.dir > 0 ? 0 : Math.PI, 6, dt); }
+      else if (c.kind === 'west') { if (moving) c.z += c.dir * sp * dt; if (c.z > 90) c.dir = -1; if (c.z < 14) c.dir = 1; gr.position.set(c.x, CITY_Y, c.z); if (moving) gr.rotation.y = damp(gr.rotation.y, c.dir > 0 ? 0 : Math.PI, 6, dt); }
       else { if (moving) c.a += c.speed * dt * (rain ? 1.6 : 1); gr.position.set(POS.plaza[0] + Math.cos(c.a) * 5.2, CITY_Y, POS.plaza[1] + Math.sin(c.a) * 5.2); if (moving) gr.rotation.y = -c.a; }
       const ph = t * 6 * sp / Math.max(0.5, c.speed) + c.phase, sw = moving ? Math.sin(ph) * (rain ? 0.8 : 0.6) : 0;
       c.legL.rotation.x = sw; c.legR.rotation.x = -sw; c.armL.rotation.x = damp(c.armL.rotation.x, -sw * 0.6, 10, dt); c.armR.rotation.x = damp(c.armR.rotation.x, rain ? -0.15 : c.kind === 'plaza' ? -1.1 : sw * 0.6, 10, dt);

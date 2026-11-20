@@ -24,7 +24,7 @@ const DEF = {
 const INTRO = {
   ahorro: [
     L('lucia', 'Capi, hasta ahora sumamos energía limpia. Pero hay otra forma de ayudar a la red: gastar menos sin perder comodidad.'),
-    L('lucia', 'En el barrio de las casitas, al este de la terminal, tres vecinos te esperan para cambiar sus lamparitas viejas por LED.'),
+    L('lucia', 'En el Barrio Sur, pasando el bulevar, tres vecinos te esperan para cambiar sus lamparitas viejas por LED.'),
     L('lucia', 'Y pasá por la terminal ahora, al mediodía: quiero cargar los ómnibus cuando sobra sol, y no de noche, cuando todos prenden todo.')],
   viento: [
     L('valeria', `¡Capi! Acá Valeria, desde el Centro de Control. La ciudad está funcionando casi toda con respaldo térmico fósil: menos de un 20${N}% de la energía es renovable.`),
@@ -33,14 +33,14 @@ const INTRO = {
     L('valeria', 'Entró un frente de pampero y tenemos molinos frenados. Buscá a Don Mateo en la entrada de las cuchillas, al este. La flecha amarilla del minimapa te guía.')],
   rio: [
     L('valeria', 'Llovió fuerte en la cuenca alta y el caudal del río viene creciendo. Y al mediodía las fábricas piden más energía.'),
-    L('valeria', 'Andá a la Central Hidroeléctrica, al norte. Está inspirada en Salto Grande, la represa que Uruguay comparte con Argentina sobre el río Uruguay.', 1),
+    L('valeria', 'Andá a la represa de Salto Grande, al norte, sobre el río Uruguay. La compartimos con Argentina: cada país tiene su central en su orilla y la nuestra es la del lado este.', 1),
     L('valeria', 'Hay compuertas abiertas de más: tiramos agua sin turbinarla. Regulá el vertedero y después sincronizá la Turbina 3.')],
   sol: [
-    L('valeria', 'Una nube de polvo cubrió el Parque Solar, al noroeste, y descalibró los seguidores. Podés llegar por el puente del canal o por el coronamiento de la represa.'),
+    L('valeria', 'Una nube de polvo cubrió el Parque Solar, al norte, y descalibró los seguidores. Podés llegar por la calle del Barrio Jardín o por el puente del arroyo.'),
     L('valeria', 'Limpiá y reorientá las matrices, habilitá el Banco de Baterías y cargalo antes de las 18:30, cuando se nos va el sol.')],
   urbano: [
     L('lucia', '¡Hola, Capi! Lucía, de la Terminal de la Rambla. Tengo la flota eléctrica lista para salir, pero los cargadores rápidos están sin potencia.'),
-    L('valeria', 'Y justo afloja el viento al atardecer. Necesitamos respaldo firme: la Planta de Biomasa, al sureste.'),
+    L('valeria', 'Y justo afloja el viento al atardecer. Necesitamos respaldo firme: la Planta de Biomasa, al este de la ciudad.'),
     L('valeria', 'Cargá chips del acopio forestal, encendé la caldera con su secuencia de arranque y enrutá la potencia hasta la terminal.')],
   tormenta: [
     L('mateo', '¡Capi, m\'hijo! Mirá el cielo del sudeste: se viene una sudestada de las bravas. Viento fuerte, lluvia y río crecido.'),
@@ -138,7 +138,7 @@ export class Missions {
       case 'rio': {
         const set = S ? [0] : [0, 1], n = set.filter(i => G.hydro.gates[i].reg).length;
         return [
-          { text: 'Viajar a la Central Hidroeléctrica, al norte', targets: ['gate:0'], done: this.flag('atDam') || (Math.abs(c.x) < 42 && c.z < -34 && c.z > -80 && (this.flags.atDam = true)) },
+          { text: 'Viajar a la represa de Salto Grande, al norte', targets: ['gate:0'], done: this.flag('atDam') || (c.x > -170 && c.x < -60 && c.z < -84 && c.z > -126 && (this.flags.atDam = true)) },
           { text: S ? 'Regular la compuerta del vertedero' : `Regular dos compuertas del vertedero (${n}/2)`, targets: set.filter(i => !G.hydro.gates[i].reg).map(i => 'gate:' + i), done: n === set.length },
           { text: 'Sincronizar la Turbina 3 en la sala de máquinas', targets: ['turb:2'], done: G.hydro.t[2].on },
           { text: `Alcanzar el 65${N}% de energía renovable`, targets: [], done: o.pct >= 65 }];
@@ -287,12 +287,12 @@ export class Missions {
     if (who === 'lucia') {
       if (K === 'urbano' && this.active && G.bio.routed && (this.short || f.charged) && !f.busesSeen) return U.dialog(this.lines([
         L('lucia', '¡Llegó la potencia a los cargadores! Cada ómnibus eléctrico que sale es gasoil que no se quema en la ciudad.'),
-        L('lucia', 'Carga rápida al atardecer y a recorrer la rambla. ¡Mirá cómo salen!')]), () => { G.buses = true; this.busT = 6; g.inspect('terminal'); g.audio.power(); });
+        L('lucia', 'Carga rápida al atardecer y a recorrer la ciudad. ¡Mirá cómo salen!')]), () => { G.buses = true; this.busT = 6; g.inspect('terminal'); g.audio.power(); });
       if (K === 'urbano' && this.active && G.bio.routed && !f.charged) return U.dialog([L('lucia', 'Ya hay potencia. Ahora dale ritmo a los cargadores: es la consola del costado de la terminal, acá al lado.')]);
       return g.social.menu('lucia', G.buses ? 'La flota anda sola con energía de acá nomás. Y en silencio: los vecinos, chochos.' : 'Sin potencia en los cargadores no puedo sacar la flota. Avisame cuando la biomasa esté en línea.');
     }
     if (K === 'pico' && this.active && !this.m5 && !this.ceremony) return U.dialog(this.lines([
-      L('valeria', 'Es la noche del festival en la rambla: demanda máxima histórica y cero megavatios solares.'),
+      L('valeria', 'Es la noche del festival en el bulevar: demanda máxima histórica y cero megavatios solares.'),
       L('valeria', 'Terminó el mantenimiento de la Turbina 4, así que la represa va a pleno. Tenés agua, biomasa, baterías y las ráfagas de la noche.', 1),
       L('valeria', `Abrí el panel de red con Tab y pasá las baterías a Automático. Después aguantá ${this.short ? 'un minuto y medio' : 'dos minutos'} al 100${N}% renovable: si algo falla, las baterías te dan margen mientras lo arreglás.`),
       L('valeria', '¿Listo? ¡Arranca la hora pico!')]), () => (this.short ? this.startM5() : this.dryYear()));

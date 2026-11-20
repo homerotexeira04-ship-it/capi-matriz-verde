@@ -1,8 +1,9 @@
 // WorldBuilder (sectores): ciudad y rambla, represa, parque eólico, parque solar + baterías, biomasa, red de transmisión y flora.
 import * as THREE from 'three';
-import { clamp, lerp, damp, smooth, noise2 } from './util.js';
-import { POS, CITY_Y, B0 as B, coastD, channelD, resInside, terrainH, RES } from './terrain.js';
-import { C, canvasTex, textTex, Batch } from './world.js';
+import { clamp, lerp, damp, smooth, noise2, rng } from './util.js';
+import { POS, CITY_Y, B0 as B, coastD, channelD, terrainH, RES, DAM_Z, HYDRO_OFF, SOLAR_OFF } from './terrain.js';
+import { C, canvasTex, textTex, Batch, offsetWorld } from './world.js';
+import { argFlag } from './barrios.js';
 import { CAP } from './grid.js';
 
 export const PAL = [C.cream, C.terra, C.ochre, C.rose, C.white, 0xa9cfe0, 0xd9c6a0, 0xe0d2b4];
@@ -75,78 +76,72 @@ export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
 // ================= SECTOR 1: CIUDAD COSTERA Y RAMBLA =================
 export function buildCity(w) {
   const b = w.batch, R = w.rand, Y = 2.2;
-  b.boxB(-44, 1.2, 41, 68, 0.9, 60, C.asphalt);
-  b.boxB(-46.5, 1.0, 73.3, 73, 1.2, 4.6, C.granite);
-  b.boxB(-80.6, 1.0, 41, 4.8, 1.2, 60, C.granite);
-  w.addPlatform(-83.2, -10, 11, 75.8, CITY_Y);
-  for (let x = -80; x <= -12; x += 4) b.boxB(x, Y, 73.3, 0.14, 0.02, 4.4, 0xc38e80);
-  for (let z = 14; z <= 70; z += 4) b.boxB(-80.6, Y, z, 4.6, 0.02, 0.14, 0xc38e80);
+  // Calzadas, bulevar y costanera: la ciudad creció hacia el este (hasta x 22) y hacia el sur (hasta z 94)
+  b.boxB(-28, 1.2, 41, 100, 0.9, 60, C.asphalt);              // x -78..22, z 11..71
+  b.boxB(-30.5, 1.0, 73.3, 105, 1.2, 4.6, C.granite);         // bulevar
+  b.boxB(-28, 1.2, 84.8, 100, 0.9, 18.4, C.asphalt);          // x -78..22, z 75.6..94
+  b.boxB(-80.6, 1.0, 52.5, 4.8, 1.2, 83, C.granite);          // costanera sobre el río Uruguay
+  b.boxB(-28, 1.25, 94.1, 100, 0.9, 0.6, C.sidewalk);         // cordón del sur
+  w.addPlatform(-83.2, 22, 11, 94.4, CITY_Y);
+  for (let x = -80; x <= 20; x += 4) b.boxB(x, Y, 73.3, 0.14, 0.02, 4.4, 0xc38e80);
+  for (let z = 14; z <= 92; z += 4) b.boxB(-80.6, Y, z, 4.6, 0.02, 0.14, 0xc38e80);
   const wall = (x0, x1, z0, z1) => { b.boxB((x0 + x1) / 2, Y, (z0 + z1) / 2, x1 - x0, 0.7, z1 - z0, C.cream); b.boxB((x0 + x1) / 2, Y + 0.7, (z0 + z1) / 2, x1 - x0 + 0.16, 0.12, z1 - z0 + 0.16, 0xfaf4e6); w.addSolid(x0, x1, z0, z1, 3.05); };
-  wall(-83.4, -66.6, 75.6, 76.0); wall(-49.4, -10, 75.6, 76.0); wall(-83.4, -83.0, 11, 75.6);
+  // Baranda de la costanera, con la boca del puerto y las bajadas al puerto deportivo
+  const GAPS = [[38, 60], [67.4, 70.6], [76.4, 79.6]];
+  let zz = 11; for (const [g0, g1] of GAPS) { wall(-83.4, -83.0, zz, g0); zz = g1; } wall(-83.4, -83.0, zz, 94.2);
+  const inGap = z => GAPS.some(([g0, g1]) => z > g0 - 1.6 && z < g1 + 1.6);
   // líneas de calzada
-  const xsS = [-76, -60, -44, -28, -12], zsS = [13, 27, 41, 55, 69];
-  for (const x of xsS) for (let z = 15; z < 70; z += 3.2) b.boxB(x, 2.1, z, 0.14, 0.02, 1.4, 0xe9e2c8);
-  for (const z of zsS) for (let x = -76; x < -11; x += 3.2) b.boxB(x, 2.1, z, 1.4, 0.02, 0.14, 0xe9e2c8);
+  const xsS = [-76, -60, -44, -28, -12, 4, 20], zsS = [13, 27, 41, 55, 69, 77.6, 92];
+  for (const x of xsS) for (let z = 15; z < 92; z += 3.2) { if (z > 70.4 && z < 76) continue; b.boxB(x, 2.1, z, 0.14, 0.02, 1.4, 0xe9e2c8); }
+  for (const z of zsS) for (let x = -76; x < 21; x += 3.2) b.boxB(x, 2.1, z, 1.4, 0.02, 0.14, 0xe9e2c8);
 
-  const xs = [-68, -52, -36, -20], zs = [20, 34, 48, 62];
+  const xs = [-68, -52, -36, -20, -4, 12], zs = [20, 34, 48, 62, 85];
   const dummy = { rand: R, cityBatch: new Batch(), batch: new Batch(), winBatch: [new Batch(), new Batch(), new Batch()], addSolid() {}, addOcc() {} };
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-    const cx = xs[i], cz = zs[j], key = i + ',' + j, barrio = i === 0 ? 0 : i === 3 ? 2 : 1;
-    if ((i === 1 || i === 2) && (j === 1 || j === 2)) continue;   // las cuatro manzanas centrales son la Plaza Matriz
+  const block = (i, j) => {
+    const cx = xs[i], cz = zs[j], key = i + ',' + j, barrio = i === 0 ? 0 : i >= 3 ? 2 : 1;
+    if ((i === 1 || i === 2) && (j === 1 || j === 2)) return;   // las cuatro manzanas centrales son la Plaza Matriz
+    if (key === '4,2') return;                                    // Plaza Artigas, frente al teatro
     b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, C.sidewalk);
-    if (key === '3,0') { substation(w, cx, cz); continue; }
-    if (key === '3,3') { terminal(w, cx, cz); continue; }
-    if (key === '2,0') { tower(w, cx, cz); continue; }
+    if (key === '3,0') { substation(w, cx, cz); return; }
+    if (key === '3,3') { terminal(w, cx, cz); return; }
+    if (key === '2,0') { tower(w, cx, cz); return; }
     // El teatro y la catedral ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
-    const land = key === '1,0' || key === '2,3', bw0 = land ? dummy : w;
+    const land = key === '4,1' || key === '2,3', bw0 = land ? dummy : w;
     const n = R() < 0.45 ? 2 : 3, total = 10.6, gap = 0.5, bw = (total - gap * (n - 1)) / n;
     for (let k = 0; k < n; k++) {
-      const x = cx - total / 2 + bw / 2 + k * (bw + gap), tall = (i === 1 || i === 2) ? 6.5 + R() * 6.5 : 4.2 + R() * 4;
+      const x = cx - total / 2 + bw / 2 + k * (bw + gap), tall = (i === 1 || i === 2) && j < 4 ? 6.5 + R() * 6.5 : 4.2 + R() * 4;
       building(bw0, x, cz + (R() - 0.5) * 0.6, bw, 7 + R() * 1.0, tall, PAL[Math.floor(R() * PAL.length)], barrio, Math.floor(R() * 4));
     }
+    if (key === '4,1') return;
     w.tree(R() < 0.5 ? 'jaca' : 'native', cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y);
-  }
+  };
+  // primero las 16 manzanas de siempre (mismo orden de dados), después el ensanche
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) block(i, j);
+  for (let i = 4; i < 6; i++) for (let j = 0; j < 4; j++) block(i, j);
+  for (let i = 0; i < 6; i++) block(i, 4);
 
   plaza(w);
+  plazaArtigas(w);
 
-  // Farolas, palmeras y bancos de la rambla
-  for (let x = -80; x <= -12; x += 8) { if (x > -68 && x < -48) continue; w.lamp(x, 75.1, Math.PI, Y); }
-  for (let z = 16; z <= 68; z += 8) w.lamp(-82.5, z, Math.PI / 2, Y);
-  for (let x = -76; x <= -16; x += 12) { if (x > -68 && x < -48) continue; w.tree('palm', x + 4, 72.2, 0.95 + R() * 0.2, Y); b.boxB(x, Y, 74.6, 2.2, 0.45, 0.6, C.wood); }
-  for (let z = 20; z <= 64; z += 11) { w.tree('palm', -79.4, z, 1, Y); b.boxB(-82.1, Y, z + 4, 0.6, 0.45, 2.2, C.wood); }
-  for (const x of xsS) for (const z of [20, 48]) w.lamp(x + 2.4, z + 5.0, 0, Y);
-  // Letras de la rambla
+  // Farolas, palmeras y bancos del bulevar (el tramo de x -68 a -48 queda libre para las llamadas)
+  for (let x = -80; x <= 20; x += 8) { if (x > -68 && x < -48) continue; w.lamp(x, 75.1, Math.PI, Y); }
+  for (let z = 16; z <= 92; z += 8) { if (inGap(z)) continue; w.lamp(-82.5, z, Math.PI / 2, Y); }
+  for (let x = -76; x <= 8; x += 12) { if (x > -68 && x < -48) continue; w.tree('palm', x + 4, 72.2, 0.95 + R() * 0.2, Y); if (x !== -4) b.boxB(x, Y, 74.6, 2.2, 0.45, 0.6, C.wood); }   // en x -4 está el puesto de la feria
+  for (let z = 20; z <= 86; z += 11) { w.tree('palm', -79.4, z, 1, Y); if (!inGap(z + 4)) b.boxB(-82.1, Y, z + 4, 0.6, 0.45, 2.2, C.wood); }
+  for (const x of xsS) for (const z of [20, 48, 85]) { if (x === 4 && z === 48) continue; w.lamp(x + 2.4, z + 5.0, 0, Y); }
+  // Letras del bulevar
   const tex = textTex('URUGUAY', { w: 1024, h: 256, fg: '#ffffff', stroke: '#1d6fb8', size: 210 });
   const let3 = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.2), new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.25 }));
   let3.position.set(-33, Y + 1.75, 74.95); let3.castShadow = true; w.scene.add(let3);
   const let4 = let3.clone(); let4.position.z = 74.85; let4.rotation.y = Math.PI; w.scene.add(let4);
   b.boxB(-33, Y, 74.9, 13.4, 0.18, 0.7, 0xf2efe8);
   logoSign(w, -18.5, Y, 74.7, 0, 7);
+  sign(w, 'BULEVAR', 14, Y, 74.9, 0, 4.4, 0.9);
 
-  // Puerto deportivo
-  for (const px of [-64, -52]) {
-    b.boxB(px, 0.9, 87, 2.4, 0.3, 22, C.wood); w.addPlatform(px - 1.2, px + 1.2, 75.6, 98, 1.25);
-    for (let z = 78; z <= 98; z += 5) { b.cyl(px - 1.1, -2.6, z, 0.16, 0.16, 4, 0x6a4a2f, 6); b.cyl(px + 1.1, -2.6, z, 0.16, 0.16, 4, 0x6a4a2f, 6); }
-  }
-  b.boxB(-58, 0.9, 97, 14.4, 0.3, 2.2, C.wood); w.addPlatform(-65.2, -50.8, 95.9, 98.1, 1.25);
-  b.boxB(-58, 1.25, 76.4, 15, 0.9, 1.6, C.granite); w.addPlatform(-66, -50, 75.4, 77.4, 1.7);
-  w.dyn.boats = [];
-  const sails = [0xffffff, 0xffd166, 0xef476f, 0x8ecae6, 0xffffff, 0x90be6d];
-  [[-60.5, 82], [-60.5, 89], [-55.5, 84], [-55.5, 91], [-68, 86], [-47.5, 88]].forEach((p, i) => {
-    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.8, vertexColors: true });
-    const bb = new (b.constructor)();
-    bb.box(0, 0.25, 0, 1.3, 0.6, 3.6, 0xf4f1ea); bb.box(0, 0.05, 0, 1.0, 0.3, 3.0, i % 2 ? 0x1d6fb8 : 0xc0392b); bb.box(0, 0.7, -0.3, 0.9, 0.4, 1.2, 0xe8e2d2);
-    bb.cyl(0, 0.5, 0.4, 0.05, 0.05, 4.2, 0x8a8f96, 5);
-    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([0, 4.5, 0.45, 0, 1.1, 0.45, 0, 1.1, -1.7, 0, 4.5, 0.45, 0, 1.1, -1.7, 0, 1.1, 0.45], 3)); sg.computeVertexNormals();
-    bb.add(sg, sails[i], 0, 0, 0, 1, 1, 1, 0, 0, 0, 0);
-    const m = bb.mesh(mat); m.castShadow = true; g.add(m); g.position.set(p[0], 0, p[1]); g.rotation.y = (i % 2) * Math.PI + 0.1 * i; w.scene.add(g); w.dyn.boats.push(g);
-  });
-  w.updaters.push((dt) => w.dyn.boats.forEach((g, i) => { g.position.y = Math.sin(w.time * 1.3 + i) * 0.12 - 0.05; g.rotation.z = Math.sin(w.time * 1.1 + i * 2) * 0.05; }));
-
-  // Barrio residencial (viviendas instanciadas)
-  const roofs = [0xb5533c, 0xa9462f, 0xc86a4a, 0x8f9aa3];
+  // Barrio Sur: viviendas instanciadas al sur del bulevar, sobre la ruta que sale de la ciudad
+  const roofs = [0xb5533c, 0xa9462f, 0xc86a4a, 0x8f9aa3], DX = -33, DZ = 73;
   for (const hx of [-3, 5, 13]) for (const hz of [33, 41, 49, 57]) {
-    const x = hx + (R() - 0.5), z = hz + (R() - 0.5), y = w.groundAt(x, z), c = PAL[Math.floor(R() * PAL.length)];
+    const x = hx + DX + (R() - 0.5), z = hz + DZ + (R() - 0.5), y = w.groundAt(x, z), c = PAL[Math.floor(R() * PAL.length)];
     w.houses.push({ x, y, z, w: 4.8, d: 5.2, h: 2.7, rh: 1.7, c, rc: roofs[Math.floor(R() * 4)], ry: 0 });
     w.addSolid(x - 2.4, x + 2.4, z - 2.6, z + 2.6); w.addOcc(x - 2.4, x + 2.4, z - 2.6, z + 2.6, y + 4);
     const q = new THREE.PlaneGeometry(0.8, 0.9);
@@ -156,7 +151,32 @@ export function buildCity(w) {
     if (R() < 0.7) w.tree(R() < 0.5 ? 'ceibo' : 'native', x + 3.4, z + 2.8, 0.7);
     if (R() < 0.6) w.tree('bush', x - 3, z + 3, 1);
   }
-  for (let z = 30; z <= 60; z += 10) w.lamp(1, z, Math.PI / 2);
+  for (let z = 30; z <= 60; z += 10) w.lamp(1 + DX, z + DZ, Math.PI / 2);
+  sign(w, 'BARRIO SUR', -42, w.groundAt(-42, 100.6), 100.6, 0, 4.6, 0.9);
+}
+
+// Plaza Artigas: frente al Teatro Larrañaga, con el monumento a Artigas, canteros, bancos y faroles
+function plazaArtigas(w) {
+  const b = w.batch, Y = 2.2, R = w.rand, [cx, cz] = POS.artigas;
+  b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, 0xdcd1b8);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.boxB(cx + sx * 3.7, Y, cz + sz * 2.9, 4.2, 0.07, 3.4, 0x6dbb52);
+  b.boxB(cx, Y, cz, 12.6, 0.012, 1.4, 0xc9bca0); b.boxB(cx, Y, cz, 1.4, 0.012, 10.6, 0xc9bca0);
+  // monumento: pedestal escalonado y la figura del prócer (abstracta, en bronce)
+  b.boxB(cx, Y, cz, 3.2, 0.4, 3.2, 0xd8d2c2); b.boxB(cx, Y + 0.4, cz, 2.4, 0.4, 2.4, 0xd8d2c2); b.boxB(cx, Y + 0.8, cz, 1.5, 2.2, 1.5, 0xcfc6b2);
+  b.boxB(cx, Y + 3.0, cz, 1.7, 0.2, 1.7, 0xe6dfcf);
+  const BR = 0x6b5a3a;
+  b.boxB(cx - 0.18, Y + 3.2, cz, 0.22, 0.95, 0.24, BR); b.boxB(cx + 0.18, Y + 3.2, cz, 0.22, 0.95, 0.24, BR);
+  b.boxB(cx, Y + 4.1, cz, 0.72, 1.05, 0.42, BR); b.add(new THREE.ConeGeometry(0.62, 1.4, 6), BR, cx, Y + 4.25, cz, 1, 1, 0.75);
+  b.sph(cx, Y + 5.42, cz, 0.24, BR); b.boxB(cx + 0.42, Y + 4.4, cz + 0.06, 0.16, 0.7, 0.16, BR);
+  w.addSolid(cx - 1.6, cx + 1.6, cz - 1.6, cz + 1.6, Y + 5.6);
+  plaqueSign(w, 'PLAZA ARTIGAS', cx, Y + 1.9, cz + 0.79, 0, 1.4, 0.36);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { w.tree(R() < 0.5 ? 'jaca' : 'native', cx + sx * 5.6, cz + sz * 4.4, 0.75, Y); b.boxB(cx + sx * 3.7, Y, cz + sz * 0.9, 2.2, 0.45, 0.6, C.wood); }
+  for (const [x, z] of [[cx - 6, cz], [cx + 6, cz], [cx, cz + 5.1]]) w.lamp(x, z, 0, Y);
+}
+function plaqueSign(w, text, x, y, z, ry, sw, sh) {
+  const t = textTex(text, { w: 512, h: Math.round(512 * sh / sw), bg: '#3a3226', fg: '#f3e2b0', border: '#cfa24a', size: 64 });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.25, roughness: 0.8 }));
+  m.position.set(x, y, z); m.rotation.y = ry; w.scene.add(m);
 }
 
 function plaza(w) {
@@ -267,28 +287,37 @@ function terminal(w, cx, cz) {
 }
 
 // ================= SECTOR 2: CENTRAL HIDROELÉCTRICA =================
-export function buildHydro(w) {
-  const b = w.batch, D = POS.dam, T = D.top, cc = C.concrete;
+// La represa se arma en coordenadas locales (como siempre) y se ubica sobre el río Uruguay con una vista desplazada del mundo.
+// El tramo original (vertedero + central uruguaya) se completa hacia el oeste con el cuerpo de la presa y la central argentina.
+export function buildHydro(W) {
+  const [OX, OZ] = HYDRO_OFF, w = offsetWorld(W, OX, OZ), GATES = POS.gates.map(x => x - OX), TURBS = POS.turbs.map(x => x - OX);
+  const b = w.batch, D = { x0: POS.dam.x0 - OX, x1: POS.dam.x1 - OX, z0: POS.dam.z0 - OZ, z1: POS.dam.z1 - OZ }, T = POS.dam.top, cc = C.concrete;
   b.box(-22.7, (T - 3) / 2, -55, 2.6, T + 3, 6, cc); b.box(11.3, (T - 3) / 2, -55, 25.4, T + 3, 6, cc);
+  b.box((D.x0 - 24) / 2, (T - 3) / 2, -55, -24 - D.x0, T + 3, 6, cc);   // cuerpo oeste, hasta la orilla argentina
   b.box(-11.4, -0.2, -56, 20, 5.6, 4, C.concreteD);                    // umbral del vertedero
   b.box(-11.4, 1.05, -50.4, 20, 0.7, 7.8, C.concreteD, 0, 0.417);       // rápida
   b.box(-11.4, T - 0.35, -55, 20, 0.7, 6, cc);                          // tablero sobre los vanos
   for (let k = 0; k < 5; k++) { const px = -21.08 + k * 4.84; b.box(px, (T - 3) / 2, -54, 0.64, T + 3, 8, cc); b.box(px, 0.3, -48.6, 0.64, 2.6, 3.2, cc, 0, 0.417); }
-  b.box(0, T + 0.02, -55, 47.6, 0.04, 3.4, 0x6a6f77);
-  for (let x = -22; x <= 22; x += 3.2) b.box(x, T + 0.05, -55, 1.4, 0.02, 0.14, 0xe9e2c8);
-  for (const z of [-57.85, -52.15]) { b.box(0, T + 0.95, z, 48, 0.1, 0.1, C.steelD); b.box(0, T + 0.5, z, 48, 0.06, 0.06, C.steelD); for (let x = -24; x <= 24; x += 2.4) b.boxB(x, T, z, 0.1, 1.0, 0.1, C.steelD); }
+  const CX = (D.x0 + D.x1) / 2, CW = D.x1 - D.x0;
+  b.box(CX, T + 0.02, -55.4, CW, 0.04, 2.6, 0x6a6f77);
+  for (let x = D.x0 + 2; x <= D.x1 - 2; x += 3.2) b.box(x, T + 0.05, -55.4, 1.4, 0.02, 0.14, 0xe9e2c8);
+  // vía del tren sobre el coronamiento (el puente une Salto con Concordia)
+  b.box(CX, T + 0.03, -53.4, CW, 0.03, 1.5, 0x8a7d6b); for (const dz of [-0.36, 0.36]) b.box(CX, T + 0.1, -53.4 + dz, CW, 0.08, 0.08, 0x5a6068);
+  for (let x = D.x0 + 0.5; x <= D.x1; x += 0.9) b.box(x, T + 0.05, -53.4, 0.22, 0.04, 1.2, 0x6b4f3a);
+  for (const z of [-57.85, -52.15]) { b.box(CX, T + 0.95, z, CW, 0.1, 0.1, C.steelD); b.box(CX, T + 0.5, z, CW, 0.06, 0.06, C.steelD); for (let x = D.x0; x <= D.x1; x += 2.4) b.boxB(x, T, z, 0.1, 1.0, 0.1, C.steelD); }
   w.addSolid(D.x0, D.x1, D.z0, D.z1, T, true);
-  // Rampas de acceso en ambos estribos
-  for (const sx of [-1, 1]) { b.box(sx * 25.8, T - 0.66, -55, 3.8, 0.5, 6, cc, 0, 0, -sx * 0.215); w.addPlatform(sx > 0 ? 24 : -27.6, sx > 0 ? 27.6 : -24, D.z0, D.z1, (x) => T - (Math.abs(x) - 24) / 3.6 * 0.8); }
+  // Rampa en el estribo uruguayo y explanada en el argentino (la meseta queda a la altura del coronamiento)
+  b.box(25.8, T - 0.66, -55, 3.8, 0.5, 6, cc, 0, 0, -0.215); w.addPlatform(24, 27.6, D.z0, D.z1, (x) => T - (x - 24) / 3.6 * 0.8);
+  b.box(D.x0 - 2.5, T - 0.4, -55, 5, 0.8, 6, cc); w.addPlatform(D.x0 - 5, D.x0, D.z0, D.z1, T);
   w.addSolid(D.x0, D.x1, D.z0 - 0.1, D.z0 + 0.2, T + 1.0); w.addSolid(D.x0, D.x1, D.z1 - 0.2, D.z1 + 0.1, T + 1.0);
-  for (let x = -20; x <= 20; x += 10) w.lamp(x, -57.5, 0, T);
+  for (let x = D.x0 + 4; x <= 20; x += 10) w.lamp(x, -57.5, 0, T);
   // Pórticos de izaje y compuertas móviles
   const fallTex = canvasTex(32, 64, (g) => { g.fillStyle = '#bfe9fb'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#ffffff'; for (let i = 0; i < 26; i++) g.fillRect((i * 13) % 32, (i * 29) % 64, 3, 10 + (i * 7) % 16); }, { repeat: 1 });
   fallTex.wrapS = fallTex.wrapT = THREE.RepeatWrapping; fallTex.repeat.set(2, 2);
   const fallMat = new THREE.MeshBasicMaterial({ map: fallTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
   const gateMat = new THREE.MeshStandardMaterial({ color: 0x2f6f9f, flatShading: true, roughness: 0.7, metalness: 0.3 });
   const gates = [];
-  POS.gates.forEach((gx, i) => {
+  GATES.forEach((gx, i) => {
     for (const z of [-57.6, -52.4]) for (const dx of [-2.3, 2.3]) b.boxB(gx + dx, T, z, 0.22, 3.4, 0.22, C.yellow);
     for (const dx of [-2.3, 2.3]) b.box(gx + dx, T + 3.5, -55, 0.3, 0.3, 5.6, C.yellow);
     for (const z of [-57.6, -55, -52.4]) b.box(gx, T + 3.5, z, 4.9, 0.3, 0.3, C.yellow);
@@ -306,8 +335,13 @@ export function buildHydro(w) {
   b.box(12, 4.5, -44.2, 20.4, 0.25, 0.4, C.steel);
   w.glassBatch.box(12, 4.55, -48.1, 19.6, 0.08, 7.6, 0xffffff);
   w.addSolid(2, 22, -52, -44, 4.6, true);
+  // rampa de servicio desde la orilla uruguaya hasta el techo de la sala de máquinas
+  { const RT = x => lerp(4.6, 6.02, clamp((x - 22) / 6.2, 0, 1)), zc = -49;
+    b.box(25.1, (RT(22) + RT(28.2)) / 2 - 0.22, zc, 6.36, 0.44, 3, cc, 0, 0, Math.atan2(RT(28.2) - RT(22), 6.2));
+    w.addPlatform(21.8, 28.4, zc - 1.5, zc + 1.5, (x) => RT(x));
+    for (const s of [-1, 1]) { const z = zc + s * 1.45; for (let x = 22.2; x <= 28.2; x += 1.5) b.boxB(x, RT(x), z, 0.08, 0.95, 0.08, C.steelD); b.box(25.2, (RT(22.2) + RT(28.2)) / 2 + 0.92, z, 6.1, 0.07, 0.07, C.steelD, 0, 0, Math.atan2(RT(28.2) - RT(22.2), 6)); w.addSolid(22, 27.4, z - 0.05, z + 0.05, 6.4); } }
   const rotors = [], rotMat = new THREE.MeshStandardMaterial({ color: 0xe6e6e6, flatShading: true, roughness: 0.5, metalness: 0.4 });
-  POS.turbs.forEach((tx, i) => {
+  TURBS.forEach((tx, i) => {
     b.cyl(tx, 0.8, -48, 1.55, 1.7, 1.3, 0xf2a03a, 12); b.cyl(tx, 2.1, -48, 0.5, 0.5, 0.5, C.steelD, 8);
     const r = new THREE.Group(); const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.22, 12), rotMat); r.add(disc);
     for (let k = 0; k < 3; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 0.34), new THREE.MeshStandardMaterial({ color: 0xd7263d, roughness: 0.6 })); sp.rotation.y = k * Math.PI / 3; sp.position.y = 0.14; r.add(sp); }
@@ -315,9 +349,26 @@ export function buildHydro(w) {
     b.box(tx, 0.1, -44.1, 2.2, 1.0, 0.5, 0x1f2a33);
     w.addInter('turb:' + i, tx, -52.9, { y: T, ry: Math.PI, h: 4.2 });
   });
-  sign(w, 'CENTRAL HIDROELÉCTRICA', 31, w.groundAt(31, -50), -49.5, -0.5, 7.5, 1.3);
-  sign(w, 'SALA DE MÁQUINAS', 12, 2.2, -44.0, 0, 6, 0.9, { bg: '#1c3d5a' });
-  for (let x = -16; x <= 16; x += 4) { const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), new THREE.MeshStandardMaterial({ color: 0xff7b25, flatShading: true })); buoy.position.set(x, RES, -62.5); w.scene.add(buoy); (w.dyn.buoys = w.dyn.buoys || []).push(buoy); }
+  sign(w, 'CENTRAL HIDROELÉCTRICA · URUGUAY', 12, 2.2, -43.9, 0, 9, 0.8, { bg: '#1c3d5a' });
+  // Central argentina, en la margen oeste (de adorno: su energía va a la red argentina)
+  b.box(-36, -1.1, -48, 18, 3.8, 8, cc);
+  b.box(-36, 2.6, -44.2, 18, 3.6, 0.4, 0xd9d2c4); b.box(-44.8, 2.6, -48, 0.4, 3.6, 8, 0xd9d2c4); b.box(-27.2, 2.6, -48, 0.4, 3.6, 8, 0xd9d2c4);
+  b.box(-36, 3.6, -44.0, 18, 0.5, 0.1, 0x74acdf);
+  for (let x = -45; x <= -27; x += 4.5) b.box(x, 4.5, -48, 0.25, 0.25, 8, C.steel);
+  w.glassBatch.box(-36, 4.55, -48.1, 17.6, 0.08, 7.6, 0xffffff);
+  w.addSolid(-45, -27, -52, -44, 4.6, true);
+  const rotA = [];
+  for (const tx of [-42, -37.5, -33, -28.5]) {
+    b.cyl(tx, 0.8, -48, 1.55, 1.7, 1.3, 0xf2a03a, 12); b.cyl(tx, 2.1, -48, 0.5, 0.5, 0.5, C.steelD, 8); b.box(tx, 0.1, -44.1, 2.2, 1.0, 0.5, 0x1f2a33);
+    const r = new THREE.Group(); r.add(new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.22, 12), new THREE.MeshStandardMaterial({ color: 0xe6e6e6, flatShading: true, roughness: 0.5, metalness: 0.4 })));
+    for (let k = 0; k < 3; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 0.34), new THREE.MeshStandardMaterial({ color: 0x74acdf, roughness: 0.6 })); sp.rotation.y = k * Math.PI / 3; sp.position.y = 0.14; r.add(sp); }
+    r.position.set(tx, 2.45, -48); w.scene.add(r); rotA.push(r);
+  }
+  sign(w, 'CENTRAL ARGENTINA', -36, 2.2, -44.0, 0, 6, 0.9, { bg: '#1c3d5a', border: '#74acdf' });
+  argFlag(w, -49.5, w.groundAt(-49.5, -58.5), -58.5, 2.4, 1.6, 8);
+  flag(W, POS.dam.x1 + 5.2, W.groundAt(POS.dam.x1 + 5.2, -104.4), -104.4, 2.4, 1.6, 8);
+  w.updaters.push((dt, st) => { const u = st.grid.hydroUnit, avg = (u[0] + u[1] + u[2] + u[3]) / 4; rotA.forEach((r, i) => { r.rotation.y += dt * (0.25 + avg / CAP.hydro) * 7.5 * (1 + i * 0.03); }); });
+  for (let x = -44; x <= 20; x += 4) { const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), new THREE.MeshStandardMaterial({ color: 0xff7b25, flatShading: true })); buoy.position.set(x, RES, -62.5); w.scene.add(buoy); (w.dyn.buoys = w.dyn.buoys || []).push(buoy); }
   w.updaters.push((dt, st) => {
     const G = st.grid;
     fallTex.offset.y += dt * 1.6;
@@ -325,11 +376,24 @@ export function buildHydro(w) {
       const goal = G.hydro.gates[i].reg ? 0.28 : 1;
       g.open = damp(g.open, goal, 1.5, dt); g.mesh.position.y = 4.3 + g.open * 2.3;
       g.fall.scale.x = 0.3 + 0.7 * g.open; g.fall.material.opacity = 0.9;
-      if (Math.random() < g.open * 60 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 3.6 * g.open, 0.3, -46.3 + Math.random(), (Math.random() - 0.5) * 2, 1.5 + Math.random() * 2.5 * g.open, 1 + Math.random() * 2, 0.8, 0.5, 1.3, 0xffffff, 0.8, 5, 1);
+      if (Math.random() < g.open * 60 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 3.6 * g.open, 0.3, -46.3 + OZ + Math.random(), (Math.random() - 0.5) * 2, 1.5 + Math.random() * 2.5 * g.open, 1 + Math.random() * 2, 0.8, 0.5, 1.3, 0xffffff, 0.8, 5, 1);
     });
-    rotors.forEach((r, i) => { r.rotation.y += dt * (G.hydroUnit[i] / CAP.hydro) * 9; if (G.hydroUnit[i] > 1 && Math.random() < 14 * dt) st.fx.soft.emit(POS.turbs[i] + (Math.random() - 0.5) * 1.6, 0.15, -43.6, (Math.random() - 0.5), 0.3, 1.5 + Math.random() * 2, 1.0, 0.4, 1.0, 0xffffff, 0.6, 0, 0.8); });
+    rotors.forEach((r, i) => { r.rotation.y += dt * (G.hydroUnit[i] / CAP.hydro) * 9; if (G.hydroUnit[i] > 1 && Math.random() < 14 * dt) st.fx.soft.emit(POS.turbs[i] + (Math.random() - 0.5) * 1.6, 0.15, -43.6 + OZ, (Math.random() - 0.5), 0.3, 1.5 + Math.random() * 2, 1.0, 0.4, 1.0, 0xffffff, 0.6, 0, 0.8); });
     w.dyn.buoys.forEach((bu, i) => { bu.position.y = RES + Math.sin(w.time * 1.5 + i) * 0.1; });
   });
+  // Pasos de frontera en las dos cabeceras del puente
+  const aduana = (x, z, text, col, face) => {
+    const y = W.groundAt(x, z), bb = W.batch;
+    bb.boxB(x, y, z, 4.4, 2.8, 2.6, 0xf2efe8); bb.boxB(x, y + 2.0, z, 4.46, 0.5, 2.66, col); bb.boxB(x, y + 2.8, z, 4.9, 0.2, 3.1, 0xdad4c6);
+    W.winBatch[2].add(new THREE.PlaneGeometry(2.6, 0.9), 0xffffff, x, y + 1.4, z + face * 1.32, 1, 1, 1, 0, face > 0 ? 0 : Math.PI, 0, 0);
+    W.addSolid(x - 2.2, x + 2.2, z - 1.3, z + 1.3);
+    bb.boxB(x + 2.8, y, z + face * 1.6, 0.3, 1.1, 0.3, 0xe8e2d2); bb.box(x + 5.0, y + 1.0, z + face * 1.6, 4.2, 0.14, 0.14, 0xe5484d);
+    for (let k = 0; k < 4; k++) bb.box(x + 3.6 + k * 1.0, y + 1.0, z + face * 1.6, 0.5, 0.16, 0.16, 0xffffff);
+    sign(W, text, x, y + 0.4, z + face * 1.4 + face * 0.02, face > 0 ? 0 : Math.PI, 4.2, 0.7, { bg: '#12325a', border: '#ffc93c' });
+  };
+  aduana(-76.5, -104.8, 'ADUANA · URUGUAY', 0x0038a8, 1);
+  aduana(-171.5, -104.8, 'ADUANA · ARGENTINA', 0x74acdf, 1);
+  sign(W, 'REPRESA DE SALTO GRANDE', -84, W.groundAt(-84, -106.5), -106.5, 0, 7.6, 1.2, { bg: '#0b4f7a', border: '#9be7ff' });
 }
 
 // ================= SECTOR 3: PARQUE EÓLICO EN LAS CUCHILLAS =================
@@ -413,7 +477,7 @@ export function buildSolar(w) {
   for (let k = -1; k <= 1; k++) b.boxB(ix + k * 1.2, iy + 0.3, iz + 1.32, 0.8, 1.2, 0.06, 0x8c949c);
   w.addSolid(ix - 2.1, ix + 2.1, iz - 1.3, iz + 1.3);
   b.box(ix + 12, iy + 0.05, iz, 22, 0.1, 0.5, 0x8c8676);
-  sign(w, 'PARQUE SOLAR Y BATERÍAS', -52, w.groundAt(-52, -59.2), -59.4, 0, 7, 1.2);
+  sign(w, 'PARQUE SOLAR Y BATERÍAS', 28, w.groundAt(28, -59.2), -59.4, 0, 7, 1.2);
   // Banco de baterías LFP
   const [bx, bz] = POS.batYard, by = w.groundAt(bx, bz), leds = [];
   b.boxB(bx, by, bz, 15, 0.08, 17, 0xbdb6a2);
@@ -485,15 +549,23 @@ export function buildBiomass(w) {
 // ================= INFRAESTRUCTURA: carreteras, puente, líneas de transmisión =================
 export function buildRoads(w) {
   const A = C.asphalt, G = C.gravel;
-  w.road([[-10, 27], [8, 27], [22, 26], [34, 22.5]], 3.4, A);
+  w.road([[22, 27], [28, 25.5], [34, 22.5]], 3.4, A);
   w.road([[34, 22.5], [42, 16.5], [48, 12.5]], 2.6, G); w.road([[48, 12.5], [57, 5], [66, -1]], 2.4, G);
   w.road([[66, -1], [60, -14], [54.5, -25.5]], 2.2, G); w.road([[66, -1], [70, -18], [72.5, -33]], 2.2, G);
   w.road([[66, -1], [78, -8], [88, -10]], 2.2, G); w.road([[66, -1], [76, 8], [85, 13.5]], 2.2, G);
-  w.road([[-10, 69], [8, 70], [28, 66.5], [44, 62.5]], 3.6, A);
-  w.road([[-44, 11], [-44, 0], [-44.6, -7], [-46, -12]], 3.4, A); w.road([[-46, -42], [-47, -48], [-52, -53.5], [-57, -58.6]], 3.4, A);
-  w.road([[-12, 13], [4, 2], [16, -14], [24, -34], [27.5, -49], [26, -55]], 3.4, A);
-  w.road([[-24, -55], [-36, -57.5], [-47, -59.2], [-57, -58.6]], 3.2, A);
-  // Puente arqueado sobre el canal
+  w.road([[22, 69], [28, 66.5], [44, 62.5]], 3.6, A);
+  // al norte: puente sobre el arroyo, Energimundo y la represa (el coronamiento sigue a Concordia)
+  w.road([[-44, 11], [-44, 0], [-44.6, -7], [-46, -12]], 3.4, A);
+  w.road([[-46, -42], [-47, -52], [-47.6, -72], [-49, -90], [-56, -99.2], [-70, -100.4], [-86.4, -100.2]], 3.4, A);
+  w.road([[-47.4, -49.6], [-60, -49.4], [-74, -49.6], [-82, -50], [-86.8, -50.6]], 3.0, A);   // acceso a Energimundo
+  w.road([[-166, -100.2], [-174, -99.6], [-179, -93], [-178.6, -84], [-177.4, -77]], 3.4, A);   // del lado argentino, hasta la avenida de Concordia
+  // al noreste: Barrio Jardín y el Parque Solar
+  w.road([[-12, 13], [4, 2], [16, -14], [24, -34], [27.5, -49], [27, -54.6]], 3.4, A);
+  // al sur: la ruta que sale de la ciudad, con el Barrio Sur y los naranjales
+  w.road([[-12, 94.4], [-12, 112], [-11, 140], [-6, 172], [0, 208]], 3.4, A);
+  w.road([[-40, 100.4], [-26, 100.4], [-12, 100.4]], 2.8, A);
+  w.road([[-11.2, 126], [12, 128], [40, 124], [70, 128], [104, 132]], 2.4, G);
+  // Puente arqueado sobre el arroyo
   const b = w.batch, Br = POS.bridge, hA = w.terrainAt(Br.x, Br.z0) + 0.05, hB = w.terrainAt(Br.x, Br.z1) + 0.05;
   const f = z => { const t = clamp((z - Br.z0) / (Br.z1 - Br.z0), 0, 1); return lerp(hA, hB, t) + 1.9 * Math.sin(Math.PI * t); };
   w.addPlatform(Br.x - 2.3, Br.x + 2.3, Br.z0, Br.z1, (x, z) => f(z));
@@ -540,12 +612,12 @@ export function buildLines(w) {
     w.lines[name] = { path, cum, len: cum[cum.length - 1], color, cap, phase: Math.random(), level: 0 };
   };
   const S = [POS.substation[0] - 1.4, POS.substation[1] - 4.1, 7];
-  mk('eolica', [[POS.windTx[0] + 2.6, POS.windTx[1] - 1.4, 6.5], [33, 12], [14, 15], [-2, 16.5], S], 0x9be7ff, 40);
-  mk('hidro', [[23, -50, 3], [17, -38], [9, -24], [2, -6], S], 0x5ad1ff, 144);
-  mk('solar', [[POS.batYard[0], POS.batYard[1] - 7.6, 6], [-39, -50], [-35, -44], [-24, -16], S], 0xffe066, 98);
-  mk('biomasa', [[POS.bioSub[0] + 2.2, POS.bioSub[1] - 1.6, 6.3], [56, 46], [36, 40], [16, 34], [-4, 22], S], 0xb6f27a, 40);
-  // Alimentador urbano en postes de baja tensión (con nidos de hornero)
-  const poles = [[-11, 28], [-11, 40], [-11, 52], [-11, 64]], fp = [];
+  mk('eolica', [[POS.windTx[0] + 2.6, POS.windTx[1] - 1.4, 6.5], [33, 12], [17, 8.2], [-1, 8.4], S], 0x9be7ff, 40);
+  mk('hidro', [[-92.5, -93, 5], [-82, -107.6], [-62, -109], [-44, -96], [-41.5, -74], [-40, -52], [-37.5, -17], [-30, 3.6], S], 0x5ad1ff, 144);
+  mk('solar', [[POS.batYard[0], POS.batYard[1] - 7.6, 6], [23, -50], [17, -38], [9, -24], [2, -6], S], 0xffe066, 98);
+  mk('biomasa', [[POS.bioSub[0] + 2.2, POS.bioSub[1] - 1.6, 6.3], [56, 46], [47, 27], [38, 11.5], [21, 5.2], [3, 5.6], S], 0xb6f27a, 40);
+  // Alimentador urbano en postes de baja tensión (con nidos de hornero), por la vereda este del ensanche
+  const poles = [[23.4, 28], [23.4, 40], [23.4, 52], [23.4, 64]], fp = [];
   poles.forEach(([x, z], i) => {
     b.cyl(x, 2.1, z, 0.1, 0.14, 7, 0x7a5a3a, 6); b.box(x, 8.6, z, 1.8, 0.14, 0.14, 0x7a5a3a);
     if (i % 2 === 0) { b.sph(x - 0.5, 8.95, z, 0.34, 0xa5673f, 0.9); b.box(x - 0.5, 8.95, z + 0.3, 0.16, 0.2, 0.1, 0x3a2416); b.box(x + 0.45, 8.85, z, 0.14, 0.24, 0.3, 0xb5651d); b.box(x + 0.45, 9.0, z + 0.16, 0.1, 0.1, 0.12, 0xd9a066); }
@@ -586,7 +658,7 @@ export function buildStops(w) {
 }
 
 // ================= FLORA Y DETALLES RURALES =================
-const FLORA_KEEP = [[-24, 71.8], [-44, 52.3], [30.5, -41], [37.5, 24.2], [-52, -56.2], [40.5, 60]];
+const FLORA_KEEP = [[-24, 71.8], [-44, 52.3], [-66, -103.6], [37.5, 24.2], [28, -56.2], [40.5, 60], [-79.5, -55.6], [-46, -45]];
 export function buildFlora(w) {
   const R = w.rand, b = w.batch;
   // Rancho de Don Mateo con ombú
@@ -602,21 +674,68 @@ export function buildFlora(w) {
   while (placed < 230 && tries++ < 4000) {
     const x = lerp(B.minX + 4, B.maxX - 3, R()), z = lerp(B.minZ + 3, B.maxZ - 4, R());
     if (coastD(x, z) < 5 || terrainH(x, z) < 1.6) continue;
-    if (x > -88 && x < 20 && z > -10 && z < 80) continue;                      // ciudad, Barrio Norte y costanera
-    if ((x > 0 && x < 47 && z > -35 && z < 12) || (x > -12 && x < 44 && z > 62 && z < 90)) continue;   // Barrio Jardín y puerto
-    if (x > -92 && x < -33 && z > -107 && z < -57) continue;                    // parque solar
+    if (x > -88 && x < 25 && z > -10 && z < 98) continue;                      // ciudad, Barrio Norte y costanera
+    if (x > -72 && x < -48 && z > 95 && z < 104) continue;                     // canchita de los gurises
+    if (x > 0 && x < 47 && z > -35 && z < 12) continue;                         // Barrio Jardín
+    if (x > -12 && x < 48 && z > -108 && z < -56) continue;                     // parque solar
     if (x > 38 && z > 28) continue;                                             // biomasa y montes
-    if (resInside(x, z) > -7 || (z < -44 && z > -62 && Math.abs(x) < 32)) continue;
+    if (Math.abs(z - DAM_Z) < 13 && x < -70) continue;                          // estribo de la represa
     if (w.nearRoad(x, z, 3.5) || Math.hypot(x - mx, z - mz) < 9 || FLORA_KEEP.some(p => Math.hypot(p[0] - x, p[1] - z) < 5)) continue;
     if (Math.hypot(x - POS.windTx[0], z - POS.windTx[1]) < 9 || POS.windT.some(p => Math.hypot(p[0] - x, p[1] - z) < 7)) continue;
-    const near = channelD(x, z) < 22 || resInside(x, z) > -16, eastF = x > 30;
+    const near = channelD(x, z) < 22 || coastD(x, z) < 15, eastF = x > 30;
     if (!near && R() < (eastF ? 0.8 : 0.45)) continue;
     const t = R(), type = near ? (t < 0.3 ? 'ceibo' : t < 0.85 ? 'native' : 'bush') : (t < 0.12 ? 'ombu' : t < 0.5 ? 'native' : t < 0.65 ? 'ceibo' : 'bush');
     const sc = type === 'ombu' ? 0.7 + R() * 0.3 : 0.8 + R() * 0.5; placed++;
     if (type !== 'bush' && POS.stops.some(p => Math.hypot(p[0] - x, p[1] - z) < 7)) continue;
     w.tree(type, x, z, sc);
   }
-  for (let i = 0; i < 26; i++) { const a = R() * 6.283, x = -62 + Math.cos(a) * (34 + R() * 6) * 0.9, z = -78 + Math.sin(a) * 30; if (coastD(x, z) > 5 && resInside(x, z) < -7 && !(x > -90 && x < -34 && z > -106 && z < -58)) w.tree('native', x, z, 0.8); }
+  for (let i = 0; i < 26; i++) { const a = R() * 6.283, x = 18 + Math.cos(a) * (34 + R() * 6) * 0.9, z = -78 + Math.sin(a) * 30; if (!(x > -12 && x < 48 && z > -108 && z < -56) && !w.nearRoad(x, z, 3)) w.tree('native', x, z, 0.8); }
   // Piedras
-  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 20 && z > -10 && z < 80) && !(x > 0 && x < 47 && z > -35 && z < 12) && !(x > 26 && x < 65 && z > -100 && z < -50) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
+  for (let i = 0; i < 40; i++) { const x = lerp(B.minX, B.maxX, R()), z = lerp(B.minZ, B.maxZ, R()), h = terrainH(x, z); if (h > 1.5 && !(x > -88 && x < 25 && z > -10 && z < 98) && !(x > 0 && x < 47 && z > -35 && z < 12) && !(x > -88 && x < -48 && z > -100 && z < -48) && !w.nearRoad(x, z, 2.5)) b.add(new THREE.IcosahedronGeometry(0.4 + R() * 0.6, 0), 0x9a968c, x, h + 0.1, z, 1, 0.6, 1, 0, R() * 6, 0); }
+}
+
+// ================= AMPLIACIÓN: CAMPO DEL SUR, NARANJALES Y MONTES =================
+// La maqueta creció: al sur de la ciudad ya no hay río sino campo salteño, con naranjales, un packing de citrus,
+// chacras, cortinas de eucaliptos y montes nativos. También se plantan árboles en las franjas nuevas del este y del norte.
+export function buildSur(w) {
+  const R = rng(9090), b = w.batch;
+  const GROVES = [[8, 104, 8, 5], [46, 106, 7, 5], [10, 134, 9, 5], [56, 136, 8, 6], [84, 108, 6, 7]], SP = 3.4;
+  const inGrove = (x, z, m = 2) => GROVES.some(([x0, z0, nx, nz]) => x > x0 - m && x < x0 + (nx - 1) * SP + m && z > z0 - m && z < z0 + (nz - 1) * SP + m);
+  for (const [x0, z0, nx, nz] of GROVES) for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
+    const x = x0 + i * SP + (R() - 0.5) * 0.4, z = z0 + k * SP + (R() - 0.5) * 0.4;
+    if (!w.nearRoad(x, z, 2.6)) w.tree('naranjo', x, z, 0.8 + R() * 0.25);
+  }
+  // cortinas de eucaliptos (rompevientos) al norte de los naranjales
+  for (let x = 4; x < 108; x += 2.8) if (!w.nearRoad(x, 100.5, 3) && !inGrove(x, 100.5, 1)) w.tree('euca', x + (R() - 0.5) * 0.6, 100.5 + (R() - 0.5) * 0.8, 0.85 + R() * 0.25);
+  // packing de citrus: galpón de clasificación con cajones de naranjas
+  const px = 31, pz = 116.5, py = w.groundAt(px, pz);
+  b.boxB(px, py - 0.4, pz, 15.4, 0.5, 10.4, 0xb7ae9b);
+  b.boxB(px, py, pz, 14, 4.2, 8.6, 0xe9e2d0); b.boxB(px, py + 3.2, pz, 14.06, 0.5, 8.66, 0xff8f1f);
+  b.add(new THREE.CylinderGeometry(1, 1, 1, 3).rotateZ(Math.PI / 2).rotateY(Math.PI / 2), 0x8f9aa3, px, py + 5.0, pz, 14.6, 1.6, 9.2 / 1.732);
+  b.boxB(px - 3, py, pz + 4.33, 3.2, 3.0, 0.1, 0x5b5a56); b.boxB(px + 3, py, pz + 4.33, 3.2, 3.0, 0.1, 0x5b5a56);
+  for (let i = 0; i < 6; i++) for (let k = 0; k < 2; k++) { const x = px - 6 + i * 1.5, z = pz + 6 + k * 1.2, y = w.groundAt(x, z); b.boxB(x, y, z, 1.2, 0.6, 0.9, 0xb98a52); b.boxB(x, y + 0.6, z, 1.0, 0.14, 0.7, 0xff9f2a); }
+  w.addSolid(px - 7, px + 7, pz - 4.3, pz + 4.3); w.addOcc(px - 7, px + 7, pz - 4.3, pz + 4.3, py + 5.8);
+  sign(w, 'PACKING DE CITRUS', px + 9.4, w.groundAt(px + 9.4, pz + 6), pz + 6, 0, 6.4, 1.1, { bg: '#c9541a', border: '#ffe0a0' });
+  // tambo y casa de chacra con molino de viento para el agua
+  const fx = 74, fz = 158, fy = w.groundAt(fx, fz);
+  w.houses.push({ x: fx, y: fy, z: fz, w: 6, d: 4.6, h: 2.6, rh: 1.6, c: 0xf2e4c4, rc: 0xb5533c, ry: 0.1 }); w.addSolid(fx - 3, fx + 3, fz - 2.3, fz + 2.3);
+  const mx = fx + 7, mz = fz - 2, my = w.groundAt(mx, mz);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.add(new THREE.CylinderGeometry(0.06, 0.08, 7.4, 4), 0x9aa0a6, mx + sx * 0.7, my + 3.6, mz + sz * 0.7, 1, 1, 1, sz * 0.1, 0, -sx * 0.1);
+  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; b.box(mx + Math.cos(a) * 0.9, my + 7.6 + Math.sin(a) * 0.9, mz + 0.3, 0.5, 1.5, 0.04, 0xd8dde2, 0, 0, a); }
+  b.cyl(mx, my, mz + 2.2, 1.2, 1.2, 1.0, 0x9aa0a6, 12); w.addCircle(mx, mz, 1.0); w.addCircle(mx, mz + 2.2, 1.25);
+  for (let i = 0; i < 9; i++) b.boxB(fx - 9 + i * 2.2, w.groundAt(fx - 9 + i * 2.2, fz + 7), fz + 7, 0.14, 1.1, 0.14, C.wood);
+  // montes nativos y árboles sueltos en las franjas nuevas (sur, este y norte de la maqueta)
+  let placed = 0, tries = 0;
+  while (placed < 190 && tries++ < 5000) {
+    const x = lerp(-86, 127, R()), z = lerp(-147, 207, R());
+    if (x > B.minX + 4 && x < B.maxX - 3 && z > B.minZ + 3 && z < B.maxZ - 4) continue;   // el área original ya tiene su flora
+    if (coastD(x, z) < 5 || terrainH(x, z) < 1.6) continue;
+    if ((x > -42 && x < -14 && z > 97 && z < 136) || inGrove(x, z, 3) || Math.hypot(x - px, z - pz) < 12 || Math.hypot(x - fx, z - fz) < 12) continue;
+    if (x > -94 && x < 50 && z > -112 && z < -48) continue;                      // represa, Energimundo y parque solar
+    if ((x > -74 && x < -20 && z > 138) || (x > 20 && x < 126 && z > 158 && !(x > 64 && x < 86 && z < 168))) continue;   // chacras
+    if (w.nearRoad(x, z, 3.5)) continue;
+    const t = R(), riv = coastD(x, z) < 18, type = riv ? (t < 0.35 ? 'ceibo' : t < 0.85 ? 'native' : 'bush') : (t < 0.1 ? 'ombu' : t < 0.45 ? 'native' : t < 0.6 ? 'euca' : t < 0.75 ? 'ceibo' : 'bush');
+    if (!riv && R() < 0.35) continue;
+    w.tree(type, x, z, type === 'ombu' ? 0.75 + R() * 0.3 : 0.8 + R() * 0.5); placed++;
+  }
 }

@@ -1,10 +1,10 @@
 // Arranque del juego: render, cámara isométrica orbital, entrada (teclado, ratón y táctil) y bucle principal.
 import * as THREE from 'three';
 import { clamp, lerp, damp, angDiff } from './util.js';
-import { B, POS, ZONES, CITY_Y, coastD, channelD } from './terrain.js';
+import { B, POS, ZONES, CITY_Y, coastD, channelD, MUSEO_OFF } from './terrain.js';
 import { EnergyGrid } from './grid.js';
-import { World, canvasTex } from './world.js';
-import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops } from './sectors.js';
+import { World, canvasTex, offsetWorld } from './world.js';
+import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops, buildSur } from './sectors.js';
 import { FX } from './fx.js';
 import { Capi } from './capi.js';
 import { Actors } from './actors.js';
@@ -32,19 +32,21 @@ const FOV = 40;
 // Tomas de la demostración: x, z, distancia, giro, cámara baja (0-1), hora, duración y recorrido de Capi
 const SHOTS = [
   { x: -44, z: 40, d: 50, yaw: -0.55, low: 0.12, h: 19.4, t: 10, capi: [-36.4, 47, -47, 37.6] },
-  { x: 4, z: -58, d: 64, yaw: 0.15, low: 0.5, h: 10.5, t: 10, rainbow: true },
+  { x: -122, z: -100, d: 76, yaw: 0.18, low: 0.45, h: 10.5, t: 10, rainbow: true },
   { x: -42, z: -4, d: 54, yaw: 2.75, low: 0.5, h: 6.7, t: 10 },
   { x: -46, z: 2, d: 40, yaw: 2.35, low: 0.4, h: 10.5, t: 10, capi: [-49, -4.5, -30, -4.5] },
   { x: 62, z: -8, d: 60, yaw: 0.9, low: 0.55, h: 16, t: 9 },
   { x: 78, z: -73, d: 42, yaw: -0.25, low: 0.35, h: 11.5, t: 10 },
-  { x: -30, z: 96, d: 58, yaw: 0.3, low: 0.6, h: 18.4, t: 10, capi: [-22.4, 73.4, -46, 74] },
+  { x: -30, z: 80, d: 58, yaw: 0.3, low: 0.6, h: 18.4, t: 10, capi: [-22.4, 73.4, -46, 74] },
   { x: -34, z: -19, d: 20, yaw: 2.6, low: 0.3, h: 9, t: 9 },
-  { x: 20, z: 96, d: 62, yaw: 0.35, low: 0.5, h: 20.2, t: 10 },
+  { x: -100, z: 56, d: 62, yaw: 1.25, low: 0.5, h: 19.6, t: 10 },
   { x: 26, z: -10, d: 44, yaw: 0.7, low: 0.45, h: 12.5, t: 9 },
   { x: -40, z: 38, d: 70, yaw: 2.6, low: 0.4, h: 17.2, t: 10 },
-  { x: -62, z: -80, d: 50, yaw: 0.2, low: 0.4, h: 13, t: 9, capi: [-66.5, -66, -66.5, -78] },
+  { x: 18, z: -80, d: 50, yaw: 0.2, low: 0.4, h: 13, t: 9, capi: [13.5, -66, 13.5, -78] },
   { x: -30, z: 45, d: 96, yaw: -0.5, low: 0.3, h: 21.5, t: 10 },
-  { x: 48, z: -70, d: 44, yaw: 0.3, low: 0.45, h: 16.4, t: 10 }
+  { x: -66, z: -68, d: 44, yaw: 0.3, low: 0.45, h: 16.4, t: 10 },
+  { x: -4, z: 40, d: 40, yaw: 0.12, low: 0.35, h: 18.8, t: 9 },
+  { x: -64, z: 0, d: 150, yaw: -1.05, low: 0.1, h: 11.5, t: 10 }
 ];
 class Game {
   constructor() {
@@ -69,11 +71,11 @@ class Game {
     const ii = $('logoIso');
     if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
     w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4);
-    await stage('Trazando calles, rambla y puente…'); buildRoads(w); buildCity(w);
+    await stage('Trazando calles, costanera y puentes…'); buildRoads(w); buildCity(w);
     await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
     await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w);
-    await stage('Armando Energimundo junto a la represa…'); buildMuseo(w);
-    await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSalto(w); buildSocial(w);
+    await stage('Armando Energimundo junto a la represa…'); buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1]));
+    await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w);
     await stage('Uniendo las piezas de la maqueta…'); w.finalize();
     await stage('Calculando caminos para Capi…');
     this.capi = new Capi(this.scene, w, this.fx, this.audio);
@@ -401,8 +403,8 @@ class Game {
     let amb = null, windNear = Math.max(0.12, near(70, -12, 75)), waterNear = Math.max(near(-11, -49, 45), c.swimming ? 0.45 : 0);
     if (!play) {   // pantalla de inicio y demostración: el sonido sigue a la cámara
       const f = cam.target, nf = (x, z, r) => clamp(1 - Math.hypot(f.x - x, f.z - z) / r, 0, 1), wide = clamp((cam.dist - 75) / 55, 0, 1);
-      const water = Math.max(clamp(1 - coastD(f.x, f.z) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(0, -68, 42), nf(-11, -49, 38));
-      const city = Math.max(nf(-32, 42, 52), nf(-20, 62, 30), nf(-44, 4, 34)), field = nf(58, -6, 58);
+      const water = Math.max(clamp(1 - coastD(f.x, f.z) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(-130, -124, 60), nf(-122, -96, 40));
+      const city = Math.max(nf(-32, 48, 58), nf(0, 52, 40), nf(-44, 4, 34)), field = nf(58, -6, 58);
       amb = { water: lerp(water, 0.45, wide), city: lerp(city, 0.4, wide), field: lerp(field, 0.3, wide), green: clamp(1 - city * 0.7, 0.3, 1), plaza: nf(-44, 38, 24) * (1 - wide), night, hour: G.hour };
       windNear = Math.max(0.08, 0.6 * lerp(Math.max(field, nf(70, -12, 75) * 0.6), 0.3, wide)); waterNear = amb.water * 0.45;
     }

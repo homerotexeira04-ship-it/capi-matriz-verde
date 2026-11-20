@@ -1,6 +1,6 @@
 // UIManager: HUD de telemetría, tarjeta de misión, diálogos con retratos, minimapa-brújula y panel de red.
 import { clamp, lerp, fmtHour } from './util.js';
-import { B, ZONES, terrainH, waterAt, coastD, farD, POS } from './terrain.js';
+import { B, ZONES, terrainH, waterAt, coastD, westD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
@@ -90,19 +90,23 @@ export class UI {
       const x = B.minX + (i + 0.5) / S * W, z = B.minZ + (j + 0.5) / S * D, h = terrainH(x, z), wl = waterAt(x, z), k = (j * S + i) * 4;
       let r, gg, b;
       if (h < wl - 0.15) { r = 40; gg = 120 + (wl > 1 ? 40 : 0); b = 200; }
-      else if ((coastD(x, z) < 5 || (z > 120 && farD(x, z) < 5)) && h < 2.6) { r = 232; gg = 214; b = 164; }
+      else if ((coastD(x, z) < 5 || (westD(x, z) > -2 && westD(x, z) < 5)) && h < 2.6) { r = 232; gg = 214; b = 164; }
       else { const t = clamp((h - 2) / 8, 0, 1); r = lerp(96, 150, t); gg = lerp(178, 205, t); b = lerp(72, 96, t); }
-      if (x > -84 && x < -9 && z > -8 && z < 76) { r = 176; gg = 170; b = 160; }
-      if (x > -88 && x < -36 && z > -104 && z < -60 && h > 5) { r = 205; gg = 198; b = 172; }
+      if (x > -84 && x < 22 && z > 11 && z < 94.4 || x > -84 && x < -9 && z > -8 && z < 11) { r = 176; gg = 170; b = 160; }
+      if (x > -12 && x < 48 && z > -106 && z < -58 && h > 5) { r = 205; gg = 198; b = 172; }
+      if (westD(x, z) > 9 && h >= wl - 0.15 && x < -166 && z > -84) { r = lerp(r, 196, 0.35); gg = lerp(gg, 186, 0.35); b = lerp(b, 170, 0.35); }
       d[k] = r; d[k + 1] = gg; d[k + 2] = b; d[k + 3] = 255;
     }
     g.putImageData(img, 0, 0);
     const X = x => (x - B.minX) / W * S, Z = z => (z - B.minZ) / D * S;
     g.strokeStyle = 'rgba(70,70,80,.9)'; g.lineWidth = 1.6;
     for (const l of this.g.world.roads) { g.beginPath(); l.forEach((p, i) => i ? g.lineTo(X(p[0]), Z(p[1])) : g.moveTo(X(p[0]), Z(p[1]))); g.stroke(); }
-    g.fillStyle = '#9a948a'; g.fillRect(X(-24), Z(-58), X(24) - X(-24), 6); g.fillRect(X(POS.bridge.x - 2), Z(POS.bridge.z0), 4, Z(POS.bridge.z1) - Z(POS.bridge.z0));
-    g.fillRect(X(POS.muelle.x - 1.7), Z(POS.muelle.z0), 4, Z(POS.muelle.z1) - Z(POS.muelle.z0)); g.fillRect(X(POS.orilla.x - 1.7), Z(POS.orilla.z0), 4, Z(POS.orilla.z1) - Z(POS.orilla.z0)); g.fillRect(X(POS.faro[0] - 1.3), Z(82), 3, Z(101) - Z(82));
-    { const E = POS.edificio; g.fillStyle = '#b9b2a6'; g.fillRect(X(40), Z(-77), X(56) - X(40), Z(-66) - Z(-77)); g.fillStyle = '#8b2f2a'; g.fillRect(X(E.x0), Z(E.z0), X(E.x1) - X(E.x0), Z(E.z1) - Z(E.z0)); g.fillStyle = '#2d2d33'; g.beginPath(); g.arc(X(POS.domo[0]), Z(POS.domo[1]), 3.3 / W * S, 0, 7); g.fill(); }
+    const Dm = POS.dam, Mu = POS.muelle, O = POS.orilla;
+    g.fillStyle = '#9a948a'; g.fillRect(X(Dm.x0), Z(Dm.z0), X(Dm.x1) - X(Dm.x0), Math.max(4, Z(Dm.z1) - Z(Dm.z0))); g.fillRect(X(POS.bridge.x - 2), Z(POS.bridge.z0), 4, Z(POS.bridge.z1) - Z(POS.bridge.z0));
+    g.fillRect(X(-96), Z(38), X(-83.4) - X(-96), Z(60) - Z(38));
+    g.fillRect(X(Mu.x1), Z(Mu.z - 1.7), X(Mu.x0) - X(Mu.x1), 3); g.fillRect(X(O.x1), Z(O.z - 1.7), X(O.x0) - X(O.x1), 3); g.fillRect(X(-88), Z(POS.faro[1] - 1.3), X(-88) - X(POS.faro[0]) > 0 ? X(-88) - X(POS.faro[0]) : 1, 2);
+    for (const z of [69, 77.6]) g.fillRect(X(-104), Z(z - 1.2), X(-84) - X(-104), 2);
+    { const E = POS.edificio; g.fillStyle = '#b9b2a6'; g.fillRect(X(-74), Z(-75), X(-58) - X(-74), Z(-64) - Z(-75)); g.fillStyle = '#8b2f2a'; g.fillRect(X(E.x0), Z(E.z0), X(E.x1) - X(E.x0), Z(E.z1) - Z(E.z0)); g.fillStyle = '#2d2d33'; g.beginPath(); g.arc(X(POS.domo[0]), Z(POS.domo[1]), 3.3 / W * S, 0, 7); g.fill(); }
     g.fillStyle = '#1f3f9a'; for (const [x, z] of POS.solar) g.fillRect(X(x - 6), Z(z - 5.5), 13, 12);
     g.fillStyle = '#fff'; for (const [x, z] of POS.windT) { g.beginPath(); g.arc(X(x), Z(z), 2.2, 0, 7); g.fill(); }
     this.map = c; this.mapScale = S / W;

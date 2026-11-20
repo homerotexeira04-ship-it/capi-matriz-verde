@@ -15,7 +15,7 @@ const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, flatShading:
 // Recorridos de mano única (en sentido del tránsito). El 2 comparte calles con los ómnibus, en el mismo sentido.
 const ROUTES = [
   { pts: [[-28, -1], [-60, -1], [-60, 55], [-28, 55]], n: 5 },
-  { pts: [[-77, 27], [-11, 27], [-11, 70], [-77, 70]], n: 5 }
+  { pts: [[-77, 27], [19, 27], [19, 70], [-77, 70]], n: 7 }
 ];
 // Esquinas con semáforo: grupo 0 = calles norte-sur, grupo 1 = calles este-oeste
 const CROSS = [[-60, 12.4], [-28, 12.4], [-60, 27], [-28, 27]];
@@ -123,7 +123,7 @@ export class Urbano {
     // ---------- Feria de la costanera y mercado ----------
     const F = w.dyn.feria;
     this.vendors = F ? F.stalls.map((s, i) => { const p = adult(R, { shirt: [0xffffff, 0x2a9d8f, 0xffc420, 0x6a2c91][i], hat: i % 2 ? 'gorra' : null, hatColor: 0x1f2f4f }); p.group.position.set(s.x + 0.3, w.groundAt(s.x, s.z + 0.95), s.z + 0.95); p.group.rotation.y = Math.PI; sc.add(p.group); return p; }) : [];
-    this.shoppers = F ? Array.from({ length: 4 }, (_, i) => { const p = adult(R, { extra: i % 2 ? 'mate' : null }); const x = 25 + i * 3.4; p.group.position.set(x, 2.12, 73.8); sc.add(p.group); return Object.assign(p, { x, z: 73.8, dir: i % 2 ? 1 : -1, wait: 0, sp: 0.9 + R() * 0.4 }); }) : [];
+    this.shoppers = F ? Array.from({ length: 4 }, (_, i) => { const p = adult(R, { extra: i % 2 ? 'mate' : null }); const x = F.walk.x0 + 0.5 + i * 3.0; p.group.position.set(x, 2.12, F.walk.z); sc.add(p.group); return Object.assign(p, { x, z: F.walk.z, dir: i % 2 ? 1 : -1, wait: 0, sp: 0.9 + R() * 0.4 }); }) : [];
     const Mk = w.dyn.market;
     this.market = Mk ? Array.from({ length: 5 }, (_, i) => { const p = adult(R, { pony: i === 1, extra: i === 3 ? 'mate' : null }); const x = Mk.cx + (R() - 0.5) * 6, z = Mk.cz + (R() - 0.5) * 1.6; p.group.position.set(x, CITY_Y, z); sc.add(p.group); return Object.assign(p, { x, z, tx: x, tz: z, wait: R() * 4, sp: 0.9 + R() * 0.3 }); }) : [];
     // ---------- Vecinos en la huerta ----------
@@ -131,7 +131,7 @@ export class Urbano {
     this.garden = H ? [0, 1].map(i => { const p = adult(R, { hat: 'gorra', hatColor: i ? 0xffc420 : 0x2f7d32, shirt: i ? 0x2a9d8f : 0xf4a261 }); const x = H.x - 1.5 + i * 3, z = H.z - 2 + i * 2; p.group.position.set(x, H.y, z + 0.7); p.group.rotation.y = Math.PI; sc.add(p.group); return Object.assign(p, { ph: R() * 6 }); }) : [];
     // ---------- Pescadores con caña ----------
     const Mu = POS.muelle, [fx, fz] = POS.faro;
-    this.fishers = [[Mu.x - 1.1, 95, -Math.PI / 2, 1.35], [Mu.x + 1.1, 90, Math.PI / 2, 1.35], [fx - 0.8, 93, -Math.PI / 2, 1.62], [-63, -12.2, Math.PI, null]].map(([x, z, ry, y], i) => {
+    this.fishers = [[-106, Mu.z - 1.1, Math.PI, 1.35], [-101, Mu.z + 1.1, 0, 1.35], [fx + 7, fz - 0.8, Math.PI, 1.62], [-63, -12.2, Math.PI, null]].map(([x, z, ry, y], i) => {
       const p = adult(R, { hat: i % 2 ? 'boina' : 'gorra', hatColor: [0x1e1e22, 0x6b8f4e, 0x2a6f97, 0xa5522d][i], jacket: i === 3 ? 0x50623a : null });
       const yy = y == null ? w.terrainAt(x, z) : y; p.group.position.set(x, yy, z); p.group.rotation.y = ry; sc.add(p.group);
       const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 3.2, 5), M(0x3a2a1a)); rod.position.set(0, -0.7, 1.4); rod.rotation.x = 1.05; p.armR.add(rod); p.armR.rotation.x = -0.9; p.armL.rotation.x = -0.8;
@@ -149,9 +149,9 @@ export class Urbano {
     const ntex = new THREE.CanvasTexture(nm); ntex.colorSpace = THREE.SRGBColorSpace;
     for (const sx of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.48), new THREE.MeshBasicMaterial({ map: ntex })); pl.position.set(sx * 1.34, 0.15, 0.4); pl.rotation.y = sx * Math.PI / 2; this.lancha.add(pl); }
     sc.add(this.lancha); this.lT = 6;
-    this.L0 = { x: Mu.x + 3.6, z: 103.2 }; this.L1 = { x: POS.orilla.x + 3.6, z: POS.orilla.z0 + 3.4 };
+    this.L0 = { x: Mu.x1 + 2.6, z: Mu.z + 3.6 }; this.L1 = { x: POS.orilla.x0 - 2.2, z: POS.orilla.z + 3.6 };
     // ---------- Kayaks ----------
-    this.kayaks = [[-22, 93, 10, 3.6, 0xffc420], [-1, 91, 6, 3, 0xe5484d], [null, null, 0, 0, 0x2ed3c6]].map(([cx, cz, rx, rz, col], i) => {
+    this.kayaks = [[-118, 24, 3.6, 10, 0xffc420], [-122, 88, 3, 6, 0xe5484d], [null, null, 0, 0, 0x2ed3c6]].map(([cx, cz, rx, rz, col], i) => {
       const kb = new Batch(); kb.add(new THREE.SphereGeometry(1, 10, 6), col, 0, 0.1, 0, 0.42, 0.22, 1.9); kb.boxB(0, 0.18, 0, 0.36, 0.5, 0.42, [0x2a9d8f, 0x6a2c91, 0xf4a261][i]); kb.sph(0, 0.85, 0, 0.2, SKINS[i], 1, 1); kb.boxB(0, 0.6, 0, 0.44, 0.22, 0.46, 0xff6b35);
       const g = new THREE.Group(); g.add(kb.mesh(VC)); const pad = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.12), M(0x3a3a3a)); pad.position.y = 0.62; g.add(pad); sc.add(g);
       return { g, pad, cx, cz, rx, rz, a: R() * 6, sp: (i % 2 ? -1 : 1) * 0.22, i, x: -60, dir: 1 };
@@ -212,17 +212,17 @@ export class Urbano {
   }
   lanchaGo(to) {   // viaje de Capi en lancha (desde el muelle del puerto o desde la otra orilla)
     const g = this.g, ex = g.extras; if (ex.fading || g.locked) return;
-    ex.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = to ? 'En lancha hacia la otra orilla…' : 'En lancha de vuelta a Salto…';
+    ex.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = to ? 'En lancha hacia Concordia…' : 'En lancha de vuelta a Salto…';
     g.audio.tone(330, 0.5, 'sine', 0.06); g.audio.tone(247, 0.7, 'sine', 0.05, 0.3); g.audio.lap(1); g.audio.splash(0.6);
     setTimeout(() => {
-      const p = to ? { x: POS.orilla.x - 0.2, z: POS.orilla.z0 + 7 } : { x: POS.muelle.x - 0.2, z: 99 };
-      g.capi.teleport(p.x, p.z); g.capi.heading = to ? 0 : Math.PI; g.cam.target.set(p.x, g.capi.pos.y + 1.5, p.z); g.cam.inspect = null; this.lT = to ? 41 : 1;
-      setTimeout(() => { $('fade').classList.remove('on'); ex.fading = false; g.ui.note(to ? 'Llegaste a la otra orilla del río Uruguay. La lancha vuelve a Salto cuando quieras.' : 'De vuelta en el puerto de Salto.', 4.5); }, 450);
+      const p = to ? { x: POS.orilla.x1 + 1.5, z: POS.orilla.z - 0.2 } : { x: POS.muelle.x0 - 3, z: POS.muelle.z - 0.2 };
+      g.capi.teleport(p.x, p.z); g.capi.heading = to ? -Math.PI / 2 : Math.PI / 2; g.cam.target.set(p.x, g.capi.pos.y + 1.5, p.z); g.cam.inspect = null; this.lT = to ? 41 : 1;
+      setTimeout(() => { $('fade').classList.remove('on'); ex.fading = false; g.ui.note(to ? 'Llegaste a Concordia, en Argentina, del otro lado del río Uruguay. La lancha vuelve a Salto cuando quieras.' : 'De vuelta en el puerto de Salto.', 4.5); }, 450);
     }, 700);
   }
   describe(id) {
     const [k, s] = id.split(':'); if (k !== 'lancha') return null;
-    return { state: 'ok', label: s === '0' ? 'Cruzar en lancha a la otra orilla' : 'Volver en lancha a Salto' };
+    return { state: 'ok', label: s === '0' ? 'Cruzar en lancha a Concordia' : 'Volver en lancha a Salto' };
   }
   interact(id) { const [k, s] = id.split(':'); if (k !== 'lancha') return false; this.lanchaGo(s === '0'); return true; }
 
@@ -308,7 +308,7 @@ export class Urbano {
     for (const s of this.shoppers) {
       const vis = feria && near(s.x, s.z); s.group.visible = vis; if (!vis) continue;
       s.wait -= dt; let mv = false;
-      if (s.wait <= 0) { s.x += s.dir * s.sp * dt; mv = true; if (s.x > 38.5) s.dir = -1; if (s.x < 24) s.dir = 1; if (this.R() < dt * 0.25) s.wait = 2 + this.R() * 3; }
+      if (s.wait <= 0) { s.x += s.dir * s.sp * dt; mv = true; if (s.x > F.walk.x1) s.dir = -1; if (s.x < F.walk.x0) s.dir = 1; if (this.R() < dt * 0.25) s.wait = 2 + this.R() * 3; }
       s.group.position.set(s.x, 2.12, s.z); s.group.rotation.y = damp(s.group.rotation.y, s.wait > 0 ? Math.PI : (s.dir > 0 ? Math.PI / 2 : -Math.PI / 2), 6, dt);
       const ph = t * 6 + s.phase; s.legL.rotation.x = mv ? Math.sin(ph) * 0.5 : 0; s.legR.rotation.x = mv ? -Math.sin(ph) * 0.5 : 0;
     }
@@ -335,13 +335,13 @@ export class Urbano {
     }
     // ---------- Lancha ----------
     this.lT = (this.lT + dt) % 80; const T = this.lT, A0 = this.L0, A1 = this.L1;
-    let lz, dir, moving = false;
-    if (T < 14) { lz = A0.z; dir = Math.PI; } else if (T < 40) { const u = smooth(0, 1, (T - 14) / 26); lz = lerp(A0.z, A1.z, u); dir = 0; moving = true; } else if (T < 54) { lz = A1.z; dir = 0; } else { const u = smooth(0, 1, (T - 54) / 26); lz = lerp(A1.z, A0.z, u); dir = Math.PI; moving = true; }
-    const lx = A0.x + (moving ? Math.sin(Math.PI * (T < 40 ? (T - 14) / 26 : (T - 54) / 26)) * 5 : 0);
+    let lx, dir, moving = false; const GO = -Math.PI / 2, BACK = Math.PI / 2;   // hacia Concordia (oeste) y de vuelta a Salto (este)
+    if (T < 14) { lx = A0.x; dir = GO; } else if (T < 40) { const u = smooth(0, 1, (T - 14) / 26); lx = lerp(A0.x, A1.x, u); dir = GO; moving = true; } else if (T < 54) { lx = A1.x; dir = BACK; } else { const u = smooth(0, 1, (T - 54) / 26); lx = lerp(A1.x, A0.x, u); dir = BACK; moving = true; }
+    const lz = A0.z + (moving ? Math.sin(Math.PI * (T < 40 ? (T - 14) / 26 : (T - 54) / 26)) * 5 : 0);
     this.lancha.position.set(lx, Math.sin(t * 1.4) * 0.08, lz); this.lancha.rotation.y = damp(this.lancha.rotation.y, dir, 1.2, dt); this.lancha.rotation.z = Math.sin(t * 1.1) * 0.03;
     this.lancha.visible = near(lx, lz, 160);
     if (moving && this.lancha.visible && Math.random() < dt * 14) { const bx = lx - Math.sin(dir) * 3.6, bz = lz - Math.cos(dir) * 3.6; st.fx.soft.emit(bx + (Math.random() - 0.5), 0.1, bz, (Math.random() - 0.5) * 0.6, 0.3, (Math.random() - 0.5) * 0.6, 1.4, 0.3, 1.2, 0xffffff, 0.45, 0, 0.4); }
-    if (night > 0.3 && this.lancha.visible) st.fx.glow.sprite(lx, 3.35, lz + (dir ? 2.3 : -2.3), 2.2, 0xfff0b0, 0.5 * night);
+    if (night > 0.3 && this.lancha.visible) st.fx.glow.sprite(lx - Math.sin(dir) * 2.3, 3.35, lz - Math.cos(dir) * 2.3, 2.2, 0xfff0b0, 0.5 * night);
     // ---------- Kayaks ----------
     const kay = hour > 7.5 && hour < 19 && !(w.storm || 0) > 0.5;
     for (const k of this.kayaks) {

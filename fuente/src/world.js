@@ -566,7 +566,7 @@ function groundColor(c, x, z, h, ny) {
   c.lerp(cA.set(0xd0c8b0), inR(-10, 45, -106, -58) * (0.85 + 0.15 * noise2(x, z)));   // parque solar
   c.lerp(cA.set(0xb89264), inR(42, 80, 51, 71) * 0.9);
   c.lerp(cA.set(0x6f9a52), inR(40, 108, 31, 50) * 0.7);
-  c.lerp(cA.set(0x8f9a8a), inR(-86, 22, 9, 95.5));                // ciudad
+  c.lerp(cA.set(0x8f9a8a), inR(-86, 22, 9, 94.4));                // ciudad
   c.lerp(cA.set(0x8f9a8a), inR(-86, -8, -8, 10));                 // Barrio Norte y costanera
   c.lerp(cA.set(0x7fb35a), inR(4, 44, -32, 9) * 0.55);            // Barrio Jardín: pasto cuidado
   const fr = Math.max(inR(-72, -22, 140, 207), inR(22, 124, 160, 207) * (1 - inR(64, 86, 148, 168)));   // chacras del sur

@@ -39,7 +39,7 @@ const INTRO = {
     L('valeria', 'Una nube de polvo cubrió el Parque Solar, al norte, y descalibró los seguidores. Podés llegar por la calle del Barrio Jardín o por el puente del arroyo.'),
     L('valeria', 'Limpiá y reorientá las matrices, habilitá el Banco de Baterías y cargalo antes de las 18:30, cuando se nos va el sol.')],
   urbano: [
-    L('lucia', '¡Hola, Capi! Lucía, de la Terminal de la Rambla. Tengo la flota eléctrica lista para salir, pero los cargadores rápidos están sin potencia.'),
+    L('lucia', '¡Hola, Capi! Lucía, de la Terminal del Bulevar. Tengo la flota eléctrica lista para salir, pero los cargadores rápidos están sin potencia.'),
     L('valeria', 'Y justo afloja el viento al atardecer. Necesitamos respaldo firme: la Planta de Biomasa, al este de la ciudad.'),
     L('valeria', 'Cargá chips del acopio forestal, encendé la caldera con su secuencia de arranque y enrutá la potencia hasta la terminal.')],
   tormenta: [
@@ -154,7 +154,7 @@ export class Missions {
         const st = [
           { text: 'Cargar chips del acopio forestal en la cinta', targets: ['bio:chips'], done: G.bio.chips },
           { text: 'Encender la caldera con su secuencia de arranque', targets: ['bio:boiler'], done: G.bio.on },
-          { text: 'Enrutar la potencia hacia la Terminal de la Rambla', targets: ['bio:sub'], done: G.bio.routed }];
+          { text: 'Enrutar la potencia hacia la Terminal del Bulevar', targets: ['bio:sub'], done: G.bio.routed }];
         if (!S) st.push({ text: 'Cargar la flota al compás en los cargadores de la Terminal', targets: ['term'], done: this.flag('charged') });
         st.push({ text: 'Ver salir los ómnibus eléctricos: hablá con Lucía', targets: ['npc:lucia'], done: this.flag('busesSeen') });
         return st;
@@ -272,7 +272,7 @@ export class Missions {
     if (k === 'bat') return `Banco LFP al ${Math.round(G.bat.soc * 100)}${N}%. Guarda excedentes y los devuelve en la hora pico.`;
     if (id === 'bio:chips') return 'Acopio de chips: biomasa de residuos forestales para la caldera.';
     if (id === 'bio:boiler') return `Caldera de cogeneración: ${r(G.out.bio)} MW firmes, haya o no viento.`;
-    return 'Subestación elevadora: alimenta los cargadores de la Terminal de la Rambla.';
+    return 'Subestación elevadora: alimenta los cargadores de la Terminal del Bulevar.';
   }
   talk(who) {
     const g = this.g, U = g.ui, G = g.grid, f = this.flags, K = this.key;

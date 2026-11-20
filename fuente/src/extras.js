@@ -6,6 +6,7 @@ import { POS, RES } from './terrain.js';
 import { smooth } from './util.js';
 import { drawFace } from './ui.js';
 import qrcode from 'qrcode-generator';
+import { drawSeal } from './escuela.js';
 
 const SITE = 'https://homerotexeira04-ship-it.github.io/capi-matriz-verde/';
 
@@ -50,7 +51,11 @@ const SPARKS = [
   [-63.2, -70, 0, 'la plaza del Cronomundo', 'El Cronomundo de Energimundo es un reloj de sol: la sombra marca la hora solar en números romanos, de 5 en 5 minutos, y sobre otra escala marca también la fecha.'],
   [-58.5, -55.6, 0, 'la vuelta del domo', 'Un domo geodésico es una cúpula armada con triángulos: reparte el peso por toda la estructura y cubre mucho espacio con poco material. El de Energimundo funciona como cine.'],
   [-56.4, -66.4, 0, 'las bicicletas del escenario', 'En el escenario a pedal de Energimundo el público pedalea bicicletas generadoras: con las piernas se produce la electricidad del espectáculo.'],
-  [-64.8, -89.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.']
+  [-64.8, -89.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.'],
+  // Geografía nueva: plaza, lago y naranjales
+  [-1.6, 50.6, 0, 'el monumento de la Plaza Artigas', 'El monumento a Artigas de la plaza que lleva su nombre, en Salto, es obra del escultor Edmundo Prati y se inauguró el 29 de septiembre de 1940.'],
+  [-85, -118, 0, 'la orilla del lago de Salto Grande', 'Al cerrar la represa se formó el lago de Salto Grande: ocupa 783 km² y se estira unos 140 km río arriba.'],
+  [33.5, 125, 0, 'los cajones del packing de citrus', 'Salto y Paysandú dan alrededor del 90 % de los cítricos que exporta el Uruguay, y lo que más se produce son mandarinas sin semilla.']
 ];
 
 export class Extras {
@@ -162,6 +167,7 @@ export class Extras {
       if (!o.story) this.g.stats.finished(m.mode); $('dWho').textContent = name; $('dWho').classList.toggle('long', name.length > 24); $('dStory').textContent = o.story || (m.short ? 'Historia corta' : 'Historia larga') + ` · ${m.seq.length} misiones`; $('dSparks').textContent = o.extra || `${this.got.size} de ${SPARKS.length} chispas de saber`;
       $('dDate').textContent = new Date().toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' });
       const c = this.colors(); drawFace($('dCapi').getContext('2d'), 'capi', 1, false, c);
+      try { drawSeal($('dSeal'), o.medal || null); } catch (e) { /* sin sello */ }
       try {   // código QR con la dirección pública del juego
         const q = qrcode(0, 'M'); q.addData(SITE); q.make(); const n = q.getModuleCount(), cv = $('dQR'), px = 4, pad = 3; cv.width = cv.height = (n + pad * 2) * px;
         const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = '#0b1a33';

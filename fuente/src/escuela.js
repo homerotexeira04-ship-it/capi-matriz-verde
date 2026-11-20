@@ -44,16 +44,107 @@ export function drawIcon(g, k, cx, cy, r, col = '#ffffff') {
   if (k === 'pico') { g.beginPath(); g.moveTo(cx + 12 * s, cy - 64 * s); g.lineTo(cx - 34 * s, cy + 8 * s); g.lineTo(cx - 2 * s, cy + 8 * s); g.lineTo(cx - 14 * s, cy + 64 * s); g.lineTo(cx + 34 * s, cy - 10 * s); g.lineTo(cx + 2 * s, cy - 10 * s); g.closePath(); g.fill(); }
   g.restore();
 }
-function drawMedal(cv, E, got = true) {
-  const g = cv.getContext('2d'), W = cv.width, c = W / 2, R = W * 0.3, cy = W * 0.56;
-  g.clearRect(0, 0, W, W);
-  // cintas
-  for (const [sx, col] of [[-1, '#6a2c91'], [1, '#e6007e']]) { g.fillStyle = col; g.beginPath(); g.moveTo(c + sx * 10, cy - R - 2); g.lineTo(c + sx * 56, 6); g.lineTo(c + sx * 92, 6); g.lineTo(c + sx * 46, cy - R + 14); g.closePath(); g.fill(); }
-  g.fillStyle = got ? '#ffd23f' : '#3a4a6a'; g.beginPath(); g.arc(c, cy, R + 12, 0, 7); g.fill();
-  g.fillStyle = got ? '#b8860b' : '#2a3654'; g.beginPath(); g.arc(c, cy, R + 4, 0, 7); g.fill();
-  g.fillStyle = got ? E.color : '#26324e'; g.beginPath(); g.arc(c, cy, R, 0, 7); g.fill();
-  drawIcon(g, E.icon, c, cy, R * 0.82, got ? '#ffffff' : '#5a6a8a');
-  if (got) { g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 4; g.beginPath(); g.arc(c, cy, R - 7, -2.6, -1.4); g.stroke(); }
+// ---------- Medallas "premium": metal dorado con canto estriado, esmalte, letras en oro e isotipo de Energimundo dorado ----------
+const SHORT = { viento: 'EÓLICA', rio: 'HIDRÁULICA', sol: 'SOLAR', urbano: 'BIOMASA', ahorro: 'EFICIENCIA', tormenta: 'CLIMA', pico: 'RED COMPLETA' };
+const METAL = {
+  gold: ['#fff4c8', '#f3c94c', '#b8841a', '#f8d870', '#8a5a0c'],
+  silver: ['#ffffff', '#cfd6df', '#8a95a3', '#e6ebf1', '#5d6774']
+};
+function metal(g, x0, y0, x1, y1, kind = 'gold') { const gr = g.createLinearGradient(x0, y0, x1, y1), c = METAL[kind]; [0, 0.24, 0.52, 0.74, 1].forEach((t, i) => gr.addColorStop(t, c[i])); return gr; }
+const disc = (g, x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); };
+let isoGold = null;
+// Isotipo de Energimundo pasado a oro: conserva los tonos del original como relieve (claro y oscuro del metal)
+function goldIso() {
+  if (isoGold !== null) return isoGold;
+  const im = $('logoIso'); if (!im || !im.naturalWidth) return null;
+  try {
+    const S = 256, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'), k = Math.min(236 / im.naturalWidth, 236 / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
+    x.drawImage(im, (S - w) / 2, (S - h) / 2, w, h); const d = x.getImageData(0, 0, S, S), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (!p[i + 3]) continue; const y = Math.floor(i / 4 / S) / S, l = (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) / 255, t = Math.max(0, Math.min(1, (l - 0.15) / 0.6)) * (1.05 - 0.3 * y);
+      p[i] = 217 + 38 * t; p[i + 1] = 160 + 82 * t; p[i + 2] = 52 + 132 * t * t;
+    }
+    x.putImageData(d, 0, 0); isoGold = c;
+  } catch (e) { isoGold = null; }
+  return isoGold;
+}
+// Anillos de colores (por si el isotipo no está disponible): igual en oro
+function goldRings(g, cx, cy, r) { for (let i = 0; i < 4; i++) { g.strokeStyle = i % 2 ? '#c99a2e' : '#f6d777'; g.lineWidth = r * 0.16; g.beginPath(); g.arc(cx, cy, r * (0.92 - i * 0.2), 0.3 + i * 0.9, 0.3 + i * 0.9 + 4.6); g.stroke(); } }
+// Texto curvo: arriba se lee de izquierda a derecha por fuera, abajo también (al derecho)
+function arcText(g, text, cx, cy, r, top, px, fill) {
+  g.save(); g.font = `900 ${px}px Nunito,"Arial Black",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = fill;
+  const sp = px * 0.08, ws = [...text].map(ch => g.measureText(ch).width + sp), total = ws.reduce((a, b) => a + b, 0) - sp; let a = (top ? -Math.PI / 2 : Math.PI / 2) + (top ? -1 : 1) * total / r / 2;
+  [...text].forEach((ch, i) => { const da = ws[i] / r, m = a + (top ? 1 : -1) * (ws[i] - sp) / r / 2; g.save(); g.translate(cx + Math.cos(m) * r, cy + Math.sin(m) * r); g.rotate(m + (top ? Math.PI / 2 : -Math.PI / 2)); g.fillText(ch, 0, 0); g.restore(); a += (top ? 1 : -1) * da; });
+  g.restore();
+}
+// Cuerpo de la medalla (sin cinta): canto estriado, esmalte con letras en oro, centro de color e ícono en relieve
+function medalBody(g, cx, cy, R, E, kind, opt) {
+  const gold = kind === 'gold', ink = gold ? '#fff3c0' : '#eef2f7', s = R / 82;
+  g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 12 * s; g.shadowOffsetY = 5 * s; g.fillStyle = metal(g, cx - R, cy - R, cx + R, cy + R, kind); disc(g, cx, cy, R); g.fill(); g.restore();
+  // canto estriado (como una moneda)
+  g.save(); g.lineWidth = Math.max(1, 1.6 * s); for (let i = 0; i < 96; i++) { const a = i / 96 * Math.PI * 2; g.strokeStyle = i % 2 ? (gold ? 'rgba(120,78,8,.55)' : 'rgba(70,80,95,.5)') : 'rgba(255,250,220,.55)'; g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9); g.lineTo(cx + Math.cos(a) * R * 0.985, cy + Math.sin(a) * R * 0.985); g.stroke(); } g.restore();
+  // bisel interior
+  g.fillStyle = metal(g, cx + R, cy + R, cx - R, cy - R, kind); disc(g, cx, cy, R * 0.88); g.fill();
+  // banda de esmalte azul noche con letras en oro
+  const band = g.createRadialGradient(cx, cy - R * 0.3, R * 0.2, cx, cy, R * 0.82); band.addColorStop(0, '#24407a'); band.addColorStop(1, '#0c1a3a');
+  g.fillStyle = band; disc(g, cx, cy, R * 0.8); g.fill();
+  g.strokeStyle = metal(g, cx - R, cy - R, cx + R, cy + R, kind); g.lineWidth = 2.2 * s; disc(g, cx, cy, R * 0.8); g.stroke();
+  if (opt.text !== false) {
+    arcText(g, opt.top || 'ENERGIMUNDO', cx, cy, R * 0.705, true, 11.5 * s, ink);
+    arcText(g, opt.bottom || SHORT[E.key] || '', cx, cy, R * 0.705, false, 10.5 * s, ink);
+    for (const sx of [-1, 1]) { g.fillStyle = ink; g.save(); g.translate(cx + sx * R * 0.705, cy); g.rotate(Math.PI / 4); g.fillRect(-2.2 * s, -2.2 * s, 4.4 * s, 4.4 * s); g.restore(); }
+  }
+  // centro de color, con brillo y rayos suaves
+  const rc = R * (opt.text === false ? 0.72 : 0.6), col = E.color || '#2ed3c6', cg = g.createRadialGradient(cx - rc * 0.35, cy - rc * 0.4, rc * 0.1, cx, cy, rc);
+  cg.addColorStop(0, shade(col, 0.45)); cg.addColorStop(0.45, col); cg.addColorStop(1, shade(col, -0.35));
+  g.fillStyle = gold ? cg : '#3a4a6a'; disc(g, cx, cy, rc); g.fill();
+  g.save(); disc(g, cx, cy, rc); g.clip(); g.globalAlpha = 0.12; g.fillStyle = '#ffffff'; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, rc, a, a + Math.PI / 32); g.closePath(); g.fill(); } g.restore();
+  g.strokeStyle = metal(g, cx + R, cy - R, cx - R, cy + R, kind); g.lineWidth = 3 * s; disc(g, cx, cy, rc); g.stroke();
+  // ícono en relieve (capa aparte, así los calados no agujerean la medalla)
+  const L = document.createElement('canvas'), n = Math.ceil(rc * 2.2); L.width = L.height = n; drawIcon(L.getContext('2d'), opt.icon || E.icon, n / 2, n / 2, rc * 0.62, '#ffffff');
+  g.save(); g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 4 * s; g.shadowOffsetY = 2 * s; g.drawImage(L, cx - n / 2, cy - n / 2); g.restore();
+  // destello
+  g.save(); g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 3 * s; g.beginPath(); g.arc(cx, cy, R * 0.93, -2.55, -1.55); g.stroke(); g.restore();
+}
+function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (k < 0 ? v * k : (255 - v) * k)))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+// Cinta con los colores de Energimundo y broche dorado con el isotipo
+function ribbon(g, c, top, y1, s) {
+  for (const [sx, a, b] of [[-1, '#6a2c91', '#8a46b5'], [1, '#e6007e', '#ff3a9d']]) {
+    const gr = g.createLinearGradient(c + sx * 70 * s, 0, c + sx * 10 * s, 0); gr.addColorStop(0, a); gr.addColorStop(0.5, b); gr.addColorStop(1, a);
+    g.fillStyle = gr; g.beginPath(); g.moveTo(c + sx * 8 * s, y1); g.lineTo(c + sx * 48 * s, top); g.lineTo(c + sx * 86 * s, top); g.lineTo(c + sx * 44 * s, y1); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.28)'; g.beginPath(); g.moveTo(c + sx * 20 * s, y1); g.lineTo(c + sx * 60 * s, top); g.lineTo(c + sx * 66 * s, top); g.lineTo(c + sx * 26 * s, y1); g.closePath(); g.fill();
+  }
+}
+function clasp(g, cx, cy, r, s) {
+  g.save(); g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 6 * s; g.shadowOffsetY = 2 * s; g.fillStyle = metal(g, cx - r, cy - r, cx + r, cy + r); disc(g, cx, cy, r); g.fill(); g.restore();
+  g.fillStyle = '#0c1a3a'; disc(g, cx, cy, r * 0.8); g.fill();
+  const iso = goldIso(); g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 2 * s; if (iso) g.drawImage(iso, cx - r * 0.74, cy - r * 0.74, r * 1.48, r * 1.48); else goldRings(g, cx, cy, r * 0.62); g.restore();
+  g.strokeStyle = 'rgba(255,240,190,.7)'; g.lineWidth = 1.4 * s; disc(g, cx, cy, r * 0.8); g.stroke();
+}
+// Medalla completa (ventana de la medalla) o en miniatura (menú). got = false: todavía no ganada.
+export function drawMedal(cv, E, got = true, opt = {}) {
+  const g = cv.getContext('2d'), W = cv.width; g.clearRect(0, 0, W, W);
+  if (opt.mini) {   // tarjeta del menú
+    const R = W * 0.47, c = W / 2;
+    if (!got) { g.fillStyle = E.color; disc(g, c, c, R * 0.84); g.fill(); g.setLineDash([4, 4]); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 3; disc(g, c, c, R * 0.95); g.stroke(); g.setLineDash([]); drawIcon(g, E.icon, c, c, R * 0.55); return; }
+    medalBody(g, c, c, R * 0.97, E, 'gold', { text: false }); return;
+  }
+  const s = W / 220, c = W / 2, R = 78 * s, cy = 136 * s;
+  ribbon(g, c, 2 * s, cy - R * 0.55, s);
+  medalBody(g, c, cy, R, E, got ? 'gold' : 'silver', opt);
+  clasp(g, c, cy - R - 6 * s, 21 * s, s);
+}
+// Sello dorado de Energimundo para el diploma: isotipo en oro, o la medalla de la misión en el certificado del Modo escuela
+export function drawSeal(cv, E) {
+  const g = cv.getContext('2d'), W = cv.width, c = W / 2, R = W * 0.46; g.clearRect(0, 0, W, W);
+  if (E) { medalBody(g, c, c, R, E, 'gold', {}); return; }
+  // estrella de puntas (borde de sello) y centro con el isotipo dorado
+  g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 8; g.shadowOffsetY = 3; g.fillStyle = metal(g, 0, 0, W, W); g.beginPath();
+  for (let i = 0; i <= 64; i++) { const a = i / 64 * Math.PI * 2, r = i % 2 ? R : R * 0.92; g.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } g.closePath(); g.fill(); g.restore();
+  const band = g.createRadialGradient(c, c - R * 0.3, R * 0.2, c, c, R * 0.8); band.addColorStop(0, '#24407a'); band.addColorStop(1, '#0c1a3a'); g.fillStyle = band; disc(g, c, c, R * 0.8); g.fill();
+  g.strokeStyle = metal(g, 0, 0, W, W); g.lineWidth = W * 0.012; disc(g, c, c, R * 0.8); g.stroke();
+  arcText(g, 'ENERGIMUNDO', c, c, R * 0.655, true, W * 0.062, '#fff3c0'); arcText(g, '100 % RENOVABLE', c, c, R * 0.655, false, W * 0.052, '#fff3c0');
+  const iso = goldIso(); g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = W * 0.012; if (iso) g.drawImage(iso, c - R * 0.55, c - R * 0.55, R * 1.1, R * 1.1); else goldRings(g, c, c, R * 0.42); g.restore();
 }
 
 export class Escuela {
@@ -84,7 +175,7 @@ export class Escuela {
     ESCUELA.forEach((E, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'eCard' + (this.medals[E.key] ? ' got' : ''); b.style.setProperty('--c', E.color);
       b.innerHTML = `<canvas width="96" height="96" aria-hidden="true"></canvas><span class="eTxt"><b><kbd>${i + 1}</kbd> ${E.name}</b><small>${E.sub}</small><em>${this.medals[E.key] ? '★ Medalla ganada' : `Unos ${E.min} minutos`}</em></span>`;
-      const cv = b.querySelector('canvas'), x = cv.getContext('2d'); x.fillStyle = E.color; x.beginPath(); x.arc(48, 48, 46, 0, 7); x.fill(); drawIcon(x, E.icon, 48, 48, 30);
+      drawMedal(b.querySelector('canvas'), E, !!this.medals[E.key], { mini: true });
       b.onclick = () => this.start(E.key); box.appendChild(b);
     });
     $('eCount').textContent = `Medallas: ${this.count()} de ${ESCUELA.length}`; $('eReset').textContent = 'Borrar medallas'; $('eReset').disabled = !this.count();
@@ -115,7 +206,7 @@ export class Escuela {
     const g = this.g, E = BY[this.cur], M = g.missions; $('eWin').classList.add('hidden'); this.winOpen = false; g.extras.open = null;
     g.extras.showDiploma(() => { this.winOpen = true; g.extras.open = 'eWin'; $('eWin').classList.remove('hidden'); }, {
       kicker: 'CERTIFICADO', title: this.count() === ESCUELA.length ? 'Las siete medallas de Energimundo' : 'Medalla de ' + E.name, desc: `por completar la misión «${M.title}» junto a Capi, en el Modo escuela de Energimundo.`,
-      story: 'Modo escuela · ' + E.name, extra: `Medallas: ${this.count()} de ${ESCUELA.length}`
+      story: 'Modo escuela · ' + E.name, extra: `Medallas: ${this.count()} de ${ESCUELA.length}`, medal: E
     });
   }
   toFree(quiet) { const M = this.g.missions; M.school = null; M.quietFree = quiet; M.start('larga', SEQ.larga.length, false); }

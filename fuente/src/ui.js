@@ -238,11 +238,12 @@ export class UI {
     g.strokeStyle = '#102a52'; g.lineWidth = 1; for (let x = 0; x < W; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); } for (let y = 0; y < H; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
     const city = { x: 380, y: 232 };
     const N = this.nodes = [
-      { zone: 'hidro', x: 380, y: 62, name: 'HIDRO', mw: o.hydro, cap: 144, col: '#4cc9f0' },
-      { zone: 'eolica', x: 640, y: 150, name: 'EÓLICA', mw: o.wind, cap: 40, col: '#e8f1f2' },
-      { zone: 'biomasa', x: 620, y: 350, name: 'BIOMASA', mw: o.bio, cap: 40, col: '#90be6d' },
-      { zone: 'solar', x: 130, y: 110, name: 'SOLAR', mw: o.solar, cap: 48, col: '#ffb703' },
-      { zone: 'solar', x: 110, y: 270, name: 'BATERÍAS', mw: o.bat, cap: 50, col: '#5ad1ff', bat: true },
+      // ubicados como en la maqueta: la represa al noroeste, el sol y las baterías al norte, el viento y la biomasa al este
+      { zone: 'hidro', x: 140, y: 92, name: 'HIDRO', mw: o.hydro, cap: 144, col: '#4cc9f0' },
+      { zone: 'eolica', x: 652, y: 182, name: 'EÓLICA', mw: o.wind, cap: 40, col: '#e8f1f2' },
+      { zone: 'biomasa', x: 630, y: 352, name: 'BIOMASA', mw: o.bio, cap: 40, col: '#90be6d' },
+      { zone: 'solar', x: 380, y: 66, name: 'SOLAR', mw: o.solar, cap: 48, col: '#ffb703' },
+      { zone: 'solar', x: 545, y: 72, name: 'BATERÍAS', mw: o.bat, cap: 50, col: '#5ad1ff', bat: true },
       { zone: null, x: 210, y: 386, name: 'RESPALDO FÓSIL', mw: o.fossil, cap: 140, col: '#b08a7a' }
     ];
     for (const n of N) {
@@ -258,7 +259,7 @@ export class UI {
     };
     for (const n of N) node(n.x, n.y, 42, n.col, n.name, (n.bat && !G.bat.connected) ? '—' : Math.round(n.mw) + ' MW', n.bat ? (G.bat.connected ? Math.round(G.bat.soc * 100) + '% carga' : 'sin conectar') : Math.round(clamp(Math.abs(n.mw) / n.cap, 0, 1) * 100) + '%');
     const ok = o.pct >= 100;
-    node(city.x, city.y, 62, ok ? '#57e389' : '#ffc93c', 'CIUDAD · DEMANDA', Math.round(o.demand) + ' MW', G.freq.toFixed(1).replace('.', ',') + ' Hz · ' + Math.round(o.pct) + '% renov.');
+    node(city.x, city.y, 62, ok ? '#57e389' : '#ffc93c', 'CIUDAD · DEMANDA', Math.round(o.demand) + ' MW', G.freq.toFixed(1).replace('.', ',') + ' Hz · ' + Math.round(o.pct) + ' %');
     g.textAlign = 'left'; g.font = '800 13px Nunito,sans-serif'; g.fillStyle = '#a9bbd6';
     g.fillText('G total = hidro + eólica + solar + biomasa + baterías = ' + Math.round(o.ren + Math.max(0, o.bat)) + ' MW', 16, H - 16);
     g.textAlign = 'right'; g.fillStyle = ok ? '#57e389' : '#ff6b4a'; g.fillText(ok ? 'EQUILIBRIO ÓPTIMO' : 'DÉFICIT RENOVABLE: ' + Math.round(o.fossil + o.unmet) + ' MW', W - 16, H - 16);

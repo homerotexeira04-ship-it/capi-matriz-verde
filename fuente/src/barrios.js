@@ -350,14 +350,14 @@ function orilla(w, R) {
     const z = lerp(-80, 204, R()), x = lerp(-226, -168, R()), fd = farD(x, z);
     if (fd < 9 || (Math.abs(z - OZ) < 7 && x > -176) || (Math.abs(z - 40) < 6 && Math.abs(x + 182) < 6) || w.nearRoad(x, z, 4.4)) continue;
     const y = w.terrainAt(x, z), tall = R() < 0.22 && x > -200;
-    if (tall) { const h = 5 + R() * 6, bw = 3.6 + R() * 2, bd = 3.6 + R() * 2; b.boxB(x, y - 0.3, z, bw, h + 0.3, bd, cols[Math.floor(R() * cols.length)]); b.boxB(x, y + h, z, bw + 0.2, 0.2, bd + 0.2, 0xf3ecdc); winGrid(w.nightBatch, x, z, bw, bd, y, h); }
-    else { w.houses.push({ x, y: y - 0.1, z, w: 3.6 + R(), d: 3.8 + R(), h: 2.4, rh: 1.4, c: cols[Math.floor(R() * cols.length)], rc: roofs[Math.floor(R() * roofs.length)], ry: (R() - 0.5) * 0.3 }); const q = new THREE.PlaneGeometry(0.7, 0.8); w.nightBatch.add(q, 0xffffff, x + 2.0, y + 1.3, z, 1, 1, 1, 0, Math.PI / 2, 0, 0); }
+    if (tall) { const h = 5 + R() * 6, bw = 3.6 + R() * 2, bd = 3.6 + R() * 2; b.boxB(x, y - 0.3, z, bw, h + 0.3, bd, cols[Math.floor(R() * cols.length)]); b.boxB(x, y + h, z, bw + 0.2, 0.2, bd + 0.2, 0xf3ecdc); winGrid(w.nightBatch, x, z, bw, bd, y, h); w.addSolid(x - bw / 2, x + bw / 2, z - bd / 2, z + bd / 2); w.addOcc(x - bw / 2, x + bw / 2, z - bd / 2, z + bd / 2, y + h); }
+    else { const hw = 3.6 + R(), hd = 3.8 + R(); w.houses.push({ x, y: y - 0.1, z, w: hw, d: hd, h: 2.4, rh: 1.4, c: cols[Math.floor(R() * cols.length)], rc: roofs[Math.floor(R() * roofs.length)], ry: (R() - 0.5) * 0.3 }); const q = new THREE.PlaneGeometry(0.7, 0.8); w.nightBatch.add(q, 0xffffff, x + hw / 2 + 0.05, y + 1.3, z, 1, 1, 1, 0, Math.PI / 2, 0, 0); w.addSolid(x - hw / 2, x + hw / 2, z - hd / 2, z + hd / 2); }
     if (R() < 0.5) plant(w, R() < 0.5 ? 'native' : 'jaca', x + (R() - 0.5) * 3, z + 3, 0.8 + R() * 0.3);
   }
   // iglesia con campanario, que se ve desde la costanera de Salto (la torre mira al río)
   const cx = -182, cz = 40, cy = w.terrainAt(cx, cz);
   b.boxB(cx, cy - 0.3, cz, 8, 5.3, 5, 0xf2e4c4); gable(b, cx, cy + 5, cz, 5.2, 1.8, 8.2, 0xb5533c, true);
-  b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
+  b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); w.addSolid(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5); w.addOcc(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5, cy + 6); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
   w.nightBatch.add(new THREE.CircleGeometry(0.6, 12), 0xffffff, cx + 5.72, cy + 3.5, cz, 1, 1, 1, 0, Math.PI / 2, 0, 0);
   for (let i = 0; i < 90; i++) { const x = lerp(-228, -164, R()), z = lerp(-84, 206, R()); if (farD(x, z) > 10 && !(Math.abs(z - OZ) < 6 && x > -178) && !w.nearRoad(x, z, 2.6)) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
 }

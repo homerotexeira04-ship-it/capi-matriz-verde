@@ -1,4 +1,4 @@
-// Minijuegos de la Feria de la Rambla: cometa y cinta de chips
+// Minijuegos de la Feria del Bulevar: cometa y cinta de chips
 import { GAMES, txt, rr, W, H } from './minigames.js';
 import { fresh, step, pct, demand, wind, sun, BIO, HYDRO, BATE, WATER } from './despacho-sim.js';
 

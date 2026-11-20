@@ -73,7 +73,7 @@ export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
   w.addSolid(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2); w.addOcc(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2, y0 + bh + (style === 1 ? 1.9 : 0.3));
 }
 
-// ================= SECTOR 1: CIUDAD COSTERA Y RAMBLA =================
+// ================= SECTOR 1: CIUDAD, COSTANERA Y BULEVAR =================
 export function buildCity(w) {
   const b = w.batch, R = w.rand, Y = 2.2;
   // Calzadas, bulevar y costanera: la ciudad creció hacia el este (hasta x 22) y hacia el sur (hasta z 94)
@@ -281,7 +281,8 @@ function terminal(w, cx, cz) {
     w.addCircle(cx + dx, cz - 2.9, 0.5);
   });
   w.addOcc(cx - 6.4, cx + 6.4, cz - 6.2, cz + 6.2, Y + 5.8);
-  sign(w, 'TERMINAL RAMBLA · ÓMNIBUS ELÉCTRICOS', cx, Y + 3.4, cz + 4.7, 0, 9, 1.0, { bg: '#0b5a4a', border: '#7dffb0' });
+  (w.navBlock = w.navBlock || []).push([cx - 6.6, cx + 6.6, cz - 2.4, cz + 4.6]);   // andén: ahí estacionan los ómnibus
+  sign(w, 'TERMINAL DEL BULEVAR · ÓMNIBUS ELÉCTRICOS', cx, Y + 3.4, cz + 4.7, 0, 9, 1.0, { bg: '#0b5a4a', border: '#7dffb0' });
   w.addInter('npc:lucia', POS.lucia[0], POS.lucia[1], { console: false, y: CITY_Y, h: 3.6 });
   w.addInter('term', -13.9, 61.2, { y: Y, ry: Math.PI / 2, h: 3.4 });
 }
@@ -387,8 +388,10 @@ export function buildHydro(W) {
     bb.boxB(x, y, z, 4.4, 2.8, 2.6, 0xf2efe8); bb.boxB(x, y + 2.0, z, 4.46, 0.5, 2.66, col); bb.boxB(x, y + 2.8, z, 4.9, 0.2, 3.1, 0xdad4c6);
     W.winBatch[2].add(new THREE.PlaneGeometry(2.6, 0.9), 0xffffff, x, y + 1.4, z + face * 1.32, 1, 1, 1, 0, face > 0 ? 0 : Math.PI, 0, 0);
     W.addSolid(x - 2.2, x + 2.2, z - 1.3, z + 1.3);
-    bb.boxB(x + 2.8, y, z + face * 1.6, 0.3, 1.1, 0.3, 0xe8e2d2); bb.box(x + 5.0, y + 1.0, z + face * 1.6, 4.2, 0.14, 0.14, 0xe5484d);
-    for (let k = 0; k < 4; k++) bb.box(x + 3.6 + k * 1.0, y + 1.0, z + face * 1.6, 0.5, 0.16, 0.16, 0xffffff);
+    // barrera levantada sobre el carril (de adorno: no corta el paso)
+    const bx = x + 2.9, bz = z + face * 1.7, A = 0.95, L = 4.4, ca = Math.cos(A), sa = Math.sin(A);
+    bb.boxB(bx, y, bz, 0.3, 1.1, 0.3, 0xe8e2d2); W.addCircle(bx, bz, 0.25);
+    for (let k = 0; k < 6; k++) { const d = (k + 0.5) * L / 6; bb.box(bx, y + 1.05 + d * sa, bz + face * d * ca, 0.13, 0.13, L / 6 + 0.02, k % 2 ? 0xffffff : 0xe5484d, 0, -face * A); }
     sign(W, text, x, y + 0.4, z + face * 1.4 + face * 0.02, face > 0 ? 0 : Math.PI, 4.2, 0.7, { bg: '#12325a', border: '#ffc93c' });
   };
   aduana(-76.5, -104.8, 'ADUANA · URUGUAY', 0x0038a8, 1);
@@ -581,17 +584,22 @@ export function buildRoads(w) {
 
 export function buildLines(w) {
   const b = w.batch, segs = [];
+  const towers = [];   // torres ya levantadas: una segunda línea que pasa por la misma torre cuelga de una cruceta más baja
   const mk = (name, pts, color, cap) => {
     const P = pts.map(([x, z, yo], i) => {
       const y = w.groundAt(x, z), end = i === 0 || i === pts.length - 1;
       const pv = pts[Math.max(0, i - 1)], nx = pts[Math.min(pts.length - 1, i + 1)], ry = Math.atan2(nx[0] - pv[0], nx[1] - pv[1]);
-      if (!end) {
+      const shared = !end && towers.some(t => Math.hypot(t[0] - x, t[1] - z) < 1.5);
+      if (!end && !shared) {
         b.add(new THREE.CylinderGeometry(0.28, 1.25, 13, 4), C.steel, x, y + 6.5, z, 1, 1, 1, 0, ry + Math.PI / 4, 0);
         b.box(x, y + 11.2, z, 6.6, 0.24, 0.3, C.steel, ry); b.box(x, y + 12.9, z, 3.6, 0.2, 0.26, C.steel, ry);
         for (const s of [-3, 3]) b.cyl(x + Math.cos(ry) * s, y + 10.5, z - Math.sin(ry) * s, 0.07, 0.12, 0.7, 0xb9684a, 5);
-        w.addCircle(x, z, 1.0);
+        w.addCircle(x, z, 1.0); towers.push([x, z]);
+      } else if (shared) {
+        b.box(x, y + 8.9, z, 6.0, 0.22, 0.28, C.steel, ry);
+        for (const s of [-2.7, 2.7]) b.cyl(x + Math.cos(ry) * s, y + 8.2, z - Math.sin(ry) * s, 0.07, 0.12, 0.7, 0xb9684a, 5);
       }
-      return { x, y: y + (end ? (yo || 6) : 10.5), z, ry, end };
+      return { x, y: y + (end ? (yo || 6) : shared ? 8.2 : 10.5), z, ry, end, low: shared };
     });
     const path = [];
     for (let i = 0; i < P.length - 1; i++) {
@@ -600,7 +608,7 @@ export function buildLines(w) {
         let prev = null;
         for (let k = 0; k <= 10; k++) {
           const t = k / 10, sag = 4 * t * (1 - t) * 1.7;
-          const oa = a.end ? off * 0.6 : off, oc = c.end ? off * 0.6 : off, ya = a.y + (off === 0 && !a.end ? 2.3 : 0), yc = c.y + (off === 0 && !c.end ? 2.3 : 0);
+          const oa = a.end ? off * 0.6 : a.low ? off * 0.9 : off, oc = c.end ? off * 0.6 : c.low ? off * 0.9 : off, ya = a.y + (off === 0 && !a.end ? (a.low ? 0.75 : 2.3) : 0), yc = c.y + (off === 0 && !c.end ? (c.low ? 0.75 : 2.3) : 0);
           const p = [lerp(a.x + Math.cos(a.ry) * oa, c.x + Math.cos(c.ry) * oc, t), lerp(ya, yc, t) - sag, lerp(a.z - Math.sin(a.ry) * oa, c.z - Math.sin(c.ry) * oc, t)];
           if (prev) segs.push(...prev, ...p);
           prev = p;
@@ -612,12 +620,12 @@ export function buildLines(w) {
     w.lines[name] = { path, cum, len: cum[cum.length - 1], color, cap, phase: Math.random(), level: 0 };
   };
   const S = [POS.substation[0] - 1.4, POS.substation[1] - 4.1, 7];
-  mk('eolica', [[POS.windTx[0] + 2.6, POS.windTx[1] - 1.4, 6.5], [33, 12], [17, 8.2], [-1, 8.4], S], 0x9be7ff, 40);
-  mk('hidro', [[-92.5, -93, 5], [-82, -107.6], [-62, -109], [-44, -96], [-41.5, -74], [-40, -52], [-37.5, -17], [-30, 3.6], S], 0x5ad1ff, 144);
+  mk('eolica', [[POS.windTx[0] + 2.6, POS.windTx[1] - 1.4, 6.5], [33, 12], [17, 8.2], [-6, 4], S], 0x9be7ff, 40);
+  mk('hidro', [[-92.5, -93, 5], [-80, -111.5], [-62, -109.5], [-44, -96], [-41.5, -74], [-40, -52], [-35.5, -14], S], 0x5ad1ff, 144);
   mk('solar', [[POS.batYard[0], POS.batYard[1] - 7.6, 6], [23, -50], [17, -38], [9, -24], [2, -6], S], 0xffe066, 98);
-  mk('biomasa', [[POS.bioSub[0] + 2.2, POS.bioSub[1] - 1.6, 6.3], [56, 46], [47, 27], [38, 11.5], [21, 5.2], [3, 5.6], S], 0xb6f27a, 40);
+  mk('biomasa', [[POS.bioSub[0] + 2.2, POS.bioSub[1] - 1.6, 6.3], [56, 46], [51, 18], [33, 12], [17, 8.2], [-6, 4], S], 0xb6f27a, 40);
   // Alimentador urbano en postes de baja tensión (con nidos de hornero), por la vereda este del ensanche
-  const poles = [[23.4, 28], [23.4, 40], [23.4, 52], [23.4, 64]], fp = [];
+  const poles = [[23.4, 22], [23.4, 33], [23.4, 50.5], [23.4, 62]], fp = [];
   poles.forEach(([x, z], i) => {
     b.cyl(x, 2.1, z, 0.1, 0.14, 7, 0x7a5a3a, 6); b.box(x, 8.6, z, 1.8, 0.14, 0.14, 0x7a5a3a);
     if (i % 2 === 0) { b.sph(x - 0.5, 8.95, z, 0.34, 0xa5673f, 0.9); b.box(x - 0.5, 8.95, z + 0.3, 0.16, 0.2, 0.1, 0x3a2416); b.box(x + 0.45, 8.85, z, 0.14, 0.24, 0.3, 0xb5651d); b.box(x + 0.45, 9.0, z + 0.16, 0.1, 0.1, 0.12, 0xd9a066); }

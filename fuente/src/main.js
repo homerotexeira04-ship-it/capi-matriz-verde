@@ -1,7 +1,7 @@
 // Arranque del juego: render, cámara isométrica orbital, entrada (teclado, ratón y táctil) y bucle principal.
 import * as THREE from 'three';
 import { clamp, lerp, damp, angDiff } from './util.js';
-import { B, POS, ZONES, CITY_Y, coastD, channelD, MUSEO_OFF } from './terrain.js';
+import { B, POS, ZONES, CITY_Y, coastD, westD, channelD, MUSEO_OFF } from './terrain.js';
 import { EnergyGrid } from './grid.js';
 import { World, canvasTex, offsetWorld } from './world.js';
 import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops, buildSur } from './sectors.js';
@@ -403,7 +403,7 @@ class Game {
     let amb = null, windNear = Math.max(0.12, near(70, -12, 75)), waterNear = Math.max(near(-11, -49, 45), c.swimming ? 0.45 : 0);
     if (!play) {   // pantalla de inicio y demostración: el sonido sigue a la cámara
       const f = cam.target, nf = (x, z, r) => clamp(1 - Math.hypot(f.x - x, f.z - z) / r, 0, 1), wide = clamp((cam.dist - 75) / 55, 0, 1);
-      const water = Math.max(clamp(1 - coastD(f.x, f.z) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(-130, -124, 60), nf(-122, -96, 40));
+      const water = Math.max(clamp(1 - Math.max(coastD(f.x, f.z), westD(f.x, f.z)) / 32, 0, 1), clamp(1 - channelD(f.x, f.z) / 26, 0, 0.85), nf(-130, -124, 60), nf(-122, -96, 40));
       const city = Math.max(nf(-32, 48, 58), nf(0, 52, 40), nf(-44, 4, 34)), field = nf(58, -6, 58);
       amb = { water: lerp(water, 0.45, wide), city: lerp(city, 0.4, wide), field: lerp(field, 0.3, wide), green: clamp(1 - city * 0.7, 0.3, 1), plaza: nf(-44, 38, 24) * (1 - wide), night, hour: G.hour };
       windNear = Math.max(0.08, 0.6 * lerp(Math.max(field, nf(70, -12, 75) * 0.6), 0.3, wide)); waterNear = amb.water * 0.45;

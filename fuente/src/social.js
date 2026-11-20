@@ -9,13 +9,13 @@ import { NAMES } from './ui.js';
 
 const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
-const PEN = { x0: 21.5, x1: 29.5, z0: 37.5, z1: 44.5, g0: 24, g1: 27 };   // corral: tranquera sobre el lado norte
+const PEN = { x0: 23.5, x1: 31.5, z0: 37.5, z1: 44.5, g0: 26, g1: 29 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-82.2, 28.6, 'la costanera', 0.15], [5.6, 72.6, 'el bulevar', 0.22]];
 const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
 const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
-export const CLEAR2 = [[20, 31.5, 36, 46.5]];
+export const CLEAR2 = [[22, 33.5, 36, 46.5]];
 
 const WHO = {
   mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.'], ['¿Cómo se llama el perro?', 'Pampa. Si te sigue es porque le caíste bien. Cuando se cansa, vuelve solo al fogón.']] },
@@ -198,14 +198,14 @@ export class Social {
     this.sheep.forEach((o, i) => {
       let ax = 0, az = 0; const d = Math.hypot(cp.x - o.x, cp.z - o.z);
       if (herd && !o.pen && d < 6.5) { ax = (o.x - cp.x) / (d || 1) * 13; az = (o.z - cp.z) / (d || 1) * 13; }
-      else if (o.pen || !herd) { const a = t * 0.25 + o.ph, tx = (o.pen ? 25.5 : o.hx) + Math.cos(a) * (o.pen ? 2.2 : 1.2), tz = (o.pen ? 41 : o.hz) + Math.sin(a * 1.3) * (o.pen ? 2 : 1.2); ax = (tx - o.x) * 0.8; az = (tz - o.z) * 0.8; }
+      else if (o.pen || !herd) { const a = t * 0.25 + o.ph, tx = (o.pen ? (P.x0 + P.x1) / 2 : o.hx) + Math.cos(a) * (o.pen ? 2.2 : 1.2), tz = (o.pen ? 41 : o.hz) + Math.sin(a * 1.3) * (o.pen ? 2 : 1.2); ax = (tx - o.x) * 0.8; az = (tz - o.z) * 0.8; }
       o.vx = (o.vx + ax * dt) * Math.exp(-2.2 * dt); o.vz = (o.vz + az * dt) * Math.exp(-2.2 * dt);
       let nx = o.x + o.vx * dt, nz = o.z + o.vz * dt; const inP = (x, z) => x > P.x0 + 0.5 && x < P.x1 - 0.5 && z > P.z0 + 0.4 && z < P.z1 - 0.5;
       if (o.pen) { nx = Math.max(P.x0 + 0.7, Math.min(P.x1 - 0.7, nx)); nz = Math.max(P.z0 + 0.9, Math.min(P.z1 - 0.7, nz)); }
       else {
         const wasIn = o.x > P.x0 - 0.5 && o.x < P.x1 + 0.5 && o.z > P.z0 - 0.4 && o.z < P.z1 + 0.5, willIn = nx > P.x0 - 0.5 && nx < P.x1 + 0.5 && nz > P.z0 - 0.4 && nz < P.z1 + 0.5;
         if (willIn && !wasIn && !(o.z <= P.z0 - 0.4 && nx > P.g0 + 0.3 && nx < P.g1 - 0.3)) { if (!(o.x > P.x0 - 0.5 && o.x < P.x1 + 0.5)) { nx = o.x; o.vx = 0; } else { nz = o.z; o.vz = 0; } }
-        nx = Math.max(20, Math.min(40, nx)); nz = Math.max(31.5, Math.min(47, nz));
+        nx = Math.max(23, Math.min(40, nx)); nz = Math.max(31.5, Math.min(47, nz));
         if (inP(nx, nz) && herd) { o.pen = true; g.fx.puff(nx, w.groundAt(nx, nz) + 0.5, nz, 8, 0xffffff, 1.2); this.step(i); }
       }
       o.x = nx; o.z = nz; const sp = Math.hypot(o.vx, o.vz); if (sp > 0.25) { let dh = Math.atan2(o.vx, o.vz) - o.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); o.h += dh * Math.min(1, dt * 7); }

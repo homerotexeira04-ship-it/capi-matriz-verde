@@ -75,23 +75,26 @@ export function terrainH(x, z) {
     h = Math.max(h, lerp(-3.2, ar, smooth(-5, 2.5, fd)));
   }
   if (z < DAM_Z - 2 && d < 3 && fd < 3) h = Math.max(h, 1.0);   // fondo del lago (arriba de la represa)
-  const dc = channelD(x, z), hw = 4.2 + 4.5 * smooth(-40, -100, x);
-  if (dc < hw + 4.5 && z > -60) h = Math.min(h, lerp(-2.4, h, smooth(hw, hw + 4.5, dc)));
+  const dc = channelD(x, z), hw = lerp(3.5, 7.5, smooth(12, -12, x)) + 1.5 * smooth(-50, -100, x);   // angosto en la naciente, ancho en la desembocadura
+  if (dc < hw + 4.5 && z > -60) h = Math.min(h, lerp(-2.6, h, smooth(hw, hw + 4.5, dc)));
   return h;
 }
 // Nivel del agua: el lago de Salto Grande, elevado, al norte de la represa; río abajo, cota 0.
 export function waterAt(x, z) { return z < DAM_Z - 3 && x < eastBank(z) + 30 ? RES : 0; }
 
 export const ZONES = [
+  { id: 'rio', name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 210] },
+  { id: 'campo', name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
   { id: 'ciudad', name: 'Ciudad de Salto', x: -36, z: 50, color: '#ffd166', rect: [-86, 22, 12, 102] },
-  { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-160, -86, -150, -84] },
+  { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-166, -86, -112, -84] },
+  { id: 'lago', name: 'Lago de Salto Grande', x: -150, z: -128, color: '#4cc9f0', rect: [-230, -86, -150, -112] },
   { id: 'eolica', name: 'Parque Eólico de las Cuchillas', x: 70, z: -12, color: '#e8f1f2' },
   { id: 'solar', name: 'Parque Solar y Baterías', x: 18, z: -80, color: '#ffb703', rect: [-18, 50, -112, -54] },
   { id: 'biomasa', name: 'Planta de Biomasa', x: 60, z: 62, color: '#90be6d' },
   { id: 'norte', name: 'Barrio Norte y Costanera', x: -44, z: -3, color: '#f4a261', rect: [-86, 4, -24, 12] },
   { id: 'puerto', name: 'Puerto de Salto', x: -96, z: 50, color: '#5ad1ff', rect: [-120, -84, 30, 70] },
+  { id: 'sur', name: 'Barrio Sur', x: -28, z: 118, color: '#f4a261', rect: [-42, -8, 97, 136] },
   { id: 'jardin', name: 'Barrio Jardín', x: 24, z: -10, color: '#b5e48c', rect: [4, 46, -34, 10] },
-  { id: 'orilla', name: 'Concordia (Argentina)', x: -190, z: 40, color: '#9be7ff', rect: [-230, -150, -150, 210] },
-  { id: 'museo', name: 'Energimundo', x: -67, z: -70, color: '#e6007e', rect: [-86, -48, -98, -49] },
-  { id: 'rio', name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 210] }
+  { id: 'orilla', name: 'Concordia (Argentina)', x: -190, z: 40, color: '#9be7ff', rect: [-230, -152, -92, 210] },
+  { id: 'museo', name: 'Energimundo', x: -67, z: -70, color: '#e6007e', rect: [-86, -48, -98, -49] }
 ];

@@ -15,6 +15,8 @@ export class NavGrid {
       const x = B.minX + (i + 0.5) * cell, z = B.minZ + (j + 0.5) * cell, c = j * N + i;
       if (x >= b.x0 - R && x <= b.x1 + R && z >= b.z0 - R && z <= b.z1 + R && b.top > this.h[c] + 0.72) this.ok[c] = 0;
     }
+    // zonas que el camino automático evita aunque no tengan colisión fija (andén de los ómnibus que se mueven)
+    for (const r of world.navBlock || []) for (let j = cj(r[2]); j <= cj(r[3]); j++) for (let i = ci(r[0]); i <= ci(r[1]); i++) this.ok[j * N + i] = 0;
     for (const o of world.circles) {
       if (!o.r) continue; const rr = o.r + 0.5;
       for (let j = cj(o.z - rr); j <= cj(o.z + rr); j++) for (let i = ci(o.x - rr); i <= ci(o.x + rr); i++) { const x = B.minX + (i + 0.5) * cell, z = B.minZ + (j + 0.5) * cell; if ((x - o.x) ** 2 + (z - o.z) ** 2 < rr * rr) this.ok[j * N + i] = 0; }

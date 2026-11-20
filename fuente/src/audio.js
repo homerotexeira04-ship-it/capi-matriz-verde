@@ -14,7 +14,7 @@ const LEAD = [
 const CLAVE = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0], PIANO = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0], BASS = [[0, 0], [6, 7], [8, 12], [12, 7]];
 
 export class AudioSynth {
-  constructor() { this.ctx = null; this.muted = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; this.title = true; this.soft = 0; this.ev = { bird: 2, cric: 1, bell: 9, bus: 6, lap: 3 }; }
+  constructor() { this.ctx = null; this.muted = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; this.title = true; this.soft = 0; this.realDrums = false; this.duck = 0; this.ev = { bird: 2, cric: 1, bell: 9, bus: 6, lap: 3 }; }
   start() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
@@ -126,7 +126,7 @@ export class AudioSynth {
       if (layer >= 2) { if (PIANO[st]) this.drum('piano', t, 1); if (st % 2 === 0) this.tone(mtof(ch.n[(st / 2) % 4] + 12), sd * 1.6, 'triangle', 0.045, w, null, this.music); if (bar % 4 === 3 && st >= 10) this.drum('repique', t, 0.6 + (st - 10) * 0.08); }
       if (layer >= 3) for (const [ls, m, l] of LEAD[bar]) if (ls === st) { this.tone(mtof(m), sd * l, 'square', 0.04, w, null, this.music, 0.02); this.tone(mtof(m) * 1.003, sd * l, 'sine', 0.05, w, null, this.music, 0.03); }
       if (!this.llamada && this.soft > 0.05) { const v = this.soft * 0.7; if (CLAVE[st]) this.drum('clave', t, v); if (st % 2) this.drum('chico', t, v * 0.8); if (PIANO[st] || st === 8) this.drum('piano', t, v * 1.2); if ([3, 7, 11, 14].includes(st)) this.drum('repique', t, v); }
-      if (this.llamada) { if (CLAVE[st]) this.drum('clave', t, 1.3); this.drum('chico', t, st % 2 ? 1.3 : 0.7); if (PIANO[st] || st === 8 || st === 14) this.drum('piano', t, 1.6); if ([3, 6, 7, 11, 13, 14, 15].includes(st)) this.drum('repique', t, 1.2); }
+      if (this.llamada && !this.realDrums) { if (CLAVE[st]) this.drum('clave', t, 1.3); this.drum('chico', t, st % 2 ? 1.3 : 0.7); if (PIANO[st] || st === 8 || st === 14) this.drum('piano', t, 1.6); if ([3, 6, 7, 11, 13, 14, 15].includes(st)) this.drum('repique', t, 1.2); }
       this.step16++; this.next += sd;
     }
   }
@@ -149,9 +149,10 @@ export class AudioSynth {
     this.aWind.fl.frequency.setTargetAtTime(320 + st.wind * 500, now, 0.5);
     this.aWater.g.gain.setTargetAtTime(st.waterNear * 0.16, now, 0.3);
     this.aHum.gain.setTargetAtTime(st.humNear * 0.07, now, 0.3);
-    this.music.gain.setTargetAtTime(this.title ? 0.3 : 0.34, now, 0.8);
+    // cuando se oye la cuerda de tambores de verdad, la música se corre a un costado para no pisarle el ritmo
+    this.music.gain.setTargetAtTime((this.title ? 0.3 : 0.34) * (1 - 0.82 * clamp(this.duck * 1.7, 0, 1)), now, this.duck > 0.05 ? 0.35 : 0.8);
     if (st.amb) this.ambience(dt, st.amb); else { this.aCity.g.gain.setTargetAtTime(0, now, 0.5); this.soft = 0; }
-    this.soft = Math.max(this.soft, st.festSoft || 0, st.carnaval && this.title ? 0.3 : 0);
+    if (this.realDrums) { if (this.duck > 0.02) this.soft = 0; } else this.soft = Math.max(this.soft, st.festSoft || 0, st.carnaval && this.title ? 0.3 : 0);
     if (st.deficit) { this.alarmT -= dt; if (this.alarmT <= 0) { this.alarm(); this.alarmT = 1.6; } } else this.alarmT = 0.4;
   }
 }

@@ -322,6 +322,7 @@ export class Fiestas {
   }
   // punto de la fiesta para el minimapa (las llamadas se mueven)
   mark() { return this.mode === 'carnaval' && this.lead ? this.lead : null; }
+  cuerdaAt() { return this.mode === 'carnaval' ? this.cuerda : null; }
   countdown(dt, st) {
     if (!(this.count > 0)) return; const g = this.g, play = g.mode === 'play';
     this.count -= dt; g.grid.hour = 23.97; const n = Math.ceil(this.count);
@@ -335,7 +336,9 @@ export class Fiestas {
 
   // ---------- Cada cuadro ----------
   update(dt, st) {
-    this.soft = 0; const k = this.mode; if (!k) return; if (this.bigFw > 0) this.bigFw -= dt;
+    this.soft = 0; this.cuerda = null; const k = this.mode, M = this.g.muestras;
+    if (M) M.bed(k === 'fiestas' && this.bigFw > 0 && !this.g.cine, -41, 32, 7);   // chisporroteo continuo del gran final de Año Nuevo
+    if (!k) return; if (this.bigFw > 0) this.bigFw -= dt;
     const S = this.sets[k], g = this.g, t = (this.t += dt), h = st.hour, night = st.night;
     const L = g.mode === 'play' ? st.capi : st.focus;
     const w = g.world; if (w.dynCircles) for (const s of this.solids) w.dynCircles.push(s);
@@ -355,6 +358,7 @@ export class Fiestas {
       }
       if (on) {
         llPoint(P.s - 3, q); const d = Math.hypot(L.x - q.x, L.z - q.z); this.soft = clamp(1 - d / 42, 0, 1); this.lead = q;
+        const q3 = this.llq3 || (this.llq3 = {}), Q = this.cuerdaQ || (this.cuerdaQ = { kind: 'llamada' }); llPoint(P.s - 4.8, q3); Q.x = q3.x; Q.y = 3.4; Q.z = q3.z; this.cuerda = Q;   // la cuerda de tambores suena desde el medio de las filas
         if (this.soft > 0.2 && (this.cfT -= dt) <= 0) { this.cfT = 5 + Math.random() * 5; st.fx && st.fx.confetti && st.fx.confetti(q.x, 5.2, q.z, 36); }
       } else this.lead = null;
     }
@@ -364,9 +368,9 @@ export class Fiestas {
     if (S.cast) this.animCast(S.cast, dt, t, st);
     this.countdown(dt, st);
     if (k === 'fiestas' && (h >= 20.5 || h < 1.5 || this.bigFw > 0) && !g.cine && (this.fwT -= dt) <= 0) {
-      this.fwT = this.bigFw > 0 ? 0.25 + Math.random() * 0.35 : 2.2 + Math.random() * 3.2; const x = -72 + Math.random() * 62, z = -6 + Math.random() * 26;   // al norte, detrás de la ciudad vista desde la cámara
-      st.fx.firework(x, 24 + Math.random() * 16, z, PAL.fiestas[Math.floor(Math.random() * PAL.fiestas.length)]);
-      if (Math.hypot(L.x - x, L.z - z) < 110 && g.audio) g.audio.boom();
+      this.fwT = this.bigFw > 0 ? 0.25 + Math.random() * 0.35 : 2.2 + Math.random() * 3.2; const x = -72 + Math.random() * 62, y = 24 + Math.random() * 16, z = -6 + Math.random() * 26;   // al norte, detrás de la ciudad vista desde la cámara
+      st.fx.firework(x, y, z, PAL.fiestas[Math.floor(Math.random() * PAL.fiestas.length)]);
+      if (M && M.ok) M.firework(x, y, z); else if (Math.hypot(L.x - x, L.z - z) < 110 && g.audio) g.audio.boom();   // el estruendo llega después del destello
     }
   }
   criolla(S, dt, t, st, L) {
@@ -393,6 +397,13 @@ export class Fiestas {
       const dR = Math.hypot(L.x - R.x, L.z - R.z);
       if (dR < 32 && (this.bellT = (this.bellT || 0) - dt) <= 0) { this.bellT = trot ? 0.45 : 0.75; A.cencerro(1 - dR / 32); }
       if (dR < 32 && (this.cheerT = (this.cheerT || 0) - dt) <= 0) { this.cheerT = trot ? 1.8 + Math.random() * 1.5 : 5 + Math.random() * 5; A.cheer((1 - dR / 32) * (trot ? 1 : 0.5)); }
+    }
+    // relinchos y resoplidos grabados: de la tropilla en el ruedo o de los caballos atados al palenque
+    const M = g.muestras;
+    if (M && M.ok) {
+      const any = () => Math.random() < 0.72 ? T.list[Math.floor(Math.random() * T.list.length)].h : S.tied[Math.floor(Math.random() * S.tied.length)];
+      if ((this.neighT = (this.neighT == null ? 2.5 : this.neighT) - dt) <= 0) { this.neighT = trot ? 3.5 + Math.random() * 4 : 7 + Math.random() * 8; M.horse(any().group.position, true); }
+      if ((this.snortT = (this.snortT == null ? 1.2 : this.snortT) - dt) <= 0) { this.snortT = 2.2 + Math.random() * 3.5; M.horse(any().group.position, false); }
     }
   }
   museos(S, dt, t, st, L) {

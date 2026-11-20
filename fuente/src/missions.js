@@ -376,7 +376,7 @@ export class Missions {
     for (const it of g.world.interList) { const d = this.describe(it.id); it.state = d.state; it.label = d.label || ''; it.target = targets.includes(it.id); if (it.target && it.state === 'locked') it.state = 'ok'; }
     if (this.fw > 0) {
       this.fw -= dt;
-      if (Math.random() < 2.2 * dt) { const n = this.fwNorth; g.fx.firework(n ? -58 + Math.random() * 28 : -60 + Math.random() * 60, n ? 13 + Math.random() * 10 : 22 + Math.random() * 16, n ? 8 + Math.random() * 16 : 84 + Math.random() * 14, [0x57e389, 0x5ad1ff, 0xffd23f, 0xff8fab, 0xffffff][Math.floor(Math.random() * 5)]); g.audio.boom(); }
+      if (Math.random() < 2.2 * dt) { const n = this.fwNorth, x = n ? -58 + Math.random() * 28 : -60 + Math.random() * 60, y = n ? 13 + Math.random() * 10 : 22 + Math.random() * 16, z = n ? 8 + Math.random() * 16 : 84 + Math.random() * 14; g.fx.firework(x, y, z, [0x57e389, 0x5ad1ff, 0xffd23f, 0xff8fab, 0xffffff][Math.floor(Math.random() * 5)]); if (g.muestras && g.muestras.ok) g.muestras.firework(x, y, z); else g.audio.boom(); }
     }
     if (this.free) {
       if (G.out.pct < 97) this.flags.low = true;

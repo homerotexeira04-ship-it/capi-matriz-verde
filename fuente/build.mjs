@@ -1,6 +1,6 @@
 import { build } from 'esbuild';
 import fs from 'fs';
-await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', outfile: 'dist/game.js', target: 'es2020', logLevel: 'warning' });
+await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', outfile: 'dist/game.js', target: 'es2020', logLevel: 'warning', loader: { '.mp3': 'base64' } });
 const uri = (p, mime) => `data:${mime};base64,` + fs.readFileSync(p).toString('base64');
 let html = fs.readFileSync('index.html', 'utf8');
 html = html.replaceAll('__LOGO_ISO__', uri('logos/iso.png', 'image/png')).replaceAll('__LOGO_LARGO__', uri('logos/largo.webp', 'image/webp')).replaceAll('__LOGO_SG__', uri('logos/saltogrande.png', 'image/png'));

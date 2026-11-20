@@ -83,6 +83,8 @@ export class Vecinos {
   get festival() { const M = this.g.missions; return this.g.actors.gathered || !!this.g.cine || (M.key === 'pico' && (M.active || M.ceremony)); }
   get luciaAway() { return this.lu.away; }
   drums(on) { this.drumOn = on; this.drummers.forEach(d => { d.group.visible = on; }); }
+  // dónde suena la cuerda del baile final (el centro de los tamborileros)
+  drumAt() { if (!this.drumOn) return null; const q = this.drumQ || (this.drumQ = { x: 0, y: 0, z: 0, kind: 'fiesta' }); let x = 0, z = 0; for (const d of this.drummers) { x += d.group.position.x; z += d.group.position.z; } q.x = x / this.drummers.length; q.z = z / this.drummers.length; q.y = CITY_Y + 1.2; return q; }
 
   update(dt, st) {
     const g = this.g, w = this.g.world, A = g.actors, t = this.t += dt, h = st.hour, storm = w.storm || 0, cp = st.capi, play = g.mode === 'play';

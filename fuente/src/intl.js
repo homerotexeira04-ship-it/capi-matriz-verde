@@ -134,7 +134,7 @@ function coachMesh() {
   for (const sz of [3.65, -2.95, -4.15]) for (const sx of [-1.17, 1.17]) { b.cyl(sx, 0.5, sz, 0.5, 0.5, 0.32, dark, 12, 0, 0, Math.PI / 2); b.cyl(sx * 1.01, 0.5, sz, 0.26, 0.26, 0.34, 0xb8bec4, 8, 0, 0, Math.PI / 2); }
   b.box(0, 0.55, L / 2 + 0.05, W, 0.32, 0.12, dark); b.box(0, 0.55, -L / 2 - 0.05, W, 0.32, 0.12, dark);
   for (const sx of [-1, 1]) { b.box(sx * 1.42, 2.75, L / 2 - 0.1, 0.08, 0.06, 0.6, dark); b.box(sx * 1.66, 2.5, L / 2 + 0.15, 0.1, 0.5, 0.16, dark); }
-  win.box(0, 2.3, -0.5, W + 0.06, 1.0, L - 2.4, 0x22303c);                    // ventanillas
+  win.box(0, 2.3, 0.45, W + 0.06, 1.0, 6.9, 0x22303c);                         // ventanillas (atrás queda el panel con el logo)
   win.box(0, 2.05, L / 2 + 0.03, W - 0.16, 1.9, 0.06, 0x22303c);               // parabrisas
   win.box(0, 2.35, -L / 2 - 0.03, W - 0.5, 0.8, 0.06, 0x22303c);               // luneta
   for (const sx of [-1, 1]) win.box(sx * (W / 2 + 0.035), 1.65, L / 2 - 1.15, 0.05, 2.1, 0.9, 0x2a3a4a);   // puertas delanteras
@@ -152,6 +152,12 @@ function coachMesh() {
   });
   const sm = new THREE.MeshStandardMaterial({ map: side, roughness: 0.6 });
   for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 0.6), sm); p.position.set(sx * (W / 2 + 0.032), 1.42, -0.6); p.rotation.y = sx * Math.PI / 2; g.add(p); }
+  // logo de Salto Grande en los dos costados, sobre el panel trasero sin ventanillas (archivo provisto por Energimundo)
+  const sgc = document.createElement('canvas'); sgc.width = 512; sgc.height = 287; const sgx = sgc.getContext('2d'), sgt = new THREE.CanvasTexture(sgc); sgt.colorSpace = THREE.SRGBColorSpace; sgt.anisotropy = 4;
+  const paintSG = () => { sgx.fillStyle = '#f6f7f9'; sgx.fillRect(0, 0, 512, 287); const im = $('logoSG'); if (im && im.naturalWidth) { const k = Math.min(492 / im.naturalWidth, 270 / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; sgx.drawImage(im, (512 - w) / 2, (287 - h) / 2, w, h); } sgt.needsUpdate = true; };
+  paintSG(); { const im = $('logoSG'); if (im && !im.naturalWidth) im.addEventListener('load', paintSG, { once: true }); }
+  const sgm = new THREE.MeshStandardMaterial({ map: sgt, roughness: 0.55 });
+  for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.18), sgm); p.position.set(sx * (W / 2 + 0.032), 2.3, -4.35); p.rotation.y = sx * Math.PI / 2; g.add(p); }
   const back = canvasTex(256, 64, (x) => { x.fillStyle = '#0b3d91'; x.fillRect(0, 0, 256, 64); x.fillStyle = '#ffd23f'; x.beginPath(); x.moveTo(40, 8); x.lineTo(22, 36); x.lineTo(36, 36); x.lineTo(28, 58); x.lineTo(50, 26); x.lineTo(36, 26); x.closePath(); x.fill(); x.fillStyle = '#fff'; x.font = '900 30px Nunito, Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('ELÉCTRICO', 64, 34); });
   const bp = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshStandardMaterial({ map: back, roughness: 0.6 })); bp.position.set(0, 1.45, -L / 2 - 0.035); bp.rotation.y = Math.PI; g.add(bp);
   // cartel de destino con letras de LED

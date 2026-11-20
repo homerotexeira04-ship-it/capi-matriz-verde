@@ -210,6 +210,22 @@ body.bigText .eTxt b{font-size:21px} body.bigText .eTxt small{font-size:15px} bo
 .dFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:#5a6a86}
 #fade{position:fixed;inset:0;background:#050b18;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;z-index:9}
 #fade.on{opacity:1;pointer-events:auto}
+#scLoad{position:fixed;inset:0;z-index:12;display:grid;place-items:center;background:radial-gradient(circle at 50% 42%,#173b6b 0,#0b1830 55%,#050b18 100%);overflow:hidden}
+#scLoad::before{content:"";position:absolute;inset:-50%;background-image:linear-gradient(rgba(46,230,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(46,230,255,.09) 1px,transparent 1px);background-size:34px 34px;transform:perspective(600px) rotateX(58deg) translateY(10%);animation:scGrid 2.5s linear infinite}
+#scLoad.hidden{display:none} @keyframes scGrid{to{background-position:0 34px}}
+.scBox{position:relative;display:grid;justify-items:center;gap:12px;text-align:center;animation:scIn .45s ease-out}
+@keyframes scIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+#scFace{width:min(240px,52vw,40vh);height:auto;image-rendering:pixelated;border-radius:26px;border:5px solid #fff7e6;box-shadow:0 0 0 4px #2ee6ff,0 0 38px rgba(46,230,255,.55),0 0 80px rgba(255,201,60,.25);animation:scPulse 1.25s ease-in-out infinite}
+@keyframes scPulse{50%{box-shadow:0 0 0 4px #2ee6ff,0 0 56px rgba(46,230,255,.8),0 0 100px rgba(255,201,60,.35)}}
+#scLoad h2{margin:6px 0 0;font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,52px);letter-spacing:1px;color:#fff7e6;text-shadow:0 4px 0 #071226}
+#scLoad h2 span{background:linear-gradient(90deg,#ffd23f 0 50%,#2ee6ff 50% 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 4px 0 #071226)}
+#scMsg{margin:0;min-height:1.4em;font-size:17px;color:#bfe9ff}
+.scTrack{width:min(420px,78vw);height:14px;border-radius:999px;background:#0f2140;border:3px solid #2a4374;overflow:hidden}
+.scTrack i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#2ee6ff);box-shadow:0 0 14px rgba(46,230,255,.8)}
+#scPct{font-size:15px;color:#fff7e6;font-variant-numeric:tabular-nums}
+#scLoad.done .scBox{animation:scOut .28s ease-in forwards} @keyframes scOut{to{opacity:0;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){#scLoad::before,#scFace,.scBox{animation:none!important}}
+.gTitle{display:flex;align-items:center;gap:10px;justify-content:center} #gFace{width:40px;height:40px;image-rendering:pixelated;border-radius:9px;border:2px solid #2ee6ff}
 #bMap{position:absolute;right:150px;bottom:6px;padding:5px 10px;font-size:13px;border-radius:12px;z-index:1} #bMap kbd{font-size:11px}
 @media (hover:none) and (pointer:coarse){#bMap kbd{display:none}}
 .bmBox{width:min(1180px,97vw);height:min(780px,95vh);max-height:none;padding:12px 14px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;justify-items:stretch;text-align:left;overflow:hidden}
@@ -355,6 +371,7 @@ input[type=text]{cursor:text}
   </div>
   <div id="tr">
     <img id="logoIso" src="__LOGO_ISO__" alt="Energimundo" width="170" height="163">
+    <img id="logoSG" src="__LOGO_SG__" alt="" width="250" height="140" hidden>
     <button class="btn" id="bPanel" type="button">Red <kbd>Tab</kbd></button>
     <button class="btn ghost" id="bMute" type="button">Sonido: sí</button>
     <button class="btn ghost" id="bHelp" type="button">Ayuda</button>
@@ -521,9 +538,15 @@ input[type=text]{cursor:text}
 <div id="attract"><div class="aBrand"><img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163"><span>presenta</span></div><div class="aName">CAPI<small>Guardián de la Matriz Verde</small></div><div class="aCta">Tocá la pantalla o una tecla para jugar</div></div>
 <div id="tut" class="pane hidden" aria-live="polite"><div class="tKick">Primeros pasos · <span id="tutN"></span></div><div id="tutT"></div><div id="tutX"></div><div id="tutCaps"></div><div class="tutFoot"><div id="tutDots"></div><button class="btn ghost" id="tSkip" type="button">Saltar tutorial <kbd>Esc</kbd></button></div></div>
 <div id="confetti" aria-hidden="true"></div>
-<div id="pauseTag">Pausa · modo guía</div>
+<div id="pauseTag">Pausa · modo SuperCapi</div>
+<div id="scLoad" class="hidden" role="status" aria-live="polite"><div class="scBox">
+  <canvas id="scFace" width="240" height="240" aria-label="Capi, mitad Capi y mitad robot"></canvas>
+  <h2>MODO <span>SUPERCAPI</span></h2>
+  <p id="scMsg">Encendiendo circuitos…</p>
+  <div class="scTrack"><i id="scBar"></i></div><b id="scPct">0 %</b>
+</div></div>
 <div id="guide" class="ov hidden"><div class="oBox pane gBox">
-  <h2>Modo guía</h2>
+  <h2 class="gTitle"><canvas id="gFace" width="24" height="24" aria-hidden="true"></canvas>Modo SuperCapi</h2>
   <p class="gSub">Solo para el personal del museo. Se cierra con <kbd>Esc</kbd> o escribiendo la palabra de nuevo.</p>
   <div class="gCols">
     <div id="gActionsWrap"><div id="gActions"></div>

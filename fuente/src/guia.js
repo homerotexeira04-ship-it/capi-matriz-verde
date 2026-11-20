@@ -1,5 +1,21 @@
-// Modo guía (se abre escribiendo "energimundo"), contador de visitas y ajustes de pantalla.
+// Modo SuperCapi para el personal (se abre escribiendo "energimundo"), contador de visitas y ajustes de pantalla.
+import { drawFace } from './ui.js';
 const $ = id => document.getElementById(id);
+// Cara partida al medio: a la izquierda Capi de siempre, a la derecha Capi robot (24 x 24 píxeles, como los retratos)
+export function drawSuperFace(g, t, col, scan) {
+  drawFace(g, 'capi', t, false, col);
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  R(12, 0, 12, 24, '#14284d'); g.fillStyle = 'rgba(46,230,255,.12)'; for (let i = 12; i < 24; i += 3) g.fillRect(i, 0, 1, 24); for (let j = 0; j < 24; j += 3) g.fillRect(12, j, 12, 1);
+  R(12, 17, 8, 7, '#2b3138'); R(12, 20, 8, 1, '#2ee6ff'); R(14, 22, 2, 1, '#ffd23f');          // pecho con luces
+  R(12, 7, 7, 12, '#8d99a6'); R(12, 12, 5, 8, '#b4bec9'); R(12, 12, 3, 2, '#2b3138'); R(12, 17, 1, 2, '#e6edf3');   // placa de la cara, hocico, nariz y diente
+  R(18, 8, 3, 3, '#5d6774'); R(19, 9, 1, 1, '#dfe6ee');                                          // oreja con tornillo
+  R(12, 3, 7, 5, '#c3ccd5'); R(12, 7, 8, 1, '#7d8794'); R(13, 4, 4, 1, '#eef3f7');               // casco cromado
+  R(16, 0, 1, 3, '#7d8794'); R(15, 0, 3, 1, Math.sin(t * 6) > 0 ? '#ff4d4d' : '#ffb3b3');        // antena
+  const on = 0.6 + 0.4 * Math.sin(t * 9); R(15, 10, 2, 2, `rgba(46,230,255,${on})`); R(14, 10, 1, 2, 'rgba(46,230,255,.35)');   // ojo LED
+  R(13, 15, 4, 1, '#2ee6ff'); R(16, 15, 1, 3, '#2ee6ff'); R(13, 8, 1, 1, '#e6edf3'); R(17, 18, 1, 1, '#e6edf3');   // circuitos y remaches
+  R(11, 0, 1, 24, 'rgba(255,255,255,.85)'); R(12, 0, 1, 24, 'rgba(46,230,255,.9)');            // costura luminosa
+  if (scan != null) { const y = Math.floor(scan * 24) % 24; R(12, y, 12, 1, 'rgba(46,230,255,.55)'); }
+}
 const SKEY = 'capi-estadisticas', AKEY = 'capi-ajustes', WORD = 'energimundo';
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
@@ -82,8 +98,32 @@ export class Guide {
     if (g.muteAt && g.muteAt > t0) g.toggleMute();
     if (g.mg.active && g.mg.startedAt > t0) g.mg.cancel();
     if (g.extras.open === 'guide') return this.close();
+    if (g.extras.open === 'scLoad') return;
     if (g.attract) g.stopAttract();
     if (g.extras.open && g.extras.open !== 'guide') { const o = g.extras.open; $(o).classList.add('hidden'); g.extras.open = null; }
+    this.load();
+  }
+  // Pantalla de carga de 2,5 segundos con la cara mitad Capi, mitad robot; después aparece el menú
+  load() {
+    const g = this.g, el = $('scLoad'), cv = $('scFace'), small = document.createElement('canvas'); small.width = small.height = 24;
+    const sx = small.getContext('2d'), x = cv.getContext('2d'), T = this.loadMs || 2500, t0 = performance.now(), col = g.extras.colors(), id = this.loadId = (this.loadId || 0) + 1;
+    const msgs = ['Encendiendo circuitos…', 'Sincronizando con la red a 50 Hz…', 'Cargando las herramientas del personal…', '¡SuperCapi listo!'];
+    g.extras.open = 'scLoad'; el.classList.remove('hidden'); el.classList.remove('done');
+    g.audio.tone(160, 2.3, 'sawtooth', 0.035, 0, 880); [0.4, 0.9, 1.4, 1.9].forEach((w, i) => g.audio.tone(660 + i * 110, 0.08, 'square', 0.04, w));
+    const step = now => {
+      if (id !== this.loadId || g.extras.open !== 'scLoad') { el.classList.add('hidden'); return; }
+      const k = Math.min(1, (now - t0) / T), t = (now - t0) / 1000;
+      drawSuperFace(sx, t, col, k * 3); x.imageSmoothingEnabled = false; x.clearRect(0, 0, cv.width, cv.height); x.drawImage(small, 0, 0, cv.width, cv.height);
+      $('scBar').style.width = (k * 100).toFixed(1) + '%'; $('scPct').textContent = Math.round(k * 100) + ' %'; const m = msgs[Math.min(msgs.length - 1, Math.floor(k * (msgs.length - 1) + (k >= 1 ? 1 : 0)))]; if ($('scMsg').textContent !== m) $('scMsg').textContent = m;
+      if (k < 1) return requestAnimationFrame(step);
+      el.classList.add('done'); g.audio.tone(523, 0.18, 'square', 0.05); g.audio.tone(784, 0.3, 'square', 0.05, 0.12);
+      setTimeout(() => { if (id !== this.loadId || g.extras.open !== 'scLoad') return; el.classList.add('hidden'); g.extras.open = null; this.openPanel(); }, 280);
+    };
+    requestAnimationFrame(step);
+  }
+  openPanel() {
+    const g = this.g;
+    try { const f = $('gFace').getContext('2d'); drawSuperFace(f, 1, g.extras.colors()); } catch (e) { /* sin retrato */ }
     g.extras.open = 'guide'; $('guide').classList.remove('hidden'); g.audio.click(); this.confirm = 0; $('gReset').textContent = 'Reiniciar estadísticas'; $('gCopy').textContent = 'Copiar resumen'; $('gText').classList.add('hidden');
     this.build(); this.render();
   }

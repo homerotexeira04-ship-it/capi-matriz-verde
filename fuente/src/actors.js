@@ -82,7 +82,7 @@ function loopPoint(s, out) {
   if (s < 64) { out.x = -12 - s; out.z = 70; out.h = -Math.PI / 2; }
   else if (s < 120) { out.x = -77; out.z = 69 - (s - 64); out.h = Math.PI; }
   else if (s < 184) { out.x = -76 + (s - 120); out.z = 12; out.h = Math.PI / 2; }
-  else { out.x = -11; out.z = 13 + (s - 184); out.h = 0; }
+  else { out.x = -12; out.z = 13 + (s - 184); out.h = 0; }   // por el medio de la calle: el Teatro Larrañaga llega hasta la vereda
   return out;
 }
 

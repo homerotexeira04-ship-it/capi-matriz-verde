@@ -203,11 +203,11 @@ export class Urbano {
   busBlock(b, dt) {
     if (!this.obs) return 1;
     b.wait = b.wait || 0;
-    const { d } = this.ahead(b.x, b.z, b.h, b, 1.0, this.carObs);
+    const { d, who } = this.ahead(b.x, b.z, b.h, b, 1.0, this.carObs);
     let k = clamp((d - 5.2) / 4, 0, 1);
     // los ómnibus respetan los semáforos de la calle del norte
     if (Math.abs(b.z - 12) < 1.5 && Math.abs(angDiff(b.h, Math.PI / 2)) < 0.4) for (const [cx] of CROSS.slice(0, 2)) { const dd = cx - b.x; if (dd > 2.5 && dd < 7.5 && !this.green(1, dd)) k = Math.min(k, clamp((dd - 4.2) / 2, 0, 1)); }
-    if (k < 0.05) { b.wait += dt; if (b.wait > 5) k = 1; } else b.wait = 0;
+    if (k < 0.05) { if (who && who.hard) b.wait = 0; else { b.wait += dt; if (b.wait > 5) k = 1; } } else b.wait = 0;   // detrás del internacional se espera sin atravesarlo
     return k;
   }
   lanchaGo(to) {   // viaje de Capi en lancha (desde el muelle del puerto o desde la otra orilla)
@@ -243,6 +243,7 @@ export class Urbano {
     for (const c of this.cars) obs.push({ x: c.x, z: c.z, r: 1.2, ref: c });
     this.obs = obs;
     this.carObs = []; for (const c of this.cars) this.carObs.push({ x: c.x - Math.sin(c.h) * 1.2, z: c.z - Math.cos(c.h) * 1.2, r: 1.1, ref: null }, { x: c.x + Math.sin(c.h) * 1.2, z: c.z + Math.cos(c.h) * 1.2, r: 1.1, ref: null });
+    if (this.g.intl) this.g.intl.addObs(this.carObs);   // los ómnibus eléctricos esperan detrás del internacional
     // ---------- Autos ----------
     const hl = 0.4 + night * 0.6;
     for (const c of this.cars) {

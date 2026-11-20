@@ -25,6 +25,8 @@ import { buildBarrios, CLEAR3 } from './barrios.js';
 import { Urbano } from './urbano.js';
 import { buildMuseo, Museo, CLEAR4 } from './museo.js';
 import { Escuela } from './escuela.js';
+import { Internacional, buildIntlSalto, CLEAR5 } from './intl.js';
+import { Mapa } from './mapa.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -70,10 +72,10 @@ class Game {
     if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
     const ii = $('logoIso');
     if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-    w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4);
+    w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4, CLEAR5);
     await stage('Trazando calles, costanera y puentes…'); buildRoads(w); buildCity(w);
     await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
-    await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w);
+    await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w); buildIntlSalto(w);
     await stage('Armando Energimundo junto a la represa…'); buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1]));
     await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w);
     await stage('Uniendo las piezas de la maqueta…'); w.finalize();
@@ -88,7 +90,7 @@ class Game {
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -217,13 +219,13 @@ class Game {
   }
   toTitle() {
     if (this.photo) this.togglePhoto();
-    this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
-    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo', 'escuela', 'eWin'].forEach(id => $(id).classList.add('hidden'));
+    this.intl.cancel(); this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo', 'escuela', 'eWin', 'bigmap'].forEach(id => $(id).classList.add('hidden'));
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
     this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};
   }
-  get locked() { return this.mode !== 'play' || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading || !!this.photo; }
+  get locked() { return this.mode !== 'play' || !!this.riding || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading || !!this.photo; }
   togglePanel(on) { if (this.mode !== 'play' || this.mg.active || this.ui.dlg) return; this.panel = on == null ? !this.panel : on; if (this.panel) this.ui.openPanel(this.missions.free); else this.ui.closePanel(); this.audio.click(); }
   toggleHelp(on) { this.help = on; $('help').classList.toggle('hidden', !on); }
   toggleMute() { this.muteAt = performance.now(); this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
@@ -254,9 +256,11 @@ class Game {
       if (this.mode === 'title') { if (c === 'KeyM' && !e.repeat) this.toggleMute(); if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
       if (c === 'KeyP' && !e.repeat && this.mode === 'play' && (this.photo || !this.locked)) { this.togglePhoto(); return; }
       if (this.photo) { if (c === 'Escape') this.togglePhoto(); else this.keys[c] = true; return; }
+      if (this.riding) { if (!e.repeat && ['KeyE', 'Space', 'Enter', 'Escape', 'KeyF'].includes(c)) this.intl.skip(); if (c === 'KeyM' && !e.repeat) this.toggleMute(); return; }
       if (c === 'Escape' && this.tut.on && !this.extras.open && !this.mg.active && !this.ui.dlg) { this.tut.skip(); return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
       if (c === 'KeyM' && !e.repeat) this.toggleMute();
+      if (c === 'KeyN' && !e.repeat && this.mode === 'play' && (this.extras.open === 'bigmap' || !this.locked)) { this.mapa.toggle(); return; }
       if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV' || c === 'KeyB') this.extras.close(); else this.extras.key(c); } return; }
       if (c === 'KeyB' && !e.repeat && !this.locked) { this.social.openAlbum(); return; }
       if (c === 'KeyV' && !e.repeat && !this.locked) { this.extras.toggleWardrobe(); return; }
@@ -356,7 +360,7 @@ class Game {
     // --- Entrada ---
     const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * cdt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * cdt; }
-    if (mx || mz) { cam.inspect = null; this.face = null; cam.lowT = 0; }
+    if ((mx || mz) && !this.riding) { cam.inspect = null; this.face = null; cam.lowT = 0; }
     if (cam.lowT > 0) cam.lowT -= cdt;   // plano bajo por un rato (por ejemplo, para mirar una fiesta)
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
@@ -366,7 +370,7 @@ class Game {
     if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: !this.attract });
     // --- Simulación ---
     G.step(dt);
-    if (play) this.missions.update(dt);
+    if (play && !this.riding) this.missions.update(dt);
     this.tut.update(dt);
     this.mg.update(dt);
     // Consola candidata
@@ -379,12 +383,12 @@ class Game {
     cam.inspectT -= cdt; if (cam.inspectT <= 0) cam.inspect = null;
     if (this.cine) cam.yawT = this.cineYaw + Math.sin(this.time * 0.22) * 0.24;
     cam.cineK = damp(cam.cineK || 0, this.cine ? 1 : 0, 2.2, cdt);
-    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, cdt); cam.dist = damp(cam.dist, this.cine ? (this.cineWide ? 20 : 7.4) : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, cdt);
-    const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + (this.cineWide ? 0.6 : 1.95), c.pos.z + (this.cineWide ? 4.2 : 0)) : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
+    cam.yaw = damp(cam.yaw, cam.yawT, this.cine ? 2 : 9, cdt); cam.dist = damp(cam.dist, this.cine ? (this.cineWide ? 20 : 7.4) : cam.follow ? cam.followD : cam.inspect ? 95 : cam.distT, this.cine ? 2.2 : 4, cdt);
+    const goal = this.cine ? new THREE.Vector3(c.pos.x, c.pos.y + (this.cineWide ? 0.6 : 1.95), c.pos.z + (this.cineWide ? 4.2 : 0)) : cam.follow ? cam.follow : cam.inspect ? cam.inspect : !play ? cam.target : new THREE.Vector3(c.pos.x + c.vel.x * 0.4, c.pos.y + 1.5, c.pos.z + c.vel.z * 0.4);
     cam.target.x = damp(cam.target.x, goal.x, cam.inspect ? 2.5 : 6, cdt); cam.target.y = damp(cam.target.y, goal.y, 4, cdt); cam.target.z = damp(cam.target.z, goal.z, cam.inspect ? 2.5 : 6, cdt);
     const zt = clamp((cam.dist - 20) / 175, 0, 1), base = (40 + 5 * zt) * Math.PI / 180;
     // Si un edificio tapa a Capi, se abre un corte en los edificios entre la cámara y él
-    const occ = play && !cam.inspect && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
+    const occ = play && !cam.inspect && !cam.follow && !this.cine && w.occluded(c.pos.x + Math.sin(cam.yaw) * Math.cos(base) * cam.dist, c.pos.y + 1.5 + Math.sin(base) * cam.dist, c.pos.z + Math.cos(cam.yaw) * Math.cos(base) * cam.dist, c.pos.x, c.pos.y + 1.6, c.pos.z);
     cam.cut = damp(cam.cut || 0, occ ? 1 : 0, occ ? 7 : 3, cdt); w.setCutaway(cam.cut, c.pos, cam.yaw);
     cam.lowK = damp(cam.lowK || 0, this.attract ? (cam.low || 0) : this.photo ? (cam.lowP || 0) : cam.lowT > 0 ? (cam.lowF || 0) : 0, cam.lowT > 0 ? 1.5 : 3, cdt);
     cam.wideK = damp(cam.wideK || 0, this.cineWide ? 1 : 0, 2, cdt);
@@ -398,7 +402,7 @@ class Game {
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);

@@ -212,6 +212,15 @@ export class Capi {
     b.box(0, 0.02, 0.665, 0.2, 0.26, 0.02, 0xf4f4f4, 0, -0.12); b.box(0, 0.12, 0.672, 0.2, 0.05, 0.02, 0x6a2c91, 0, -0.12); b.box(-0.04, 0.0, 0.676, 0.07, 0.08, 0.01, 0xa56f3e, 0, -0.12); b.box(0.05, -0.02, 0.676, 0.06, 0.015, 0.01, 0x3a3f4a, 0, -0.12);
     for (let i = 0; i < 3; i++) b.cyl(0.26 + i * 0.05, 0.36, 0.58, 0.012, 0.012, 0.16, [0xe5484d, 0x1d6fb8, 0x1c1c1e][i], 5);
     done(k);
+    // ---- Viajero: piluso con el Sol de Mayo (está en las dos banderas), cámara de fotos y parches de Uruguay y Argentina ----
+    k = kit('viajero', { noHelmet: true }); const hv = bat(k, 'head'), cel = 0x75aadb, sol = 0xfcd116;
+    hv.cyl(0, 0.36, -0.04, 0.44, 0.6, 0.36, 0xfbfbf8, 16); hv.cyl(0, 0.37, -0.04, 0.605, 0.615, 0.1, cel, 16); hv.cyl(0, 0.3, -0.04, 0.6, 0.86, 0.07, 0xf2f2ee, 18);
+    hv.cyl(0, 0.42, 0.57, 0.07, 0.07, 0.03, sol, 10, Math.PI / 2, 0, 0); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; hv.box(Math.cos(a) * 0.1, 0.42 + Math.sin(a) * 0.1, 0.575, 0.07, 0.022, 0.015, sol, 0, 0, a); }
+    b = bat(k, 'rig');
+    b.box(0.05, 0.22, 0.62, 0.05, 0.95, 0.025, 0x2b2d33, 0, -0.12, 0.62);                       // correa cruzada
+    b.box(-0.2, -0.06, 0.68, 0.27, 0.18, 0.13, 0x1c1c1e, 0, -0.1); b.cyl(-0.2, -0.06, 0.77, 0.065, 0.07, 0.09, 0x3a3f4a, 10, Math.PI / 2 - 0.1, 0, 0); b.box(-0.29, 0.05, 0.68, 0.06, 0.035, 0.08, 0xd8dde3, 0, -0.1);
+    for (const [y, c1, c2] of [[0.34, cel, 0xffffff], [0.16, 0xffffff, 0x0038a8]]) { b.box(0.3, y + 0.035, 0.625, 0.15, 0.035, 0.02, c1, 0.4, -0.2); b.box(0.3, y, 0.63, 0.15, 0.035, 0.02, c2, 0.4, -0.2); b.box(0.3, y - 0.035, 0.625, 0.15, 0.035, 0.02, c1, 0.4, -0.2); }
+    done(k, ['head']);
     for (const key in K) for (const m of K[key].parts) m.visible = false;
     this.kitKey = 'clasico'; this.applyKit();
   }

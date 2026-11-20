@@ -16,7 +16,7 @@ export const HILLS = [[52, -28, 6], [72, -36, 7], [90, -12, 6.5], [66, -4, 5.5],
 
 export const POS = {
   plaza: [-44, 44], stage: [-44, 32.6], fest: [-44, 36.6], substation: [-20, 20], terminal: [-20, 62], tower: [-36, 20],
-  mateo: [34, 25], valeria: [-20, 27.8], lucia: [-12.6, 66.2],
+  mateo: [34, 25], valeria: [-20, 27.8], lucia: [-14.3, 66.3],
   windT: HILLS.map(h => [h[0], h[1]]), windTx: [48, 8],
   dam: { x0: -161, x1: -90, z0: -103, z1: -97, top: 6.6 },
   gates: [-132.66, -127.82, -122.98, -118.14], turbs: [-108.5, -104, -99.5, -95],

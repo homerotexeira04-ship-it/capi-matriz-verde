@@ -5,6 +5,7 @@ import { POS, CITY_Y, B, terrainH, farD, westBank } from './terrain.js';
 import { C, Batch, textTex, canvasTex } from './world.js';
 import { sign, flag, building, PAL } from './sectors.js';
 import { rng, clamp, lerp } from './util.js';
+import { buildIntlConcordia, intlKeep, ROT } from './intl.js';
 
 const Y = 2.2;
 // Rectángulos donde la flora al azar no debe plantar (edificios nuevos)
@@ -345,12 +346,13 @@ function orilla(w, R) {
   for (let z = -82; z <= 202; z += 12) { if (Math.abs(z - OZ) < 6) continue; plant(w, R() < 0.6 ? 'palm' : 'ceibo', westBank(z) - 7.2, z, 0.9 + R() * 0.2); }
   // calles de Concordia: una avenida paralela a la costanera y transversales hasta el borde de la maqueta
   const av = []; for (let z = -78; z <= 206; z += 8) av.push([westBank(z) - 15, z]); w.road(av, 3.2, C.asphalt);
-  for (let z = -70; z <= 200; z += 22) w.lamp(westBank(z) - 17.2, z, Math.PI / 2);
+  buildIntlConcordia(w);   // rotonda con naranjos y parada del ómnibus internacional
+  for (let z = -70; z <= 200; z += 22) { if (Math.hypot(westBank(z) - 17.2 - ROT.x, z - ROT.z) < ROT.r + 3) continue; w.lamp(westBank(z) - 17.2, z, Math.PI / 2); }
   for (const z of [-40, 8, OZ, 92, 140, 186]) w.road([[westBank(z) - 8.4, z], [westBank(z) - 15, z], [-196, z], [-229, z]], z === OZ ? 3.2 : 2.6, C.asphalt);
   // casas y edificios bajos de la ciudad vecina
   for (let i = 0; i < 130; i++) {
     const z = lerp(-80, 204, R()), x = lerp(-226, -168, R()), fd = farD(x, z);
-    if (fd < 9 || (Math.abs(z - OZ) < 7 && x > -176) || (Math.abs(z - 40) < 6 && Math.abs(x + 182) < 6) || w.nearRoad(x, z, 4.4)) continue;
+    if (fd < 9 || intlKeep(x, z) || (Math.abs(z - OZ) < 7 && x > -176) || (Math.abs(z - 40) < 6 && Math.abs(x + 182) < 6) || w.nearRoad(x, z, 4.4)) continue;
     const y = w.terrainAt(x, z), tall = R() < 0.22 && x > -200;
     if (tall) { const h = 5 + R() * 6, bw = 3.6 + R() * 2, bd = 3.6 + R() * 2; b.boxB(x, y - 0.3, z, bw, h + 0.3, bd, cols[Math.floor(R() * cols.length)]); b.boxB(x, y + h, z, bw + 0.2, 0.2, bd + 0.2, 0xf3ecdc); winGrid(w.nightBatch, x, z, bw, bd, y, h); w.addSolid(x - bw / 2, x + bw / 2, z - bd / 2, z + bd / 2); w.addOcc(x - bw / 2, x + bw / 2, z - bd / 2, z + bd / 2, y + h); }
     else { const hw = 3.6 + R(), hd = 3.8 + R(); w.houses.push({ x, y: y - 0.1, z, w: hw, d: hd, h: 2.4, rh: 1.4, c: cols[Math.floor(R() * cols.length)], rc: roofs[Math.floor(R() * roofs.length)], ry: (R() - 0.5) * 0.3 }); const q = new THREE.PlaneGeometry(0.7, 0.8); w.nightBatch.add(q, 0xffffff, x + hw / 2 + 0.05, y + 1.3, z, 1, 1, 1, 0, Math.PI / 2, 0, 0); w.addSolid(x - hw / 2, x + hw / 2, z - hd / 2, z + hd / 2); }
@@ -361,7 +363,7 @@ function orilla(w, R) {
   b.boxB(cx, cy - 0.3, cz, 8, 5.3, 5, 0xf2e4c4); gable(b, cx, cy + 5, cz, 5.2, 1.8, 8.2, 0xb5533c, true);
   b.boxB(cx + 4.6, cy - 0.3, cz, 2.2, 11.3, 2.2, 0xf2e4c4); w.addSolid(cx - 4, cx + 5.7, cz - 2.5, cz + 2.5); w.addOcc(cx - 4.2, cx + 6, cz - 2.7, cz + 2.7, cy + 6); b.add(new THREE.ConeGeometry(1.4, 2.6, 4), 0xb5533c, cx + 4.6, cy + 12.3, cz, 1, 1, 1, 0, Math.PI / 4, 0);
   w.nightBatch.add(new THREE.CircleGeometry(0.6, 12), 0xffffff, cx + 5.72, cy + 3.5, cz, 1, 1, 1, 0, Math.PI / 2, 0, 0);
-  for (let i = 0; i < 90; i++) { const x = lerp(-228, -164, R()), z = lerp(-84, 206, R()); if (farD(x, z) > 10 && !(Math.abs(z - OZ) < 6 && x > -178) && !w.nearRoad(x, z, 2.6)) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
+  for (let i = 0; i < 90; i++) { const x = lerp(-228, -164, R()), z = lerp(-84, 206, R()); if (farD(x, z) > 10 && !intlKeep(x, z) && !(Math.abs(z - OZ) < 6 && x > -178) && !w.nearRoad(x, z, 2.6)) plant(w, R() < 0.25 ? 'euca' : R() < 0.6 ? 'native' : 'bush', x, z, 0.8 + R() * 0.5); }
 }
 // Bandera argentina en la otra orilla del río
 export function argFlag(w, x, y, z, fw, fh, mast) {

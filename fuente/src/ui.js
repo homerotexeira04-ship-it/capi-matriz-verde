@@ -4,7 +4,7 @@ import { B, ZONES, terrainH, waterAt, coastD, westD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
-export const NAMES = { capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno' };
+export const NAMES = { capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento' };
 
 // Retratos pixelados (grilla 24×24) con parpadeo y boca animada
 export function drawFace(g, who, t, talking, col) {
@@ -27,8 +27,14 @@ export function drawFace(g, who, t, talking, col) {
     else if (k === 'hidro') { R(6, 16, 12, 2, '#ff8a1a'); R(6, 19, 2, 2, '#5ad1ff'); R(15, 18, 2, 2, '#ff8a1a'); }
     else if (k === 'biomasa') { R(2, 7, 3, 4, '#d62828'); R(19, 7, 3, 4, '#d62828'); R(5, 2, 14, 1, '#2f3337'); R(17, 19, 3, 2, '#4c9a3f'); }
     else if (k === 'guardian') { R(0, 14, 4, 10, '#e6007e'); R(20, 14, 4, 10, '#e6007e'); R(6, 7, 12, 1, '#2ed3c6'); R(10, 19, 4, 3, '#ffd23f'); }
+    else if (k === 'viajero') { R(4, 0, 16, 8, '#3f8fd0'); R(6, 1, 12, 5, '#ffffff'); R(6, 5, 12, 1, '#75aadb'); R(3, 6, 18, 2, '#ffffff'); R(11, 5, 2, 1, '#fcd116'); R(7, 19, 4, 3, '#1c1c1e'); R(8, 20, 2, 1, '#5a6070'); R(15, 17, 1, 7, '#2b2d33'); }
     else if (k === 'control') { R(3, 6, 2, 6, '#3a3f4a'); R(19, 6, 2, 6, '#3a3f4a'); R(5, 14, 4, 1, '#3a3f4a'); R(6, 9, 4, 3, 'rgba(207,234,255,.45)'); R(14, 9, 4, 3, 'rgba(207,234,255,.45)'); R(11, 20, 3, 4, '#f4f4f4'); }
     else if (k === 'clasico' || !k) R(16, 18, 2, 4, '#2b2d33');
+    return;
+  }
+  if (who === 'placa') {   // placa de bronce con un jinete
+    R(0, 0, 24, 24, '#3a3226'); R(2, 2, 20, 20, '#cfa24a'); R(3, 3, 18, 18, '#5b4a33'); const c = '#e3c06a';
+    R(7, 12, 10, 4, c); R(7, 16, 1, 4, c); R(10, 16, 1, 4, c); R(14, 16, 1, 4, c); R(16, 16, 1, 4, c); R(16, 9, 2, 4, c); R(17, 8, 3, 2, c); R(6, 13, 1, 3, c); R(11, 7, 3, 5, c); R(11, 5, 3, 2, c); R(10, 5, 5, 1, c);
     return;
   }
   const P = {
@@ -43,7 +49,8 @@ export function drawFace(g, who, t, talking, col) {
     marta: { bg: '#2f7fc1', skin: '#c58b62', hair: '#3b2a1e', body: '#2f7fc1', hat: '#ffffff' },
     papanoel: { bg: '#1f7a3a', skin: '#f1c9a5', hair: '#f4f4f4', body: '#d42a2a', hat: '#d42a2a' },
     payador: { bg: '#8a5a2b', skin: '#c58b62', hair: '#1a1412', body: '#f2efe8', hat: '#1c1c1e' },
-    nico: { bg: '#3a1f6b', skin: '#e0ac86', hair: '#3b2a1e', body: '#ffc420', hat: '#3b2a1e' }
+    nico: { bg: '#3a1f6b', skin: '#e0ac86', hair: '#3b2a1e', body: '#ffc420', hat: '#3b2a1e' },
+    graciela: { bg: '#4a8fc8', skin: '#f1c9a5', hair: '#6b4a2a', body: '#f8f8f8', hat: '#6b4a2a' }
   }[who] || { bg: '#23395d', skin: '#d9a17a', hair: '#2a1c12', body: '#4aa3d8', hat: '#4aa3d8' };
   R(0, 0, 24, 24, P.bg); R(3, 18, 18, 6, P.body); R(10, 16, 4, 3, P.skin);
   R(6, 6, 12, 11, P.skin); R(5, 7, 2, 8, P.hair); R(17, 7, 2, 8, P.hair);
@@ -55,10 +62,23 @@ export function drawFace(g, who, t, talking, col) {
   if (who === 'mamavieja') { R(4, 2, 16, 6, P.hat); R(7, 4, 1, 1, '#e6007e'); R(12, 3, 1, 1, '#e6007e'); R(16, 5, 1, 1, '#e6007e'); R(5, 13, 1, 2, '#ffd23f'); R(18, 13, 1, 2, '#ffd23f'); }
   if (who === 'marta') { R(5, 3, 14, 4, P.hat); R(12, 6, 9, 1, P.hat); }
   if (who === 'payador') { R(3, 3, 18, 4, P.hat); R(9, 3, 6, 1, P.hat); R(8, 13, 8, 2, '#2a1c12'); R(9, 18, 6, 2, '#5aa9e6'); }
+  if (who === 'graciela') { R(5, 4, 14, 3, P.hair); R(18, 7, 3, 10, P.hair); R(9, 18, 6, 2, '#75aadb'); R(7, 9, 4, 3, 'rgba(32,36,44,.55)'); R(13, 9, 4, 3, 'rgba(32,36,44,.55)'); }
   if (who === 'nico') { R(5, 3, 14, 4, P.hair); R(6, 9, 5, 4, '#20242c'); R(13, 9, 5, 4, '#20242c'); R(11, 10, 2, 1, '#20242c'); }
   if (who === 'papanoel') { R(5, 1, 14, 5, P.hat); R(18, 0, 4, 4, '#ffffff'); R(4, 6, 16, 2, '#ffffff'); R(6, 13, 12, 6, '#f4f4f4'); R(3, 21, 18, 1, '#ffffff'); }
   if (!blink) { R(8, 10, 2, 2, '#20242c'); R(14, 10, 2, 2, '#20242c'); } else { R(8, 11, 2, 1, '#20242c'); R(14, 11, 2, 1, '#20242c'); }
   if (open) R(10, 14, 4, 2, '#7a2f2f'); else R(10, 14, 4, 1, '#8a4a3a');
+}
+
+// Color del terreno para los mapas (minimapa y mapa grande)
+export function mapColor(x, z) {
+  const h = terrainH(x, z), wl = waterAt(x, z); let r, gg, b;
+  if (h < wl - 0.15) { r = 40; gg = 120 + (wl > 1 ? 40 : 0); b = 200; }
+  else if ((coastD(x, z) < 5 || (westD(x, z) > -2 && westD(x, z) < 5)) && h < 2.6) { r = 232; gg = 214; b = 164; }
+  else { const t = clamp((h - 2) / 8, 0, 1); r = lerp(96, 150, t); gg = lerp(178, 205, t); b = lerp(72, 96, t); }
+  if (x > -84 && x < 22 && z > 11 && z < 94.4 || x > -84 && x < -9 && z > -8 && z < 11) { r = 176; gg = 170; b = 160; }
+  if (x > -12 && x < 48 && z > -106 && z < -58 && h > 5) { r = 205; gg = 198; b = 172; }
+  if (westD(x, z) > 9 && h >= wl - 0.15 && x < -166 && z > -84) { r = lerp(r, 196, 0.35); gg = lerp(gg, 186, 0.35); b = lerp(b, 170, 0.35); }
+  return [r, gg, b];
 }
 
 export class UI {
@@ -86,17 +106,7 @@ export class UI {
   buildMap() {
     const S = 256, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), img = g.createImageData(S, S), d = img.data;
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ;
-    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
-      const x = B.minX + (i + 0.5) / S * W, z = B.minZ + (j + 0.5) / S * D, h = terrainH(x, z), wl = waterAt(x, z), k = (j * S + i) * 4;
-      let r, gg, b;
-      if (h < wl - 0.15) { r = 40; gg = 120 + (wl > 1 ? 40 : 0); b = 200; }
-      else if ((coastD(x, z) < 5 || (westD(x, z) > -2 && westD(x, z) < 5)) && h < 2.6) { r = 232; gg = 214; b = 164; }
-      else { const t = clamp((h - 2) / 8, 0, 1); r = lerp(96, 150, t); gg = lerp(178, 205, t); b = lerp(72, 96, t); }
-      if (x > -84 && x < 22 && z > 11 && z < 94.4 || x > -84 && x < -9 && z > -8 && z < 11) { r = 176; gg = 170; b = 160; }
-      if (x > -12 && x < 48 && z > -106 && z < -58 && h > 5) { r = 205; gg = 198; b = 172; }
-      if (westD(x, z) > 9 && h >= wl - 0.15 && x < -166 && z > -84) { r = lerp(r, 196, 0.35); gg = lerp(gg, 186, 0.35); b = lerp(b, 170, 0.35); }
-      d[k] = r; d[k + 1] = gg; d[k + 2] = b; d[k + 3] = 255;
-    }
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const k = (j * S + i) * 4, c = mapColor(B.minX + (i + 0.5) / S * W, B.minZ + (j + 0.5) / S * D); d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = 255; }
     g.putImageData(img, 0, 0);
     const X = x => (x - B.minX) / W * S, Z = z => (z - B.minZ) / D * S;
     g.strokeStyle = 'rgba(70,70,80,.9)'; g.lineWidth = 1.6;

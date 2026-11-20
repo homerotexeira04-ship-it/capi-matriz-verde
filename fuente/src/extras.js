@@ -22,7 +22,8 @@ export const OUTFITS = [
   { name: 'Guardián', kit: 'guardian', need: 10, school: 'pico', helmet: 0xe6007e, vest: 0x6a2c91, band: 0x2ed3c6, desc: 'Capa, hombreras y visera que brilla' },
   { name: 'Gaucho', kit: 'gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0, desc: 'Boina, poncho a rayas con flecos y rastra' },
   { name: 'Chofer', kit: 'chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff, desc: 'Gorra de chofer, camisa, corbata y charreteras' },
-  { name: 'Control', kit: 'control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0, desc: 'Auriculares con micrófono, lentes y credencial' }
+  { name: 'Control', kit: 'control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0, desc: 'Auriculares con micrófono, lentes y credencial' },
+  { name: 'Viajero', kit: 'viajero', need: 0, favor: 'graciela', helmet: 0xffffff, vest: 0x75aadb, band: 0xffffff, desc: 'Piluso con el Sol de Mayo, cámara de fotos y escudos de los dos países' }
 ];
 
 // [x, z, altura extra, pista del lugar, dato]
@@ -182,6 +183,7 @@ export class Extras {
   key(code) {
     if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
     if (this.open === 'escuela' && this.g.escuela) return this.g.escuela.key(code);
+    if (this.open === 'bigmap' && this.g.mapa) return this.g.mapa.key(code);
     if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([0-9])$/.exec(code), n = m ? (+m[1] + 9) % 10 : null; if (n != null && n < POS.stops.length) this.travel(n); }
   }
 

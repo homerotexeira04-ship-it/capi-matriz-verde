@@ -11,12 +11,28 @@ const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 23.5, x1: 31.5, z0: 37.5, z1: 44.5, g0: 26, g1: 29 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Matriz', 0.08], [-82.2, 28.6, 'la costanera', 0.15], [5.6, 72.6, 'el bulevar', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9] };
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [86, -78, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9], graciela: [-169.6, 51.2, 1.86] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
 const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
 export const CLEAR2 = [[22, 33.5, 36, 46.5]];
 
+// Postales de los alumnos de Graciela (favor en Concordia): a quién se le entrega cada una y qué contesta
+const POST = { beto: 0, guia: 1, lucia: 2 };
+const POSTR = {
+  beto: '¡Una postal de los gurises de Concordia! Me dibujaron un dorado. Del otro lado se pescan los mismos peces: el río no tiene frontera.',
+  guia: '¡Qué lindo! Mis alumnos de Salto les van a contestar con otra postal. Y en la próxima visita cruzamos todos juntos en el internacional.',
+  lucia: '¡Me dibujaron arriba del ómnibus! Decile a Graciela que los esperamos en la terminal: el internacional los trae en un rato.'
+};
+// Placa del monumento a Artigas de la Plaza Artigas de Salto
+const MON = [
+  'Monumento al General José Gervasio Artigas, obra de Edmundo Prati, escultor nacido en Paysandú que trabajó muchos años en Salto. Se inauguró el 29 de setiembre de 1940.',
+  'Prati lo quiso «joven y fuerte, vigoroso y severo», a caballo, «como anduvo en la vida y como van los héroes». Los bronces se fundieron en Italia y llegaron en barco.',
+  'A los lados están el ciudadano y el gaucho. Detrás, las palmeras representan al pueblo de la Redota que marcha hacia el norte, detrás de Artigas.',
+  '¿Por qué hacia el norte? En 1811 Artigas marchó al norte con miles de orientales: es el Éxodo del Pueblo Oriental, la Redota.',
+  'En diciembre de 1811 acamparon casi un mes en el Salto, frente a los saltos del río Uruguay, y después cruzaron al campamento del Ayuí, en la otra orilla.',
+  'José Gervasio Artigas nació en Montevideo en 1764 y murió en el Paraguay en 1850, después de treinta años de exilio. Defendió la libertad de los pueblos y el federalismo, y en 1815 dictó un reglamento para repartir tierras entre los más pobres.'
+];
 const WHO = {
   mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.'], ['¿Cómo se llama el perro?', 'Pampa. Si te sigue es porque le caíste bien. Cuando se cansa, vuelve solo al fogón.']] },
   lucia: { q: [['¿Por qué ómnibus eléctricos?', 'No echan humo en la calle, hacen mucho menos ruido y andan con electricidad hecha acá, no con combustible traído de afuera.'], ['¿Cuándo conviene cargarlos?', 'Cuando sobra energía: al mediodía con mucho sol o de madrugada, cuando la ciudad duerme y gasta poco.']] },
@@ -41,17 +57,24 @@ const WHO = {
     ['¿Qué es una payada?', 'Es poesía improvisada con guitarra. En la payada de contrapunto, dos payadores se contestan en verso, por turnos y sin libreto.'],
     ['¿Me cantás una payada?', ['Ahí va, compañero, una décima de mi cosecha:', 'Con permiso, compañero,\nle canto a la red de acá,\nque el viento soplando va\npor la cuchilla y el estero;', 'el río, fiel y certero,\ngira turbinas; de día\ncarga el sol con alegría;', 'la biomasa da su llama,\ny el Capi, que tiene fama,\n¡cuida la red, alma mía!'], 'payada'],
     ['¿Qué es la Semana Criolla?', 'Una fiesta de las tradiciones del campo que se hace en Semana de Turismo: desfile de tropillas, fogones, payadores y artesanías. La del Prado, en Montevideo, se hace desde 1925.']] },
+  graciela: { hi: '¡Hola, Capi! Bienvenido a Concordia. Soy maestra en una escuela de acá, a unas cuadras del río.', q: [
+    ['¿Qué se puede visitar en Concordia?', 'El Parque San Carlos, con el castillo donde estuvo el aviador y escritor Antoine de Saint-Exupéry en 1929. Lo cuenta en su libro «Tierra de hombres».'],
+    ['¿Concordia también tiene naranjas?', 'Muchísimas: Concordia es la Capital Nacional del Citrus y cada diciembre hace la Fiesta Nacional de la Citricultura. Por eso la rotonda de la avenida tiene naranjos.'],
+    ['¿Cómo se cruza a Salto?', 'En la lancha, que sale de este muelle, o en el ómnibus internacional, que pasa por arriba de la represa. La represa es de los dos países: la energía se reparte mitad y mitad.']] },
   nico: { hi: '¡Bienvenido a Museos en la Noche, Capi! ¿Te animás con la bicicleta generadora?', q: [
     ['¿Qué es Museos en la Noche?', 'Una noche al año, en diciembre, museos de todo el país abren en un horario distinto y con entrada libre, con actividades para toda la familia.'],
     ['¿Cómo funciona la bicicleta generadora?', 'Al pedalear, un pequeño generador transforma el movimiento en electricidad. Es lo mismo que pasa en una turbina o en un molino, pero con tus piernas.'],
     ['¿Cuánta energía da una persona pedaleando?', 'Pedaleando parejo, unos 100 vatios: alcanza para varias lamparitas LED, pero no para una estufa. ¡Por eso usamos el agua, el viento y el sol!']] }
 };
-export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno' };
+export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Represa de Salto Grande, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
   valeria: { title: 'Leer 3 medidores', outfit: 'Control', ask: 'Necesito tres lecturas para el informe: los medidores de la Plaza Matriz, de la costanera y del bulevar. Son los postes blancos con reloj.', done: 'Lecturas recibidas. ¿Ves? La ciudad no gasta igual en todos lados ni a toda hora: por eso miramos la demanda todo el tiempo. Tomá, ya sos del equipo de control.' }
 };
+FAV.graciela = { title: 'Llevar 3 postales de Concordia a Salto', outfit: 'Viajero',
+  ask: 'Mis alumnos hicieron postales para tres vecinos de Salto que conocieron en una visita: Beto, el pescador del puerto; Pepe, el guía de Energimundo, que anda con un grupo por la Plaza Matriz; y Lucía, la chofer de la terminal. ¿Se las llevás? Podés cruzar en la lancha o en el ómnibus internacional.',
+  done: '¡Llegaron las tres! Los chicos van a saltar de contentos. Tomá, para tus viajes de una orilla a la otra: un piluso con el Sol de Mayo, que está en las banderas de los dos países.' };
 const SCENES = { valeria: ['despacho', '¿Puedo manejar la red un día entero?', 'Pasá al Centro de Control', 'Centro de Control'], mateo: ['torre', '¿Se puede subir a un molino?', 'Por dentro de la torre, hasta la góndola', 'Torre del aerogenerador'] };
 const ARCADE = [['sync', 'Sincronización de fase', 'Apretá en el momento justo'], ['crank', 'Freno del aerogenerador', 'Girá la manivela a toda velocidad'], ['gates', 'Compuerta del embalse', 'Regulá el paso del agua'], ['helio', 'Matriz solar', 'Limpiá y orientá los paneles'], ['route', 'Subestación', 'Armá el camino de la energía'], ['seq', 'Caldera de biomasa', 'Memorizá la secuencia de arranque'], ['rhythm', 'Compás de carga', 'Seguí el ritmo con las flechas'], ['led', 'Cambio a LED', 'Encontrá las lamparitas que gastan de más'], ['solar', 'Carga con sol', 'Cargá solo mientras brilla el sol'], ['cometa', 'Cometa en la rambla', 'Atrapá las ráfagas de viento'], ['cinta', 'Cinta de chips', 'Sacá lo que no es madera'], ['despacho', 'Centro de Control', 'Manejá la red durante un día entero'], ['torre', 'Torre del aerogenerador', 'Subí por dentro hasta la góndola']];
 
@@ -89,7 +112,8 @@ export class Social {
       rosa: add({ skin: 0xd9a17a, shirt: 0xf2a93b, pants: 0x4a6b3a, hair: 0x5a4636, hat: 'boina', hatColor: 0xe9dcc0 }, ...NEW.rosa),
       beto: add({ skin: 0xc58b62, shirt: 0x3f7d8c, pants: 0x3a3a44, hair: 0x555555, hat: 'gorra', hatColor: 0xd4483b, bigote: true }, ...NEW.beto),
       sofi: add({ skin: 0xe0ac86, shirt: 0x35c9d2, pants: 0xf4f1ea, hair: 0x1a1412, pony: true }, ...NEW.sofi),
-      guia: add({ skin: 0xc58b62, shirt: 0xe6007e, jacket: 0x6a2c91, pants: 0x2b2d42, hair: 0x3b2314, hat: 'gorra', hatColor: 0xffc420 }, ...NEW.guia)
+      guia: add({ skin: 0xc58b62, shirt: 0xe6007e, jacket: 0x6a2c91, pants: 0x2b2d42, hair: 0x3b2314, hat: 'gorra', hatColor: 0xffc420 }, ...NEW.guia),
+      graciela: add({ skin: 0xf1c9a5, shirt: 0x75aadb, jacket: 0xf8f8f8, pants: 0x2b2d42, hair: 0x6b4a2a, pony: true }, ...NEW.graciela)   // guardapolvo blanco de maestra
     };
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 3.6, 5), new THREE.MeshStandardMaterial({ color: 0x5a4636 })); rod.position.set(0.5, 1.9, 1.5); rod.rotation.x = 1.05; this.npc.beto.group.add(rod);
     this.kids = [0xffc420, 0x4fc3f7, 0x57e389, 0xff8fab].map((col, i) => add({ skin: i % 2 ? 0xc58b62 : 0xe0ac86, shirt: 0xffffff, pants: 0x23395d, hair: i % 2 ? 0x1a1412 : 0x5a4636, hat: 'gorra', hatColor: col, scale: 0.62 }, NEW.guia[0] + 2.2 + (i % 2) * 1.1, NEW.guia[1] - 1.4 + i * 0.95, -1.9));
@@ -117,18 +141,30 @@ export class Social {
   reset() { this.restore(null); }
   refresh() { const f = this.active && FAV[this.active], n = this.prog.filter(Boolean).length; $('favLine').textContent = f ? `Favor: ${f.title} (${n}/3)` : ''; $('favLine').classList.toggle('hidden', !f); }
 
+  // Adónde hay que ir para el favor en curso (para el mapa grande)
+  favorTargets() {
+    const a = this.active, P = this.prog, out = []; if (!a) return out;
+    if (a === 'graciela') [[NEW.beto, 'Beto'], [NEW.guia, 'Pepe'], [POS.lucia, 'Lucía']].forEach(([p, n], i) => { if (!P[i]) out.push({ x: p[0], z: p[1], label: 'Postal para ' + n }); });
+    if (a === 'valeria') METERS.forEach((m, i) => { if (!P[i]) out.push({ x: m[0], z: m[1], label: 'Medidor de ' + m[2] }); });
+    if (a === 'lucia') PAS.forEach((st, i) => { if (!P[i]) out.push({ x: POS.stops[st][0], z: POS.stops[st][1], label: 'Pasajero en ' + POS.stops[st][2] }); });
+    if (a === 'mateo') this.sheep.forEach(o => { if (!o.pen) out.push({ x: o.x, z: o.z, label: 'Oveja suelta' }); });
+    return out;
+  }
+
   // ---------- Conversación con preguntas ----------
   menu(who, line) {
     const g = this.g, Wd = WHO[who], f = FAV[who], opts = Wd.q.map(q => [q[0], '']); let fi = -1;
     if (f && !this.done[who] && (who !== 'lucia' || g.grid.buses)) { fi = opts.length; opts.push(this.active === who ? ['¿Cómo era el favor?', ''] : ['¿Necesitás una mano con algo?', 'Un favor corto, con premio']); }
     const m = g.missions, busy = m.m5 && !m.flags.m5won, sc = busy ? null : SCENES[who]; let si = -1; if (sc) { si = opts.length; opts.push([sc[1], sc[2]]); }
     const ex = (g.fiestas && g.fiestas.extraOptions(who)) || [], ei = opts.length; ex.forEach(e => opts.push([e[0], e[1]]));
+    const pk = POST[who], pi = this.active === 'graciela' && pk != null && !this.prog[pk] ? opts.length : -1; if (pi >= 0) opts.push(['Darle la postal de Concordia', 'De los alumnos de Graciela']);
     opts.push(['Nada más, ¡gracias!', '']);
     const fl = g.fiestas && g.fiestas.line(who); if (fl) line = fl;
     g.extras.choose(NAMES[who], line || Wd.hi, opts, i => {
       if (i < Wd.q.length) { const a = Wd.q[i][1]; if (Wd.q[i][2] && g.fiestas) g.fiestas.onAsk(who, Wd.q[i][2]); return g.ui.dialog((Array.isArray(a) ? a : [a]).map(x => L(who, x))); }
       if (i >= ei && i < ei + ex.length) return ex[i - ei][2]();
       if (i === si) return this.enterScene(sc[0], sc[3]);
+      if (i === pi) return g.ui.dialog([L(who, POSTR[who])], () => this.step(pk));
       if (i !== fi) return;
       if (this.active && this.active !== who) return g.ui.dialog([L(who, 'Primero terminá el favor que ya empezaste, y después volvé por acá.')]);
       this.active = who; if (!this.started || this.started !== who) { this.prog = [false, false, false]; this.started = who; }
@@ -147,6 +183,7 @@ export class Social {
   describe(id) {
     const [k, s] = id.split(':'), i = +s;
     if (k === 'feria') return { state: 'ok', label: 'Jugar en la feria' };
+    if (k === 'mon') return { state: 'ok', label: 'Leer la placa del monumento a Artigas' };
     if (k === 'npc' && FEST_NPC[s] && !(this.g.fiestas && this.g.fiestas.mode === FEST_NPC[s] && this.g.fiestas.present(s))) return { state: 'hidden' };
     if (k === 'npc' && WHO[s] && SOCIAL_NAMES[s]) return { state: 'ok', label: 'Hablar con ' + SOCIAL_NAMES[s].split(',')[0] };
     if (k === 'met') return this.active === 'valeria' && !this.prog[i] ? { state: 'need', label: 'Leer el medidor de ' + METERS[i][2] } : { state: 'locked' };
@@ -156,6 +193,7 @@ export class Social {
   interact(id) {
     const g = this.g, [k, s] = id.split(':'), i = +s;
     if (k === 'feria') { this.openArcade(); return true; }
+    if (k === 'mon') { g.ui.dialog(MON.map(t => L('placa', t))); return true; }
     if (k === 'npc' && SOCIAL_NAMES[s]) { this.menu(s); return true; }
     if (k === 'met') { g.capi.work(0.8); g.ui.note(`Medidor de ${METERS[i][2]}: ${Math.round(g.grid.out.demand * METERS[i][3])} MW en este momento.`, 4); this.step(i); return true; }
     if (k === 'pas') { g.ui.note('“¡Gracias, Capi! Me tomo el próximo ómnibus eléctrico.”', 4); this.step(i); return true; }

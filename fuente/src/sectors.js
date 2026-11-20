@@ -161,15 +161,33 @@ function plazaArtigas(w) {
   b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, 0xdcd1b8);
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.boxB(cx + sx * 3.7, Y, cz + sz * 2.9, 4.2, 0.07, 3.4, 0x6dbb52);
   b.boxB(cx, Y, cz, 12.6, 0.012, 1.4, 0xc9bca0); b.boxB(cx, Y, cz, 1.4, 0.012, 10.6, 0xc9bca0);
-  // monumento: pedestal escalonado y la figura del prócer (abstracta, en bronce)
-  b.boxB(cx, Y, cz, 3.2, 0.4, 3.2, 0xd8d2c2); b.boxB(cx, Y + 0.4, cz, 2.4, 0.4, 2.4, 0xd8d2c2); b.boxB(cx, Y + 0.8, cz, 1.5, 2.2, 1.5, 0xcfc6b2);
-  b.boxB(cx, Y + 3.0, cz, 1.7, 0.2, 1.7, 0xe6dfcf);
-  const BR = 0x6b5a3a;
-  b.boxB(cx - 0.18, Y + 3.2, cz, 0.22, 0.95, 0.24, BR); b.boxB(cx + 0.18, Y + 3.2, cz, 0.22, 0.95, 0.24, BR);
-  b.boxB(cx, Y + 4.1, cz, 0.72, 1.05, 0.42, BR); b.add(new THREE.ConeGeometry(0.62, 1.4, 6), BR, cx, Y + 4.25, cz, 1, 1, 0.75);
-  b.sph(cx, Y + 5.42, cz, 0.24, BR); b.boxB(cx + 0.42, Y + 4.4, cz + 0.06, 0.16, 0.7, 0.16, BR);
-  w.addSolid(cx - 1.6, cx + 1.6, cz - 1.6, cz + 1.6, Y + 5.6);
-  plaqueSign(w, 'PLAZA ARTIGAS', cx, Y + 1.9, cz + 0.79, 0, 1.4, 0.36);
+  // Monumento a Artigas (Edmundo Prati, 1940): el prócer a caballo sobre un pedestal de granito, el ciudadano y el gaucho
+  // a los lados y palmeras detrás, que representan al pueblo de la Redota marchando hacia el norte. Versión estilizada, mirando al norte.
+  const GR = 0xbcb0a3, GL = 0xd6ccbf, BRZ = 0x5b4a33, BRH = 0x4f4936;
+  b.boxB(cx, Y, cz, 4.8, 0.3, 4.4, GL); b.boxB(cx, Y + 0.3, cz, 3.9, 0.3, 3.6, GL);
+  b.boxB(cx, Y + 0.6, cz, 2.0, 2.5, 3.0, GR); b.boxB(cx, Y + 3.1, cz, 2.3, 0.2, 3.3, GL); b.boxB(cx, Y + 0.6, cz, 2.2, 0.22, 3.2, GL);
+  for (const sx of [-1, 1]) {   // el ciudadano (oeste) y el gaucho (este), de pie sobre sus plintos
+    const px = cx + sx * 1.95; b.boxB(px, Y + 0.6, cz + 0.4, 0.95, 1.0, 0.95, GR); b.boxB(px, Y + 1.6, cz + 0.4, 1.05, 0.1, 1.05, GL);
+    b.boxB(px - 0.11, Y + 1.7, cz + 0.4, 0.16, 0.75, 0.18, BRZ); b.boxB(px + 0.11, Y + 1.7, cz + 0.4, 0.16, 0.75, 0.18, BRZ);
+    b.boxB(px, Y + 2.42, cz + 0.4, 0.46, 0.68, 0.28, BRZ); b.sph(px, Y + 3.28, cz + 0.4, 0.15, BRZ);
+    if (sx > 0) { b.add(new THREE.ConeGeometry(0.4, 0.62, 7), BRZ, px, Y + 2.62, cz + 0.4, 1, 1, 0.8); b.cyl(px, Y + 3.38, cz + 0.4, 0.26, 0.26, 0.04, BRZ, 10); b.cyl(px, Y + 3.42, cz + 0.4, 0.12, 0.15, 0.12, BRZ, 8); }   // gaucho con poncho y sombrero
+    else { b.box(px, Y + 3.44, cz + 0.4, 0.3, 0.06, 0.3, BRZ); b.box(px + 0.3, Y + 2.65, cz + 0.2, 0.1, 0.5, 0.1, BRZ, 0, -0.6); }   // ciudadano con galera y el brazo adelante
+  }
+  { const y = Y + 3.3, z = cz + 0.1, S = new THREE.SphereGeometry(1, 10, 8);   // caballo al paso y jinete
+    b.add(S, BRH, cx, y + 1.3, z, 0.42, 0.47, 1.02);
+    b.boxB(cx - 0.21, y, z + 0.66, 0.17, 1.0, 0.19, BRH); b.boxB(cx + 0.21, y, z + 0.66, 0.17, 1.0, 0.19, BRH); b.boxB(cx + 0.21, y, z - 0.62, 0.17, 1.0, 0.19, BRH);
+    b.box(cx - 0.21, y + 0.98, z - 0.82, 0.16, 0.5, 0.18, BRH, 0, 0.75); b.box(cx - 0.21, y + 0.72, z - 1.02, 0.15, 0.4, 0.16, BRH, 0, -0.35);   // mano levantada: va al paso
+    b.box(cx, y + 1.82, z - 0.98, 0.3, 0.85, 0.42, BRH, 0, -0.62); b.box(cx, y + 2.2, z - 1.0, 0.07, 0.5, 0.32, BRZ, 0, -0.62); b.box(cx, y + 2.16, z - 1.42, 0.24, 0.28, 0.64, BRH, 0, -0.45);
+    b.add(new THREE.ConeGeometry(0.12, 0.85, 6), BRH, cx, y + 1.1, z + 1.08, 1, 1, 1, 2.75, 0, 0);
+    b.box(cx, y + 1.98, z + 0.08, 0.42, 0.62, 0.32, BRZ); b.add(new THREE.ConeGeometry(0.44, 0.85, 8), BRZ, cx, y + 1.88, z + 0.16, 1, 1, 0.82);   // torso y poncho
+    for (const sx of [-1, 1]) { b.box(cx + sx * 0.36, y + 1.55, z - 0.02, 0.13, 0.6, 0.17, BRZ, 0, 0.25); b.box(cx + sx * 0.24, y + 1.98, z - 0.28, 0.1, 0.45, 0.1, BRZ, 0, -1.05); }
+    b.sph(cx, y + 2.45, z + 0.04, 0.15, BRZ); b.box(cx, y + 2.6, z + 0.04, 0.54, 0.08, 0.2, BRZ); b.box(cx, y + 2.66, z + 0.04, 0.22, 0.12, 0.17, BRZ);
+  }
+  w.addSolid(cx - 2.4, cx + 2.4, cz - 2.2, cz + 2.2, Y + 7);
+  plaqueSign(w, 'JOSÉ G. ARTIGAS', cx, Y + 1.95, cz - 1.52, Math.PI, 1.7, 0.36);
+  plaqueSign(w, 'PLAZA ARTIGAS', cx, Y + 1.95, cz + 1.52, 0, 1.5, 0.34);
+  for (const sx of [-3.0, -1.4, 1.4, 3.0]) w.tree('palm', cx + sx, cz + 3.6 + Math.abs(sx) * 0.12, 0.6, Y);   // las palmeras de la Redota, detrás del prócer
+  w.addInter('mon:artigas', cx, cz + 2.75, { console: false, y: Y, h: 7.2, r: 2.6 });
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { w.tree(R() < 0.5 ? 'jaca' : 'native', cx + sx * 5.6, cz + sz * 4.4, 0.75, Y); b.boxB(cx + sx * 3.7, Y, cz + sz * 0.9, 2.2, 0.45, 0.6, C.wood); }
   for (const [x, z] of [[cx - 6, cz], [cx + 6, cz], [cx, cz + 5.1]]) w.lamp(x, z, 0, Y);
 }

@@ -26,7 +26,7 @@ FUEGOS ARTIFICIALES (Fin de año y festejo final)
   fw_crepitar_a/b      de Jonathan Shaw (InspectorJ) · CC BY 3.0 · https://freesound.org/s/410350/
   fw_final             de Jonathan Shaw (InspectorJ) · CC BY 3.0 · https://freesound.org/s/328861/
 
-AMBIENTE (el río, el vertedero de la represa, el benteveo y el tero)
+PÁJAROS (el benteveo y el tero)
   Grabaciones de Wikimedia Commons. Las aves son las mismas especies que se
   oyen en Salto, grabadas en el sur de Brasil.
   benteveo_a   «Pitangus sulphuratus call» de Eurico Zimbres (Petrópolis, 2007)
@@ -35,11 +35,6 @@ AMBIENTE (el río, el vertedero de la represa, el benteveo y el tero)
                CC BY-SA 4.0 · https://commons.wikimedia.org/wiki/File:Canto_do_Bem-te-vi.ogg
   tero_a/b     «Vanellus Chilensis» de Eurico Zimbres (Resende)
                CC BY-SA 2.5 · https://commons.wikimedia.org/wiki/File:Vanellus_Chilensis.ogg
-  rio          «Water on Rocks» de Dsw4 (olas contra las rocas, 2008),
-               con un filtro que le saca el retumbo grave
-               CC BY 3.0 · https://commons.wikimedia.org/wiki/File:Water_on_Rocks.ogg
-  vertedero    «Water fall» de Benzband (agua blanca al pie de una cascada, 2011)
-               CC BY-SA 3.0 · https://commons.wikimedia.org/wiki/File:Water_fall.ogg
   Los recortes de las grabaciones CC BY-SA se comparten con la misma licencia
   que el original (CC BY-SA, la versión de cada uno).
 
@@ -49,6 +44,5 @@ autor y licencia de cada uno.
 
 Licencia CC BY 3.0:    https://creativecommons.org/licenses/by/3.0/
 Licencia CC BY-SA 2.5: https://creativecommons.org/licenses/by-sa/2.5/
-Licencia CC BY-SA 3.0: https://creativecommons.org/licenses/by-sa/3.0/
 Licencia CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
 Licencia CC0 1.0:      https://creativecommons.org/publicdomain/zero/1.0/

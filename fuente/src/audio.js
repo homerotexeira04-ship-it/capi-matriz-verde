@@ -95,11 +95,11 @@ export class AudioSynth {
     this.aCity.g.gain.setTargetAtTime(a.city * 0.045 * (0.45 + 0.55 * day), this.ctx.currentTime, 0.6);
     this.soft = a.plaza * (a.hour >= 17.5 || a.hour < 1 ? 1 : 0.4);
     // el benteveo y el tero son grabaciones de verdad (muestras.js); acá quedan los pajaritos chicos
-    if ((E.bird -= dt) <= 0) { E.bird = 2.5 + Math.random() * 5.5; if (day > 0.5 && a.green > 0.2) { const r = Math.random(); if (this.realAmb) { if (r < 0.45) this.chirps(a.green * 0.8); } else if (r < 0.5) this.benteveo(a.green); else if (r < 0.72 && a.field > 0.3) this.tero(0.45 * a.field); else this.chirps(a.green); } }
+    if ((E.bird -= dt) <= 0) { E.bird = 2.5 + Math.random() * 5.5; if (day > 0.5 && a.green > 0.2) { const r = Math.random(); if (this.realBirds) { if (r < 0.45) this.chirps(a.green * 0.8); } else if (r < 0.5) this.benteveo(a.green); else if (r < 0.72 && a.field > 0.3) this.tero(0.45 * a.field); else this.chirps(a.green); } }
     if ((E.cric -= dt) <= 0) { E.cric = 0.4 + Math.random() * 1.2; if (a.night > 0.5) this.cricket(0.5 + 0.5 * a.green); }
     if ((E.bell -= dt) <= 0) { E.bell = 11 + Math.random() * 15; if (a.city > 0.35 && day > 0.3) this.bell(a.city); }
     if ((E.bus -= dt) <= 0) { E.bus = 8 + Math.random() * 10; if (a.city > 0.3) this.busBy(a.city); }
-    if ((E.lap -= dt) <= 0) { E.lap = 2 + Math.random() * 4; if (a.water > 0.4 && !this.realAmb) this.lap(a.water); }
+    if ((E.lap -= dt) <= 0) { E.lap = 2 + Math.random() * 4; if (a.water > 0.4) this.lap(a.water); }
   }
 
   // ---- Música ----
@@ -150,7 +150,7 @@ export class AudioSynth {
     const now = this.ctx.currentTime;
     this.aWind.g.gain.setTargetAtTime(clamp(st.windNear * (0.03 + st.wind * 0.16), 0, 0.2), now, 0.3);
     this.aWind.fl.frequency.setTargetAtTime(320 + st.wind * 500, now, 0.5);
-    this.aWater.g.gain.setTargetAtTime(st.waterNear * (this.realAmb ? 0.05 : 0.16), now, 0.3);   // con el agua grabada, el soplido queda de fondo
+    this.aWater.g.gain.setTargetAtTime(st.waterNear * 0.16, now, 0.3);
     this.aHum.gain.setTargetAtTime(st.humNear * 0.07, now, 0.3);
     // cuando se oye la cuerda de tambores de verdad, la música se corre a un costado para no pisarle el ritmo
     this.music.gain.setTargetAtTime((this.title ? 0.3 : 0.34) * (1 - 0.82 * clamp(this.duck * 1.7, 0, 1)), now, this.duck > 0.05 ? 0.35 : 0.8);

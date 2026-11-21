@@ -21,8 +21,8 @@ const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, flatShading:
 
 // Recorridos de mano única (en sentido del tránsito). El 2 comparte calles con los ómnibus, en el mismo sentido.
 const ROUTES = [
-  { pts: [[-28, -1], [-60, -1], [-60, 55], [-28, 55]], n: 5 },
-  { pts: [[-77, 27], [19, 27], [19, 70], [-77, 70]], n: 7 }
+  { pts: [[-28, -1], [-60, -1], [-60, 55], [-28, 55]], n: 3 },
+  { pts: [[-77, 27], [19, 27], [19, 70], [-77, 70]], n: 4 }
 ];
 // Esquinas con semáforo: grupo 0 = calles norte-sur, grupo 1 = calles este-oeste
 const CROSS = [[-60, 12.4], [-28, 12.4], [-60, 27], [-28, 27]];

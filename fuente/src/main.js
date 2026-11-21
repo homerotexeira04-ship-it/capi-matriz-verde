@@ -512,8 +512,8 @@ class Game {
     }
     // cuerda de tambores de verdad: el desfile de Carnaval o la del baile final en la plaza
     this.muestras.frame(dt, this.audio.llamada ? this.vecinos.drumAt() : this.fiestas.cuerdaAt(), !play, this.paused);
-    this.muestras.ambiente(dt, { w, G, hour: G.hour, storm: w.storm || 0 });   // río, vertedero, benteveo y tero grabados
-    this.audio.realDrums = this.muestras.ok; this.audio.realAmb = this.muestras.ok && !!this.muestras.buf.rio; this.audio.duck = this.muestras.level;
+    this.muestras.ambiente(dt, { w, hour: G.hour, storm: w.storm || 0 });   // benteveo y tero grabados
+    this.audio.realDrums = this.muestras.ok; this.audio.realBirds = this.muestras.ok && !!this.muestras.buf.benteveo_a; this.audio.duck = this.muestras.level;
     this.audio.update(dt, { pct, title: !play, amb, festSoft: this.fiestas.soft, carnaval: this.fiestas.mode === 'carnaval', wind: G.wind, windNear, waterNear, humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
     if ((this.curT = (this.curT || 0) - dt) <= 0) { this.curT = 0.08; this.cursor(); }
     if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });

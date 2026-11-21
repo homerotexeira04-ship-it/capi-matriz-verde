@@ -19,6 +19,7 @@ import { Social, buildSocial, CLEAR2 } from './social.js';
 import './arcade.js';
 import './casa.js';
 import { buildTransicion, CLEAR6 } from './transicion.js';
+import { Medidor } from './medidor.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
@@ -60,9 +61,12 @@ class Game {
   constructor(L) {
     this.L = L; this.loaded = false;
     const canvas = $('gl');
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
+    // El postproceso ya suaviza los bordes en su propio búfer (MSAA x4): pedirle antialias también al lienzo solo gasta
+    // memoria de video y un paso por cuadro. El lienzo lo hace solo si no hay postproceso (sin WebGL 2, o ?post=0).
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !postWillAA(), stencil: true, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75)); r.shadowMap.enabled = true; r.localClippingEnabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     this.post = new Post(r);   // resplandor, maqueta y color por hora
+    this.medidor = new Medidor(this);   // cuadros por segundo, para el personal (modo SuperCapi)
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2200);
     this.grid = new EnergyGrid(); this.audio = new AudioSynth(); this.fx = new FX(this.scene);
@@ -448,6 +452,7 @@ class Game {
   frame(now) {
     requestAnimationFrame(t => this.frame(t)); this.kiosk(now);
     const real = (now - this.last) / 1000, cdt = Math.min(0.05, Math.max(0.001, real)), dt = this.paused ? 1e-6 : cdt; this.last = now; this.time += dt;
+    this.medidor.frame(real, now);
     if (this.mode === 'play' && !this.paused && real < 1) this.stats.play(real);
     // Calidad: siempre alta (resolución, sombras de 2048 y efectos completos); no baja sola
     const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
@@ -529,6 +534,16 @@ class Game {
     }
     this.post.end({ hour: G.hour, night, storm: w.storm || 0, dist: cam.dist, focus: cam.target, camera: this.camera, title: !play });
   }
+}
+
+// ¿El postproceso va a suavizar los bordes por su cuenta? Lo hace con WebGL 2 y el nivel 1 o 2 (el de siempre)
+function postWillAA() {
+  try {
+    const force = window.CAPI_POST ?? new URLSearchParams(location.search).get('post'); if (force != null && force !== '' && +force <= 0) return false;
+    const c = document.createElement('canvas'), x = c.getContext('webgl2'); if (!x) return false;
+    const lose = x.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();   // se suelta enseguida: solo era para preguntar
+    return true;
+  } catch (e) { return false; }
 }
 
 // ---------- Arranque ----------

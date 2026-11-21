@@ -1,5 +1,6 @@
 // Modo SuperCapi para el personal (se abre escribiendo "energimundo"), contador de visitas y ajustes de pantalla.
 import { drawFace } from './ui.js';
+import { SEQ } from './missions.js';
 const $ = id => document.getElementById(id);
 // Cara partida al medio: a la izquierda Capi de siempre, a la derecha Capi robot (24 x 24 píxeles, como los retratos)
 export function drawSuperFace(g, t, col, scan) {
@@ -133,14 +134,14 @@ export class Guide {
     const g = this.g, M = g.missions, G = g.grid, box = $('gActions'); box.textContent = '';
     const sec = (title, ...kids) => { const s = document.createElement('section'); const h = document.createElement('h3'); h.textContent = title; s.appendChild(h); const row = document.createElement('div'); row.className = 'gRow'; kids.forEach(k => row.appendChild(k)); s.appendChild(row); box.appendChild(s); return row; };
     const jump = (mode, phase) => () => { this.close(); g.play(mode, phase, null, M.level || 'ingeniero', { guide: true }); };
-    const seqs = { corta: ['viento', 'rio', 'sol', 'urbano', 'pico'], larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'pico'] };
+    const seqs = SEQ;
     for (const mode of ['corta', 'larga']) sec(mode === 'corta' ? 'Ir a la historia corta' : 'Ir a la historia larga', ...seqs[mode].map((k, i) => this.btn(`<b>${i + 1}</b> ${MIS[k]}`, jump(mode, i), 'gMis')), this.btn('Modo libre', jump(mode, seqs[mode].length), 'gMis'));
     sec('Partida', this.btn('Nueva partida con tutorial', () => { this.close(); g.play('larga', 0, null, M.level || 'ingeniero', { guide: true, tutorial: true }); }), this.btn('Volver al título', () => { this.close(); if (g.mode === 'play') g.toTitle(); }));
     sec('Hora y clima', this.btn('Amanecer con neblina', () => { G.hour = 6.4; }), this.btn('Mediodía', () => { G.hour = 12; }), this.btn('Atardecer', () => { G.hour = 18.4; }), this.btn('Noche', () => { G.hour = 21.5; }),
       this.btn('Tormenta', () => { G.cloudTarget = 0.95; G.cloud = 0.95; G.windTarget = 1; }), this.btn('Despejar', () => { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); }),
       this.btn('', () => { if (g.clockStopped != null) { G.clockRate = g.clockStopped; g.clockStopped = null; } else { g.clockStopped = G.clockRate; G.clockRate = 0; } }, 'gClock'));
     sec('Red eléctrica', this.btn('Provocar una avería', () => { if (g.mode === 'play') M.randomFault(); }), this.btn('Reparar todo', () => M.clearFaults()), this.btn('', () => g.setPaused(!g.paused), 'gPause'));
-    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}));
+    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}), this.btn('', () => g.medidor.toggle(), 'gFps'));
     const S = window.__capiSettings, mark = () => { box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); const kb = box.querySelector('.gKick'); if (kb) { kb.disabled = !S.fest; kb.title = { carnaval: 'Pone el atardecer y trae las llamadas a la rambla', patrimonio: 'Pone la mañana y arranca la visita guiada en la plaza', fiestas: 'Cuenta regresiva y fuegos de Año Nuevo', criolla: 'Pone la tarde y arranca el desfile de tropillas en el ruedo', museos: 'Pone la noche y arranca la proyección en la torre' }[S.fest] || 'Primero elegí una fiesta'; } };
     const kick = this.btn('¡Empezar la fiesta ahora!', () => { this.close(); g.fiestas.kick(); }, 'gKick');
     sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['criolla', 'Semana Criolla'], ['patrimonio', 'Día del Patrimonio'], ['museos', 'Museos en la Noche'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }), kick);
@@ -152,6 +153,7 @@ export class Guide {
     $('gHour').value = G.hour; $('gHourV').textContent = `${String(Math.floor(G.hour) % 24).padStart(2, '0')}:${String(Math.floor((G.hour % 1) * 60)).padStart(2, '0')}`;
     document.querySelectorAll('.gClock').forEach(b => { b.textContent = g.clockStopped != null ? 'Reanudar el reloj' : 'Detener el reloj'; });
     document.querySelectorAll('.gPause').forEach(b => { b.textContent = g.paused ? 'Reanudar el juego' : 'Pausar el juego'; });
+    document.querySelectorAll('.gFps').forEach(b => { b.textContent = g.medidor.on ? 'Ocultar el medidor de cuadros' : 'Mostrar el medidor de cuadros'; });
     $('gSince').textContent = fmtDate(d.since);
     const avg = d.sessions ? d.sessionSec / d.sessions : 0, tiles = [
       ['Partidas nuevas', d.games, `corta ${d.mode.corta} · larga ${d.mode.larga}`], ['Historias terminadas', d.done.corta + d.done.larga, `corta ${d.done.corta} · larga ${d.done.larga}`],

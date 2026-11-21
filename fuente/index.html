@@ -208,8 +208,20 @@ body.bigText .eTxt b{font-size:21px} body.bigText .eTxt small{font-size:15px} bo
 .dSign b{display:block;font-family:var(--display);font-weight:400;font-size:18px} .dSign em{font-style:normal;font-size:12px}
 .dSign img{height:48px;width:auto} .dSign #dSeal{width:92px;height:92px;border:0;border-radius:0;image-rendering:auto;margin-left:6px}
 .dFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:#5a6a86}
-#fade{position:fixed;inset:0;background:#050b18;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;z-index:9}
-#fade.on{opacity:1;pointer-events:auto}
+#fade{position:fixed;inset:0;background:radial-gradient(circle at 50% 50%,#173a66 0%,#08142b 55%,#050b18 100%);visibility:hidden;pointer-events:none;clip-path:circle(0% at 50% 50%);transition:clip-path .45s cubic-bezier(.65,0,.35,1),visibility 0s .45s;display:grid;place-content:center;justify-items:center;gap:6px;z-index:9}
+#fade.on{visibility:visible;pointer-events:auto;clip-path:circle(75% at 50% 50%);transition:clip-path .45s cubic-bezier(.65,0,.35,1),visibility 0s}
+#fadeFace{width:96px;height:96px;image-rendering:pixelated;border-radius:50%;background:#ffd23f;box-shadow:0 0 0 6px #1a2238,0 0 0 10px rgba(255,210,63,.35),0 12px 30px rgba(0,0,0,.5)}
+@media (prefers-reduced-motion:reduce){#fade{clip-path:none;opacity:0;transition:opacity .3s,visibility 0s .3s}#fade.on{opacity:1;clip-path:none;transition:opacity .3s,visibility 0s}}
+/* Modo foto: marco de postal */
+#postal{display:none;position:fixed;inset:0;pointer-events:none;z-index:5;border:clamp(10px,2.2vw,22px) solid #fbf6ea;box-shadow:inset 0 0 0 2px rgba(60,40,10,.28),inset 0 0 46px rgba(60,40,10,.22)}
+body.photo.postal #postal{display:block}
+.pcTitle{position:absolute;left:clamp(14px,3vw,38px);bottom:clamp(40px,8vh,80px);font-family:var(--display);font-size:clamp(30px,5.4vw,64px);line-height:1;color:#fff;-webkit-text-stroke:2px #1a2238;text-shadow:0 4px 0 #1a2238,0 10px 24px rgba(0,0,0,.45);transform:rotate(-3deg);transform-origin:left bottom}
+.pcTitle b{color:var(--sun);font-weight:400}
+.pcFoot{position:absolute;left:clamp(14px,3vw,38px);bottom:clamp(12px,2.6vh,26px);padding:3px 12px;border-radius:999px;background:rgba(251,246,234,.92);font-size:13px;font-weight:800;color:#5b4a2e}
+.pcStamp{position:absolute;right:clamp(14px,3vw,38px);top:clamp(14px,3vw,38px);width:100px;padding:8px 8px 5px;background:#fffdf7;outline:3px dashed #c94f3d;outline-offset:-7px;transform:rotate(4deg);text-align:center;box-shadow:0 5px 12px rgba(0,0,0,.28)}
+.pcStamp canvas{width:76px;height:76px;image-rendering:pixelated;background:#75aadb;display:block;margin:4px auto 2px}
+.pcStamp span{font-family:var(--display);font-size:13px;color:#c94f3d;letter-spacing:1px}
+body.photo.postal #photoHint{bottom:auto;top:clamp(16px,3.2vw,40px)}
 #scLoad{position:fixed;inset:0;z-index:12;display:grid;place-items:center;background:radial-gradient(circle at 50% 42%,#173b6b 0,#0b1830 55%,#050b18 100%);overflow:hidden}
 #scLoad::before{content:"";position:absolute;inset:-50%;background-image:linear-gradient(rgba(46,230,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(46,230,255,.09) 1px,transparent 1px);background-size:34px 34px;transform:perspective(600px) rotateX(58deg) translateY(10%);animation:scGrid 2.5s linear infinite}
 #scLoad.hidden{display:none} @keyframes scGrid{to{background-position:0 34px}}
@@ -566,9 +578,10 @@ input[type=text]{cursor:text}
   </div>
   <button class="btn" id="gClose" type="button">Cerrar <kbd>Esc</kbd></button>
 </div></div>
-<div id="photoHint">Modo foto · Q E: girar · W S: inclinar · A D: acercar y alejar · P: salir</div>
+<div id="photoHint">Modo foto · Q E: girar · W S: inclinar · A D: acercar y alejar · C: marco de postal · P: salir</div>
 <div id="rideCap" class="hidden" role="status" aria-live="polite"><div class="rcBox"><b id="rcTitle"></b><p id="rcText"></p></div><button class="btn ghost" id="rcSkip" type="button">Bajar ahora <kbd>E</kbd></button></div>
-<div id="fade"><span id="fadeTxt"></span></div>
+<div id="fade"><canvas id="fadeFace" width="24" height="24"></canvas><span id="fadeTxt"></span></div>
+<div id="postal" aria-hidden="true"><div class="pcStamp"><canvas id="pcFace" width="24" height="24"></canvas><span>URUGUAY</span></div><div class="pcTitle">Saludos desde <b>Salto</b></div><div class="pcFoot"><span id="pcDate"></span> · Capi, Guardián de la Matriz Verde · Energimundo</div></div>
 
 <div id="credits" class="hidden"><div class="cBox pane">
   <img src="__LOGO_LARGO__" alt="Energimundo" width="695" height="163">

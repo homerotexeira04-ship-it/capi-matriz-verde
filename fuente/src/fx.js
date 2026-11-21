@@ -6,10 +6,10 @@ attribute vec4 aColor; attribute float aSize; varying vec4 vColor; uniform float
 void main(){ vColor=aColor; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mv;
   gl_PointSize=clamp(aSize*uScale/max(0.1,-mv.z),1.0,300.0); }`;
 const FS = soft => `
-varying vec4 vColor;
+varying vec4 vColor; uniform float uLight;
 void main(){ float d=length(gl_PointCoord-0.5);
   ${soft ? 'float a=smoothstep(0.5,0.05,d);' : 'if(d>0.5) discard; float a=1.0;'}
-  gl_FragColor=vec4(vColor.rgb,vColor.a*a);
+  gl_FragColor=vec4(vColor.rgb*uLight,vColor.a*a);
 #include <colorspace_fragment>
 }`;
 const _c = new THREE.Color();
@@ -27,7 +27,7 @@ class Layer {
     g.setAttribute('aColor', new THREE.BufferAttribute(this.bc, 4).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('aSize', new THREE.BufferAttribute(this.bs, 1).setUsage(THREE.DynamicDrawUsage));
     this.mat = new THREE.ShaderMaterial({
-      uniforms: { uScale: { value: 600 } }, vertexShader: VS, fragmentShader: FS(additive),
+      uniforms: { uScale: { value: 600 }, uLight: { value: 1 } }, vertexShader: VS, fragmentShader: FS(additive),
       transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending
     });
     this.mesh = new THREE.Points(g, this.mat); this.mesh.frustumCulled = false; this.mesh.renderOrder = additive ? 12 : 11;
@@ -79,6 +79,8 @@ export class FX {
   constructor(scene) { this.soft = new Layer(scene, 1600, false); this.glow = new Layer(scene, 1600, true); }
   setScale(px) { this.soft.mat.uniforms.uScale.value = px; this.glow.mat.uniforms.uScale.value = px; }
   update(dt) { this.soft.update(dt); this.glow.update(dt); }
+  // la espuma, el polvo y el humo reciben la luz del ambiente (de noche se ven más apagados); los brillos no
+  setLight(v) { this.soft.mat.uniforms.uLight.value = v; }
   puff(x, y, z, n = 8, hex = 0xd9c9a3, spread = 1.4) {
     for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = spread * (0.4 + Math.random()); this.soft.emit(x, y, z, Math.cos(a) * s, 0.6 + Math.random(), Math.sin(a) * s, 0.5 + Math.random() * 0.3, 0.35, 0.9, hex, 0.7, 1.5, 2.5); }
   }

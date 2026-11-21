@@ -4,7 +4,7 @@ import { B, ZONES, terrainH, waterAt, coastD, westD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
-export const NAMES = { capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento' };
+export const NAMES = { corte: 'Maqueta en corte · una unidad de Salto Grande', capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento' };
 
 // Retratos pixelados (grilla 24×24) con parpadeo y boca animada
 export function drawFace(g, who, t, talking, col) {
@@ -30,6 +30,11 @@ export function drawFace(g, who, t, talking, col) {
     else if (k === 'viajero') { R(4, 0, 16, 8, '#3f8fd0'); R(6, 1, 12, 5, '#ffffff'); R(6, 5, 12, 1, '#75aadb'); R(3, 6, 18, 2, '#ffffff'); R(11, 5, 2, 1, '#fcd116'); R(7, 19, 4, 3, '#1c1c1e'); R(8, 20, 2, 1, '#5a6070'); R(15, 17, 1, 7, '#2b2d33'); }
     else if (k === 'control') { R(3, 6, 2, 6, '#3a3f4a'); R(19, 6, 2, 6, '#3a3f4a'); R(5, 14, 4, 1, '#3a3f4a'); R(6, 9, 4, 3, 'rgba(207,234,255,.45)'); R(14, 9, 4, 3, 'rgba(207,234,255,.45)'); R(11, 20, 3, 4, '#f4f4f4'); }
     else if (k === 'clasico' || !k) R(16, 18, 2, 4, '#2b2d33');
+    return;
+  }
+  if (who === 'corte') {   // la unidad generadora en corte: generador arriba, eje y turbina abajo, agua celeste
+    R(0, 0, 24, 24, '#1c3d5a'); R(0, 15, 24, 9, '#3f9ad8'); R(4, 4, 16, 5, '#2f6f5f'); R(6, 5, 12, 3, '#b87333'); R(11, 9, 2, 6, '#b8bec6');
+    R(6, 15, 12, 2, '#c8913a'); R(4, 17, 4, 1, '#c8913a'); R(16, 17, 4, 1, '#c8913a'); R(10, 17, 4, 3, '#c8913a'); R(1, 20, 4, 1, '#bfe9fb'); R(18, 21, 4, 1, '#bfe9fb');
     return;
   }
   if (who === 'placa') {   // placa de bronce con un jinete
@@ -167,6 +172,8 @@ export class UI {
     $('vClock').textContent = fmtHour(G.hour);
     const hz = $('vHz'); hz.textContent = G.freq.toFixed(1).replace('.', ',') + ' Hz'; hz.classList.toggle('low', G.freq < 49.85);
     this.drawGauge(o.pct); this.drawPhase(G.hour); drawFace(this.fc, 'capi', this.t, st.capiTalk, st.colors);
+    if (!this.ffc) { const fc = document.getElementById('fadeFace'); this.ffc = fc ? fc.getContext('2d') : null; this.fadeEl = document.getElementById('fade'); }
+    if (this.ffc && this.fadeEl.classList.contains('on')) drawFace(this.ffc, 'capi', this.t, false, st.colors);   // la cara de Capi en el iris de las transiciones
     this.drawMini(st);
     // Cartel de sector
     let z = null; for (const q of ZONES) if (q.rect ? (st.capi.x > q.rect[0] && st.capi.x < q.rect[1] && st.capi.z > q.rect[2] && st.capi.z < q.rect[3]) : Math.hypot(st.capi.x - q.x, st.capi.z - q.z) < (q.id === 'ciudad' ? 46 : 34)) z = q;

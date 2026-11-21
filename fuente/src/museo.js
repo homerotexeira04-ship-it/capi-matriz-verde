@@ -213,6 +213,9 @@ export function buildMuseo(w) {
     sets.forEach((s, k) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(s, 3)); g.computeVertexNormals(); b.add(g, k ? 0x36363d : 0x2b2b31, x, y, z, 1, 1, 1, 0, 0, 0, 0.02); });
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
     const lm = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x8b919b })); lm.position.set(x, y, z); w.scene.add(lm);
+    // de noche las aristas del domo son tiras LED que cambian de color despacio
+    const gris = new THREE.Color(0x8b919b), led = new THREE.Color(); let tt = 0;
+    w.updaters.push((dt, st) => { tt += dt; const n = Math.min(1, Math.max(0, (st.night - 0.2) / 0.5)); led.setHSL((tt * 0.035) % 1, 0.85, 0.6); lm.material.color.copy(gris).lerp(led, n); });
     b.cyl(x, y - 0.3, z, Rd + 0.12, Rd + 0.2, 0.42, CONC, 24);
     const vx = x - Rd - 0.25; b.boxB(vx, y - 0.1, z, 1.7, 2.35, 1.9, 0x26262b); b.box(vx - 0.86, y + 0.95, z, 0.04, 1.85, 1.05, 0x0d0d11);
     b.boxB(vx - 0.4, y + 2.25, z, 2.5, 0.08, 2.2, 0x1d1d22); quad('domo', vx - 0.87, y + 2.95, z, 1.1, 0.96, -PI / 2);

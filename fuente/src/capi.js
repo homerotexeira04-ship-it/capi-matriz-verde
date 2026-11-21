@@ -1,6 +1,6 @@
 // CapiController: modelo 3D de Capi, física, colisiones suaves, detección agua/tierra y máquina de estados de animación.
 import * as THREE from 'three';
-import { clamp, lerp, damp, angDiff, rng } from './util.js';
+import { clamp, lerp, damp, smooth, angDiff, rng } from './util.js';
 import { B, POS, CITY_Y } from './terrain.js';
 import { canvasTex, Batch } from './world.js';
 
@@ -90,6 +90,21 @@ export class Capi {
     root.position.copy(this.pos); scene.add(root);
     this.buildProps(scene, add, M);
     this.buildAccessories(add, M);
+    // mate con bombilla (mano derecha) y termo bajo el brazo izquierdo, para los ratos de espera
+    const mate = new THREE.Group(); mate.position.set(0.02, -0.66, 0.16); this.armR.add(mate);
+    mate.add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), M(0x8b5a2b, { roughness: 0.7 }))).scale.set(1, 1.18, 1);
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.03, 10), M(0xd9d0bd, { metalness: 0.6, roughness: 0.35 })); ring.position.y = 0.13; mate.add(ring);
+    const yerba = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 10), M(0x5f7d2f)); yerba.position.y = 0.14; mate.add(yerba);
+    const bomb = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.34, 5), M(0xd8dde3, { metalness: 0.8, roughness: 0.25 })); bomb.position.set(0.03, 0.26, 0); bomb.rotation.z = -0.28; mate.add(bomb);
+    const termo = new THREE.Group(); termo.position.set(0.06, -0.34, 0.16); termo.rotation.x = 0.35; this.armL.add(termo);
+    termo.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 10), M(0x2e7d4f, { roughness: 0.5, metalness: 0.2 })));
+    const tapa = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.1, 10), M(0x1d1f24)); tapa.position.y = 0.3; termo.add(tapa);
+    this.mate = mate; this.termo = termo; mate.visible = termo.visible = false;
+    // borde de luz: un contorno cálido que despega a Capi del fondo (más marcado de noche)
+    this.rimU = { uRim: { value: 0.18 } }; const seen = new Set();
+    root.traverse(o => { const m = o.isMesh && o.material; if (!m || !m.isMeshStandardMaterial || seen.has(m)) return; seen.add(m);
+      m.onBeforeCompile = sh => { sh.uniforms.uRim = this.rimU.uRim; sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRim;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uRim * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0);'); };
+      m.customProgramCacheKey = () => 'capiRim'; });
   }
   // Atuendos del vestuario: cada uno trae piezas propias, no sólo colores
   buildKits(M) {
@@ -373,7 +388,7 @@ export class Capi {
       } else {
         this.vy -= 30 * dt; p.y += this.vy * dt;
         if (deep && p.y <= floatY) { this.swimming = true; p.y = floatY - 0.3; this.fx.splash(p.x, wl2 + 0.1, p.z, 22); this.audio.splash(1); }
-        else if (p.y <= g && this.vy <= 0) { p.y = g; this.grounded = true; if (this.vy < -7) { this.fx.puff(p.x, g + 0.15, p.z, 9, g < wl2 ? 0xffffff : 0xd9c9a3); this.audio.land(); } this.vy = 0; }
+        else if (p.y <= g && this.vy <= 0) { p.y = g; this.grounded = true; if (this.vy < -3.5) this.landSq = clamp(-this.vy / 13, 0.35, 1); if (this.vy < -7) { this.fx.puff(p.x, g + 0.15, p.z, 9, g < wl2 ? 0xffffff : 0xd9c9a3); this.audio.land(); } this.vy = 0; }
       }
     }
     const sp = Math.hypot(this.vel.x, this.vel.z);
@@ -394,6 +409,7 @@ export class Capi {
   animate(dt, sp, ground, wl, prev) {
     const j = this.j, t = this.t, st = this.state;
     let legL = 0, legR = 0, armL = 0, armR = 0, armLz = 0.12, armRz = -0.12, tilt = 0, roll = 0, headX = 0, lift = 0, sy = 1, spin = 0, flip = 0;
+    let headY = 0; if (st !== S.IDLE || this.talking || this.dancing || this.flinch > 0) { this.idleT = 0; this.idleAct = null; }
     this.wrench.visible = st === S.INTERACT; this.beltWrench.visible = !this.wrench.visible; this.tablet.visible = st === S.INTERACT;
     if (st === S.RUN) {
       const before = this.phase; this.phase += sp * dt * 1.25;
@@ -438,8 +454,21 @@ export class Capi {
       armR = -1.25 + Math.sin(t * 4.6) * 0.55; armRz = -0.35; armL = -0.45 + Math.sin(t * 2.9 + 1) * 0.3; armLz = 0.3; headX = Math.sin(t * 6.5) * 0.07 - 0.05; roll = Math.sin(t * 1.7) * 0.04; sy = 1 + Math.sin(t * 9) * 0.012;
     } else {
       sy = 1 + Math.sin(t * 2.2) * 0.018; headX = Math.sin(t * 0.7) * 0.04;
-      this.sniff -= dt; if (this.sniff < 0.6) headX = -0.16 + Math.sin(t * 22) * 0.05; if (this.sniff < 0) this.sniff = 3 + Math.random() * 4;
+      // ratos de espera: un mate, un saludo, una estirada o mirar alrededor
+      this.idleT = (this.idleT || 0) + dt;
+      if (!this.idleAct && this.idleT > 6.5) { this.idleAct = ['mate', 'saludo', 'estirar', 'mirar', 'mate'][Math.floor(Math.random() * 5)]; this.idleA = 0; }
+      const A = this.idleAct, a = A ? (this.idleA += dt) : 0;
+      if (A === 'mate') {          // dos sorbos de mate, con el termo bajo el brazo
+        const c = a % 3.2, up = smooth(0.2, 0.9, c) * (1 - smooth(2.4, 3.0, c)); armR = lerp(-0.6, -2.35, up); armRz = lerp(-0.15, 0.42, up); headX = -0.12 * up; armL = -0.55; armLz = 0.5;
+        if (a > 6.4) this.idleAct = null;
+      } else if (A === 'saludo') { armR = -2.75 + Math.sin(a * 11) * 0.28; armRz = -0.55 + Math.sin(a * 11) * 0.2; headX = -0.08; roll = Math.sin(a * 5.5) * 0.05; if (a > 2.6) this.idleAct = null; }
+      else if (A === 'estirar') { const u = smooth(0, 0.6, a) * (1 - smooth(1.9, 2.5, a)); armL = armR = -3.0 * u; armLz = 0.12 + 0.18 * u; armRz = -0.12 - 0.18 * u; sy = 1 + 0.07 * u; headX = -0.3 * u; if (a > 2.6) this.idleAct = null; }
+      else if (A === 'mirar') { headY = Math.sin(a * 1.8) * 0.75 * smooth(0, 0.5, a) * (1 - smooth(3.0, 3.6, a)); if (a > 3.6) this.idleAct = null; }
+      else { this.sniff -= dt; if (this.sniff < 0.6) headX = -0.16 + Math.sin(t * 22) * 0.05; if (this.sniff < 0) this.sniff = 3 + Math.random() * 4; }
+      if (!this.idleAct && A) this.idleT = Math.random() * 3;
     }
+    const mt = this.idleAct === 'mate'; if (this.mate) { this.mate.visible = mt; this.termo.visible = mt; }
+    this.landSq = Math.max(0, (this.landSq || 0) - dt * 3.5); if (this.landSq > 0 && this.grounded) { sy *= 1 - 0.2 * this.landSq; lift -= 0.1 * this.landSq; }
     if (this.flinch > 0 && (st === S.IDLE || st === S.RUN)) { this.flinch -= dt; armL = armR = -2.8; armLz = 0.45; armRz = -0.45; headX = 0.25; }   // se cubre de los teros
     // objetos de festejo
     const PR = st === S.CELEBRATE ? this.celeProp : null;
@@ -460,7 +489,7 @@ export class Capi {
     j.headX = damp(j.headX, headX, 10, dt); j.lift = damp(j.lift, lift, 22, dt); j.sy = damp(j.sy, sy, 14, dt);
     this.legL.rotation.x = j.legL; this.legR.rotation.x = j.legR; this.armL.rotation.x = j.armL; this.armR.rotation.x = j.armR; this.armL.rotation.z = -j.armLz; this.armR.rotation.z = -j.armRz;
     this.rig.rotation.x = j.tilt + flip; this.rig.rotation.y = spin; this.rig.rotation.z = j.roll; this.rig.position.y = 1.0 + j.lift; this.rig.scale.set(1 / Math.sqrt(j.sy), j.sy, 1 / Math.sqrt(j.sy));
-    this.head.rotation.x = j.headX; this.head.rotation.z = -j.roll * 1.4;
+    j.headY = damp(j.headY || 0, headY, 6, dt); this.head.rotation.x = j.headX; this.head.rotation.y = j.headY; this.head.rotation.z = -j.roll * 1.4;
     // Orejas móviles y parpadeo
     const ew = Math.sin(t * 9) * (Math.sin(t * 0.9) > 0.75 ? 0.35 : 0.04) + (st === S.RUN ? Math.sin(this.phase * 2) * 0.12 : 0);
     this.ears[0].rotation.z = 0.25 + ew; this.ears[1].rotation.z = -0.25 - ew;

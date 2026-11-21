@@ -62,6 +62,26 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Festejos de Capi:** cada misión cierra con un festejo propio (cometa, chapuzón, lentes de sol, bandera a cuadros, lamparita LED o paraguas). La primera vez que la red llega al 100 % renovable caen papelitos con los colores de Energimundo, y la ceremonia final termina con una cuerda de tambores y todo el elenco bailando candombe en el escenario.
 - **Una ciudad con vida:** los vecinos siguen la hora del día (mate en los bancos al mediodía, corredores en el bulevar y ciclistas en la costanera, fútbol en el pasto, casi nadie en la calle de noche), abren el paraguas con la tormenta, festejan cuando vuelve la luz al barrio y saludan a Capi. La Ing. Valeria y Don Mateo se mueven por su lugar de trabajo, Lucía sale a manejar un ómnibus, los teros defienden su nido a los gritos y Pampa, el perro de Don Mateo, acompaña a Capi un rato.
 
+## Cómo se ve
+
+- **Aspecto de maqueta:** cuando la cámara se aleja, la parte de arriba y la de abajo de la imagen se desenfocan suavemente, como en una foto de una maqueta de verdad. El color cambia con la hora (rosado al amanecer, dorado al atardecer, azul de noche) y hay una viñeta suave en los bordes.
+- **Sombras de maqueta:** el suelo se oscurece suave al pie de las manzanas y bajo cada árbol, y las nubes proyectan su sombra sobre el campo según dónde esté el sol.
+- **Noche de verdad:** cielo azul profundo y luces que resplandecen. Cada ventana tiene vida propia: con las horas se van apagando, unas tienen luz cálida y otras fría, y en algunas titila la luz azulada de la tele. Los autos llevan el haz de los faros sobre el asfalto y las luces traseras rojas; el Teatro Larrañaga, la Catedral, el frente de la represa y el monumento a Artigas se iluminan, y la cúpula de Energimundo es una tira LED que cambia de color.
+- **La Cruz del Sur:** con sus coordenadas reales para la latitud de Salto, junto a los Punteros (Alfa y Beta del Centauro). Gira alrededor del polo sur celeste a lo largo de la noche: al anochecer sube recostada por el sudeste.
+- **Ciudad uruguaya:** tanques de agua en las azoteas (el negro de plástico y el de hormigón sobre patas), antenas, balcones con baranda de hierro, persianas a media altura, aires acondicionados, toldos de comercio a rayas y ropa tendida en las casas bajas.
+- **Viento visible:** las copas de los árboles y las palmeras se mecen con ráfagas, las olas crecen y las banderas flamean según el viento de la simulación (el mismo de la barra del panel de red).
+- **Agua con vida:** turquesa en lo bajo y azul en lo hondo, espuma que va y viene en las orillas, estelas en V detrás de los veleros y la lancha, y en el vertedero una neblina que se va río abajo con un arcoíris en las tardes de sol (solo si el sol queda a la espalda de quien mira, como en la realidad).
+- **Después de la tormenta:** las calles, veredas y techos quedan mojados y brillantes, con charcos que reflejan el cielo y se secan de a poco; si sale el sol, aparece el arcoíris.
+- **Capi protagonista:** un borde de luz lo despega del fondo (más marcado de noche), se aplasta un poquito al caer de un salto y, si se queda quieto, toma mate con el termo bajo el brazo, saluda, se estira o mira alrededor.
+- **Vecinos más variados:** abuelos con bastón que caminan despacio y vecinos que vuelven de los mandados con la bolsa.
+- **Transiciones con Capi:** los viajes se cortan con un círculo que se abre desde el centro con la cara de Capi.
+- **Modo foto con postal (tecla P):** un marco de postal con "Saludos desde Salto", un sello con Capi y la fecha del día. La tecla C lo saca o lo vuelve a poner.
+- **Calidad automática:** si la computadora no llega a unos 30 cuadros por segundo, el juego baja la resolución, las sombras y los efectos por pasos. En el Modo SuperCapi, sección Pantalla, el botón «Efectos de imagen» elige completos, livianos o apagados y queda guardado en esa PC (útil en un kiosco con poca placa de video). En la web también se puede agregar `?post=0`, `?post=1` o `?post=2` al final de la dirección.
+
+## Sala de turbinas en corte
+
+En el mirador de Energimundo, frente a la central uruguaya, hay una maqueta grande de una de las 14 unidades generadoras de Salto Grande, cortada al medio para ver por dentro. Al tocarla, un recorrido de ocho pasos explica, con la pieza que corresponde iluminada y numerada: la toma de agua con su reja, la tubería forzada (unos 25 metros de salto), la turbina Kaplan con sus palas orientables, el eje y el generador, el transformador y las líneas de 500 kV, y el tubo de aspiración que devuelve el agua al río. El agua y la electricidad circulan por la maqueta y todo gira tan rápido como la central de la simulación: si se cierran turbinas en la represa, la maqueta se frena. Datos de la Comisión Técnica Mixta de Salto Grande: 14 unidades Kaplan de 135 MW (1890 MW), salto nominal de 25,4 m.
+
 ## Controles
 
 | Acción | Teclado y mouse |
@@ -76,7 +96,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 | Ir en la camioneta eléctrica cuando el objetivo queda lejos | T |
 | Vestuario | V |
 | Álbum de chispas | B |
-| Modo foto | P |
+| Modo foto | P (en modo foto, C saca o pone el marco de postal) |
 | Silenciar el sonido | M |
 | Joystick | Palanca o cruceta para moverse y elegir; A usar, B saltar, X panel, Y vestuario, LB y RB cámara |
 

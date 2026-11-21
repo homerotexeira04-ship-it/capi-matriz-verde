@@ -1,8 +1,8 @@
 // WorldBuilder (núcleo): relieve, agua, cielo, ciclo día/noche, lotes de geometría e instancias, colisiones.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { clamp, lerp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
-import { B, LAND, RES, DAM_Z, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank } from './terrain.js';
+import { clamp, lerp, damp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
+import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank } from './terrain.js';
 
 export const C = {
   cream: 0xf2e4c4, terra: 0xc8674a, ochre: 0xe2b25c, rose: 0xe9bba6, white: 0xf5f1e8, celeste: 0x8fcdea, concrete: 0xbdb5a8, concreteD: 0x9c958a,
@@ -26,11 +26,12 @@ function paint(g, color, jitter) {
 
 // Lote de geometría estática: miles de piezas low-poly fusionadas en una sola malla con color por vértice.
 export class Batch {
-  constructor() { this.list = []; }
+  constructor(seeded = false) { this.list = []; this.seeded = seeded; }
   add(geo, color, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0, jitter = 0.03) {
     const g = geo.index ? geo.toNonIndexed() : geo.clone();
     _m.compose(_p.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
     g.applyMatrix4(_m);
+    if (this.seeded) { const n = g.attributes.position.count, v = Math.random(); g.setAttribute('aSeed', new THREE.BufferAttribute(new Float32Array(n).fill(v), 1)); }
     this.list.push(paint(g, color, jitter));
     return this;
   }
@@ -70,36 +71,50 @@ export function textTex(text, o = {}) {
 
 // Claves del ciclo horario: hora, cielo, horizonte/niebla, color del sol, intensidad solar, intensidad ambiente
 const SKY = [
-  [0, 0x0a1230, 0x101c40, 0x9db2ff, 1.0, 1.05],
-  [5.2, 0x0e1736, 0x15224a, 0x9db2ff, 1.0, 1.05],
+  [0, 0x070d26, 0x0c1638, 0x8fa6ff, 0.55, 0.6],
+  [5.2, 0x0b1430, 0x111d44, 0x8fa6ff, 0.55, 0.62],
   [6.4, 0xf2a7b5, 0xf7c1b0, 0xffa98a, 1.5, 1.1],
   [7.6, 0xa5d6f2, 0xcfe6f2, 0xffe6c4, 2.5, 1.45],
   [12, 0x62bbf0, 0xbfe3f5, 0xffffff, 3.1, 1.7],
   [16.8, 0x7cc4ee, 0xcfe3ee, 0xfff0cf, 2.8, 1.55],
   [18.5, 0xf4a25a, 0xf8c27a, 0xff9648, 1.9, 1.15],
-  [19.5, 0x4a3a78, 0x6a4a7a, 0xb07aa0, 0.9, 0.95],
-  [20.4, 0x0c1434, 0x101c40, 0x9db2ff, 1.0, 1.05],
-  [24, 0x0a1230, 0x101c40, 0x9db2ff, 1.0, 1.05]
+  [19.5, 0x4a3a78, 0x6a4a7a, 0xb07aa0, 0.85, 0.85],
+  [20.4, 0x0a1232, 0x0e1a3e, 0x8fa6ff, 0.6, 0.66],
+  [24, 0x070d26, 0x0c1638, 0x8fa6ff, 0.55, 0.6]
 ];
 
+// [ascensión recta (h), declinación (°), magnitud]: Acrux, Mimosa, Gacrux, Delta y Épsilon Crucis; Alfa y Beta Centauri
+const _s2 = new THREE.Vector3();
+const CRUX = [[12.443, -63.10, 0.8], [12.795, -59.69, 1.25], [12.519, -57.11, 1.6], [12.252, -58.75, 2.8], [12.356, -60.40, 3.6], [14.660, -60.83, -0.1], [14.064, -60.37, 0.6]];
+const LAT = -31.4 * Math.PI / 180;   // Salto
+function skyDir(ra, dec, lst, out) {   // del cielo a una dirección del mundo (norte = −z, este = +x)
+  const H = (lst - ra) * 15 * Math.PI / 180, d = dec * Math.PI / 180;
+  const alt = Math.asin(Math.sin(d) * Math.sin(LAT) + Math.cos(d) * Math.cos(LAT) * Math.cos(H));
+  const az = Math.atan2(-Math.cos(d) * Math.sin(H), Math.sin(d) * Math.cos(LAT) - Math.cos(d) * Math.sin(LAT) * Math.cos(H));
+  return out.set(Math.cos(alt) * Math.sin(az), Math.sin(alt), -Math.cos(alt) * Math.cos(az));
+}
+
 const WATER_VS = `
-uniform float uTime; varying vec3 vWorld;
+uniform float uTime; uniform float uWave; attribute float aDepth; varying float vDepth; varying vec3 vWorld;
 #include <fog_pars_vertex>
 void main(){
   vec4 w=modelMatrix*vec4(position,1.0);
-  w.y+=sin(w.x*0.35+uTime*1.3)*0.10+sin(w.z*0.42-uTime*1.1)*0.09+sin((w.x+w.z)*0.18+uTime*0.7)*0.12;
-  vWorld=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;
+  float tw=uTime*(0.75+0.35*uWave); w.y+=(sin(w.x*0.35+tw*1.3)*0.10+sin(w.z*0.42-tw*1.1)*0.09+sin((w.x+w.z)*0.18+tw*0.7)*0.12)*uWave;
+  vDepth=aDepth; vWorld=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;
   #include <fog_vertex>
 }`;
 const WATER_FS = `
 uniform vec3 uDeep; uniform vec3 uShallow; uniform vec3 uSunDir; uniform vec3 uSunColor; uniform vec3 uSky; uniform float uOpacity; uniform float uLight; uniform float uTime;
-varying vec3 vWorld;
+varying vec3 vWorld; varying float vDepth;
 #include <fog_pars_fragment>
+float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); float a=fract(sin(dot(i,vec2(12.9898,78.233)))*43758.5453), b=fract(sin(dot(i+vec2(1.0,0.0),vec2(12.9898,78.233)))*43758.5453), c=fract(sin(dot(i+vec2(0.0,1.0),vec2(12.9898,78.233)))*43758.5453), d=fract(sin(dot(i+vec2(1.0,1.0),vec2(12.9898,78.233)))*43758.5453); return mix(mix(a,b,f.x),mix(c,d,f.x),f.y); }
 void main(){
   vec3 n=normalize(cross(dFdx(vWorld),dFdy(vWorld))); if(n.y<0.0) n=-n;
   vec3 v=normalize(cameraPosition-vWorld);
   float fres=pow(1.0-max(dot(n,v),0.0),2.0);
   vec3 col=mix(uDeep,uShallow,0.25+0.75*fres);
+  // lo bajo de la orilla es más claro (turquesa) y lo hondo, más azul
+  float shal=1.0-smoothstep(0.15,2.6,vDepth); col=mix(col,uShallow*1.05,shal*0.5);
   col=mix(col,uSky,fres*0.45);
   float diff=max(dot(n,uSunDir),0.0);
   col*=uLight*(0.62+0.5*diff);
@@ -111,14 +126,19 @@ void main(){
   float px=fwidth(q.x)+fwidth(q.y), near=1.0-smoothstep(0.25,0.7,px);
   float tw=smoothstep(0.2,0.04,length(f-o))*smoothstep(0.0,0.15,ph)*smoothstep(0.45,0.2,ph)*near;
   col+=uSunColor*(smoothstep(0.2,0.95,spec)*0.3+smoothstep(0.35,0.75,spec)*tw*0.75);
-  // Fresnel: mirada de refilón, el agua refleja y casi no deja ver el fondo; desde arriba sí se ve la orilla
-  gl_FragColor=vec4(col,mix(uOpacity,1.0,clamp(fres*1.7,0.0,1.0)));
+  // espuma que va y viene en la orilla, cortada por un ruido suave que se desplaza
+  float edge=0.75+0.3*sin(uTime*1.2+vWorld.x*0.3+vWorld.z*0.23);
+  float fm=(1.0-smoothstep(0.05,edge,vDepth))*smoothstep(-0.6,-0.05,vDepth)*(0.3+0.7*smoothstep(0.32,0.7,vn(vWorld.xz*1.1+vec2(uTime*0.25,uTime*0.17))));
+  col=mix(col,vec3(0.94,0.98,1.0)*max(uLight,0.35),fm*0.8);
+  // Fresnel: mirada de refilón, el agua refleja y casi no deja ver el fondo; desde arriba sí se ve la orilla (y en lo bajo, la arena)
+  float al=mix(uOpacity,1.0,clamp(fres*1.7,0.0,1.0))*mix(0.62,1.0,smoothstep(0.05,0.9,vDepth));
+  gl_FragColor=vec4(col,max(al,fm*0.85));
   #include <colorspace_fragment>
   #include <fog_fragment>
 }`;
 
 const TREE = {
-  euca: { th: 6.4, tr: 0.2, tc: 0xddd6c8, crowns: [[0.72, 1.25, 1.9, 0x4d8f76], [1.0, 0.95, 1.5, 0x63a585]] },
+  euca: { th: 6.4, tr: 0.2, tc: 0xddd6c8, crowns: [[0.5, 1.15, 1.7, 0x467f6a], [0.74, 1.3, 1.9, 0x4d8f76], [1.0, 0.95, 1.5, 0x63a585]] },
   native: { th: 2.3, tr: 0.28, tc: 0x6b4a2f, crowns: [[1.05, 1.9, 1.5, 0x4f9a3f]] },
   ceibo: { th: 2.1, tr: 0.26, tc: 0x5f4630, crowns: [[1.0, 1.7, 1.25, 0x4c9442], [1.45, 0.9, 0.7, 0xe2383f]] },
   jaca: { th: 2.6, tr: 0.26, tc: 0x5a4636, crowns: [[1.05, 1.9, 1.4, 0x8f7fd6]] },
@@ -134,10 +154,13 @@ const TREE = {
 export class World {
   constructor(scene, renderer) {
     this.scene = scene; this.renderer = renderer; this.rand = rng(20260);
-    this.batch = new Batch(); this.cityBatch = new Batch(); this.winBatch = [new Batch(), new Batch(), new Batch()]; this.glassBatch = new Batch(); this.screenBatch = new Batch();
+    this.batch = new Batch(); this.cityBatch = new Batch(); this.winBatch = [new Batch(true), new Batch(true), new Batch(true)]; this.glassBatch = new Batch(); this.screenBatch = new Batch();
     this.platforms = []; this.boxes = []; this.circles = []; this.occ = []; this.inter = {}; this.interList = [];
     this.trees = []; this.lamps = []; this.houses = []; this.roads = []; this.updaters = []; this.dyn = {};
     this.lines = {}; this.time = 0; this.night = 0; this.power = [0, 0, 0]; this.flicker = 0;
+    this.winU = { uLit: { value: 0.92 }, uTime: { value: 0 } };
+    this.windU = { uWind: { value: 0.5 }, uWindDir: { value: new THREE.Vector2(1, 0) }, uTime: { value: 0 } };
+    this.cloudU = { uCS: { value: Array.from({ length: 9 }, () => new THREE.Vector4(0, 0, 1, 1)) }, uCSk: { value: 0 }, uWet: { value: 0 } }; this.wet = 0;
     this.sunDir = new THREE.Vector3(0.5, 0.8, -0.3);
     this.makeMaterials();
     this.buildTerrain();
@@ -153,15 +176,20 @@ export class World {
     // Planos de corte: abren un corredor en los edificios que tapan a Capi (vista en corte tipo maqueta)
     this.clip = [new THREE.Plane(new THREE.Vector3(0, -1, 0), 80), new THREE.Plane(new THREE.Vector3(1, 0, 0), 0), new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0), new THREE.Plane(new THREE.Vector3(0, 0, -1), 0)];
     this.mats = {
-      city: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, clippingPlanes: this.clip, clipIntersection: true }),
-      solid: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0 }),
-      terrain: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0, map: grain }),
+      city: cloudShade(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, clippingPlanes: this.clip, clipIntersection: true }), this.cloudU, 'city'),
+      solid: cloudShade(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.92, metalness: 0 }), this.cloudU, 'solid'),
+      terrain: cloudShade(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0, map: grain }), this.cloudU, 'terrain'),
       glass: new THREE.MeshStandardMaterial({ color: 0xaee3ff, transparent: true, opacity: 0.32, roughness: 0.15, metalness: 0.2, depthWrite: false }),
-      win: [0, 1, 2].map(() => new THREE.MeshStandardMaterial({ color: 0x34495e, emissive: 0xffc56e, emissiveIntensity: 0, roughness: 0.4, clippingPlanes: this.clip, clipIntersection: true })),
+      win: [0, 1, 2].map(() => winLife(new THREE.MeshStandardMaterial({ color: 0x34495e, emissive: 0xffc56e, emissiveIntensity: 0, roughness: 0.4, clippingPlanes: this.clip, clipIntersection: true }), this.winU)),
       screen: new THREE.MeshStandardMaterial({ color: 0x103040, emissive: 0x4fd6ff, emissiveIntensity: 1.1, roughness: 0.4 }),
       bulb: new THREE.MeshStandardMaterial({ color: 0xfff6dd, emissive: 0xffe6a8, emissiveIntensity: 0 }),
       beacon: new THREE.MeshStandardMaterial({ color: 0x802020, emissive: 0xff2a2a, emissiveIntensity: 0 }),
       charger: new THREE.MeshStandardMaterial({ color: 0x1b3a2a, emissive: 0x4dffa0, emissiveIntensity: 0 }),
+      wash: new THREE.MeshBasicMaterial({   // luz de fachada: se suma sobre la pared, más fuerte abajo
+        map: canvasTex(64, 128, (g) => { const gr = g.createLinearGradient(0, 128, 0, 0); gr.addColorStop(0, 'rgba(255,214,150,0.95)'); gr.addColorStop(0.55, 'rgba(255,214,150,0.35)'); gr.addColorStop(1, 'rgba(255,214,150,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
+          g.globalCompositeOperation = 'destination-in'; const h = g.createLinearGradient(0, 0, 64, 0); h.addColorStop(0, 'rgba(0,0,0,0)'); h.addColorStop(0.18, 'rgba(0,0,0,1)'); h.addColorStop(0.82, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = h; g.fillRect(0, 0, 64, 128); }),
+        transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending
+      }),
       pool: new THREE.MeshBasicMaterial({
         map: canvasTex(64, 64, (g) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,225,160,0.85)'); gr.addColorStop(1, 'rgba(255,225,160,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }),
         transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending
@@ -170,6 +198,54 @@ export class World {
   }
 
   // ---------- Relieve ----------
+  // luz de fachada de noche: un plano de luz apoyado sobre la pared (ry = hacia dónde mira la fachada)
+  wash(x, y, z, w, h, ry = 0) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), this.mats.wash); m.position.set(x, y + h / 2, z); m.rotation.y = ry; m.renderOrder = 6; this.scene.add(m); return m; }
+  // Sombras de contacto: el suelo se oscurece suave al pie de cada edificio y bajo cada árbol (como en una maqueta bien iluminada)
+  groundShadows() {
+    const P = [], C = [], push = (x, z, c, gy = null) => { P.push(x, (gy == null ? this.groundAt(x, z) : gy) + 0.06, z); C.push(c, c, c); };
+    const quad = (a, b, c, d) => { for (const v of [a, b, c, a, c, d]) push(v[0], v[1], v[2], v[3]); };
+    const seen = new Set(), list = this.occ.concat(this.boxes.filter(b => b.top < 1e6).map(b => ({ x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, y1: b.top })));
+    for (const o of list) {
+      const w = o.x1 - o.x0, d = o.z1 - o.z0; if (w < 1.2 || d < 1.2 || w > 34 || d > 34) continue;
+      const key = [o.x0, o.x1, o.z0, o.z1].map(v => Math.round(v * 2)).join(','); if (seen.has(key)) continue; seen.add(key);
+      // el suelo se mide apenas afuera de las paredes (adentro, el "suelo" es el techo, porque Capi puede subirse)
+      const out = (x, z, dx, dz) => [x, z, this.groundAt(x + dx * 0.15, z + dz * 0.15)];
+      const c0 = out(o.x0, o.z0, -1, -1), c1 = out(o.x1, o.z0, 1, -1), c2 = out(o.x1, o.z1, 1, 1), c3 = out(o.x0, o.z1, -1, 1);
+      if (o.y1 - Math.min(c0[2], c1[2], c2[2], c3[2]) < 1.8) continue;
+      const m = 1.5, k = 0.55, V = (x, z, gy, c) => [x, z, c, gy], ring = [[c0, -1, -1], [c1, 1, -1], [c2, 1, 1], [c3, -1, 1]].map(([c, sx, sz]) => [V(c[0], c[1], c[2], k), V(c[0] + sx * m, c[1] + sz * m, null, 1)]);
+      for (let q = 0; q < 4; q++) { const [ia, ea] = ring[q], [ib, eb] = ring[(q + 1) % 4]; quad(ea, eb, ib, ia); }
+    }
+    for (const t of this.trees) {
+      const T = TREE[t.type]; if (!T) continue; const r = (T.crowns ? Math.max(...T.crowns.map(c => c[1])) : (T.frond || 2) * 0.55) * (t.s || 1) * 1.2, n = 8;
+      for (let i = 0; i < n; i++) { const a0 = i / n * 6.283, a1 = (i + 1) / n * 6.283; push(t.x, t.z, 0.7); push(t.x + Math.cos(a1) * r, t.z + Math.sin(a1) * r, 1); push(t.x + Math.cos(a0) * r, t.z + Math.sin(a0) * r, 1); }
+    }
+    if (!P.length) return;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
+      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
+    m.renderOrder = 4; m.frustumCulled = false; this.scene.add(m); this.contact = m;
+  }
+  // Charcos en las calles después de la lluvia: reflejan el color del cielo y se van secando
+  buildPuddles() {
+    const R = rng(77), xs = [-68, -52, -36, -20, -4, 12], zs = [20, 34, 48, 62, 85], list = [];
+    for (let k = 0; k < 70; k++) {
+      let x, z; if (R() < 0.5) { const i = Math.floor(R() * 5); x = (xs[i] + xs[i + 1]) / 2 + (R() - 0.5) * 2.2; z = 14 + R() * 78; } else { const j = Math.floor(R() * 4); z = (zs[j] + zs[j + 1]) / 2 + (R() - 0.5) * 2.2; x = -74 + R() * 92; }
+      if (Math.abs(this.groundAt(x, z) - 2.15) > 0.2) continue; list.push({ x, z, r: 0.5 + R() * 1.1, ry: R() * 6.28, e: 0.55 + R() * 0.45 });
+    }
+    const g = new THREE.CircleGeometry(1, 14).rotateX(-Math.PI / 2), m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }), list.length);
+    list.forEach((o, i) => { _m.compose(_p.set(o.x, 2.13, o.z), _q.setFromEuler(_e.set(0, o.ry, 0)), _s.set(o.r, 1, o.r * o.e)); m.setMatrixAt(i, _m); });
+    m.renderOrder = 4; m.visible = false; m.frustumCulled = false; this.scene.add(m); this.puddles = m;
+  }
+  // Luces de noche de los monumentos: Teatro Larrañaga, Catedral, frente de la represa y monumento a Artigas
+  nightLights() {
+    const Y = 2.2, [tx, tz] = POS.teatro, [cx, cz] = POS.catedral, [ax, az] = POS.artigas, D = POS.dam;
+    this.wash(tx, Y + 0.9, tz + 3.2 + 0.07, 11.4, 8.6, 0);                 // Teatro: mira al sur, a la Plaza Artigas
+    this.wash(cx, Y, cz - 4.6 - 0.07, 7.4, 10.2, Math.PI);                  // Catedral: mira al norte, a la Plaza Matriz
+    for (let x = D.x0 + 9; x < D.x1 - 4; x += 8.5) this.wash(x, 0.1, D.z1 + 0.08, 8, D.top + 0.4, 0);   // represa, aguas abajo
+    const ring = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), this.mats.pool); ring.rotation.x = -Math.PI / 2; ring.position.set(ax, Y + 0.32, az + 0.6); ring.renderOrder = 7; this.scene.add(ring);
+  }
+  // ventanas vivas: qué parte de las casas tiene la luz prendida a cada hora
+  litAt(h) { return h < 5 ? lerp(0.5, 0.18, h / 5) : h < 7 ? lerp(0.18, 0.55, (h - 5) / 2) : h < 21.5 ? 0.92 : lerp(0.92, 0.5, (h - 21.5) / 2.5); }
   buildTerrain() {
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.5);   // celdas de 1,5 (el diorama es cuadrado)
     this.N = N; this.cell = W / N;
@@ -276,19 +352,22 @@ export class World {
   // ---------- Agua ----------
   buildWater() {
     const U = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
-      uTime: { value: 0 }, uDeep: { value: new THREE.Color(0x15589a) }, uShallow: { value: new THREE.Color(0x6fd0f2) },
+      uTime: { value: 0 }, uWave: { value: 1 }, uDeep: { value: new THREE.Color(0x15589a) }, uShallow: { value: new THREE.Color(0x6fd0f2) },
       uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color(0xffffff) }, uSky: { value: new THREE.Color(0xbfe3f5) },
       uOpacity: { value: 0.86 }, uLight: { value: 1 }
     }]);
     this.waterMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, fog: true, depthWrite: false });
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ;
     // río aguas abajo de la represa (cota 0); el lago de arriba lleva su propio espejo
-    const rz0 = DAM_Z - 4, g = new THREE.PlaneGeometry(W, B.maxZ - rz0, 120, 100); g.rotateX(-Math.PI / 2);
+    const depth = (g, ox, oz, level) => { const p = g.attributes.position, a = new Float32Array(p.count); for (let i = 0; i < p.count; i++) a[i] = clamp(level - terrainH(p.getX(i) + ox, p.getZ(i) + oz), -2, 12); g.setAttribute('aDepth', new THREE.BufferAttribute(a, 1)); };
+    const rz0 = DAM_Z - 4, g = new THREE.PlaneGeometry(W, B.maxZ - rz0, 200, 175); g.rotateX(-Math.PI / 2);
     const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + B.maxX) / 2, 0, (rz0 + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
+    depth(g, river.position.x, river.position.z, 0);
     // Lago de Salto Grande: espejo elevado aguas arriba de la represa
     const lx0 = B.minX, lx1 = eastBank(DAM_Z - 3) + 8, lz0 = B.minZ, lz1 = DAM_Z - 3;
-    const rg = new THREE.PlaneGeometry(lx1 - lx0, lz1 - lz0, 60, 20); rg.rotateX(-Math.PI / 2);
+    const rg = new THREE.PlaneGeometry(lx1 - lx0, lz1 - lz0, 110, 36); rg.rotateX(-Math.PI / 2);
     const res = new THREE.Mesh(rg, this.waterMat); res.position.set((lx0 + lx1) / 2, RES, (lz0 + lz1) / 2); res.renderOrder = 5; this.scene.add(res);
+    depth(rg, res.position.x, res.position.z, RES);
   }
 
   // ---------- Lluvia: trazos que caen alrededor de la cámara ----------
@@ -326,6 +405,9 @@ export class World {
     for (let i = 0; i < 500; i++) { const a = r() * 6.283, e = Math.asin(0.05 + r() * 0.95); sp.push(Math.cos(a) * Math.cos(e) * 900, Math.sin(e) * 900 - 60, Math.sin(a) * Math.cos(e) * 900); }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
     this.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false })); s.add(this.stars);
+    // La Cruz del Sur y los Punteros (Alfa y Beta del Centauro), con sus coordenadas reales: giran alrededor del polo sur celeste
+    const st = canvasTex(32, 32, (g) => { const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(225,235,255,0.75)'); gr.addColorStop(1, 'rgba(200,215,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); });
+    this.crux = CRUX.map(([ra, dec, mag]) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: st, transparent: true, opacity: 0, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })); sp.scale.setScalar(26 * Math.pow(10, -0.13 * mag)); sp.userData = { ra, dec }; s.add(sp); return sp; });
     // Nubes low-poly
     this.clouds = [];
     const cm = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 1, transparent: true, opacity: 0.94 }); this.cloudMat = cm;
@@ -333,6 +415,7 @@ export class World {
       const b = new Batch(), n = 3 + Math.floor(r() * 3);
       for (let k = 0; k < n; k++) b.add(new THREE.IcosahedronGeometry(3 + r() * 2.5, 1), 0xffffff, (k - n / 2) * 4.2, r() * 1.2, (r() - 0.5) * 3, 1.3, 0.62, 1, 0, 0, 0, 0);
       const m = b.mesh(cm.clone()); m.castShadow = true; m.position.set(lerp(B.minX, B.maxX, r()), 46 + r() * 10, lerp(B.minZ, B.maxZ, r()));
+      m.geometry.computeBoundingBox(); const bb = m.geometry.boundingBox; m.userData.r = [(bb.max.x - bb.min.x) * 0.5 + 2, (bb.max.z - bb.min.z) * 0.5 + 2];
       s.add(m); this.clouds.push(m);
     }
   }
@@ -346,7 +429,7 @@ export class World {
     const smg = this.smogOn ? (this.smog || 0) : 0; s.fog.color.lerp(_c2.set(0x9a8f7c), smg * 0.6); s.background.lerp(_c2.set(0x9a9488), smg * 0.5); s.fog.near = lerp(180, 85, smg); s.fog.far = lerp(720, 500, smg);
     const mst = this.mist || 0; s.fog.color.lerp(_c2.set(0xdfe7ec), mst * 0.45); s.background.lerp(_c2.set(0xcfdbe4), mst * 0.25); s.fog.near = Math.min(s.fog.near, lerp(180, 100, mst)); s.fog.far = Math.min(s.fog.far, lerp(720, 540, mst));
     const sInt = lerp(a[4], b[4], k) * (1 - 0.82 * stm) * (1 - 0.22 * smg), hInt = lerp(a[5], b[5], k) * (1 - 0.42 * stm) + (this.flash || 0) * 4;
-    this.hemi.intensity = hInt; this.hemi.color.copy(s.fog.color).lerp(_c2.set(0xffffff), 0.35);
+    this.hemi.intensity = hInt; this.hemi.color.copy(s.fog.color).lerp(_c2.set(0xffffff), 0.35 - 0.17 * this.night);
     this.hemi.groundColor.set(0x6a8a55).lerp(_c2.set(0x1a2440), this.night);
     const ang = Math.PI * (hour - 6) / 12, el = Math.sin(ang);
     const sd = _p.set(Math.cos(ang), el, -0.45).normalize();
@@ -363,6 +446,8 @@ export class World {
     this.sun.target.position.copy(focus);
     this.sun.position.copy(focus).addScaledVector(this.sunDir, 200);
     this.stars.material.opacity = this.night * 0.9; this.stars.position.copy(focus);
+    const lst = (hour + 8) % 24;   // cielo de fines del verano: la Cruz sube por el sudeste al anochecer
+    for (const sp of this.crux) { const d = skyDir(sp.userData.ra, sp.userData.dec, lst, _s2); sp.position.copy(focus).addScaledVector(d, 850); sp.material.opacity = this.night * smooth(0.02, 0.12, d.y) * (1 - 0.8 * stm); sp.visible = sp.material.opacity > 0.01; }
     const u = this.waterMat.uniforms;
     // de noche el brillo del agua sigue a la luna visible
     u.uSunDir.value.copy(day || md.y < 0.08 ? this.sunDir : md); u.uSunColor.value.copy(this.sun.color).multiplyScalar(day ? 1 : 0.85);
@@ -439,11 +524,12 @@ export class World {
       if (d.frond) frond.push({ x: t.x, y: t.y + d.th * sc2, z: t.z, sx: d.frond * sc2, sy: d.frond * sc2, sz: d.frond * sc2, c: d.fc, ry: this.rand() * 6 });
     }
     const fl = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 });
+    const flC = windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.55, false), flF = windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.38, true);
     this.instanced(new THREE.CylinderGeometry(0.75, 1, 1, 5), fl, trunk);
-    this.instanced(new THREE.IcosahedronGeometry(1, 1), fl, crown, 0.08);
+    this.instanced(new THREE.IcosahedronGeometry(1, 1), flC, crown, 0.08);
     const fg = [];
     for (let k = 0; k < 8; k++) { const g = new THREE.BoxGeometry(0.26, 0.05, 1); g.translate(0, 0, 0.5); g.rotateX(0.42 + (k % 2) * 0.3); g.rotateY(k * Math.PI / 4); fg.push(g); }
-    this.instanced(mergeGeometries(fg), fl, frond, 0.05);
+    this.instanced(mergeGeometries(fg), flF, frond, 0.05);
 
     // Farolas LED
     const poles = [], heads = [], bulbs = [], pools = [];
@@ -495,6 +581,7 @@ export class World {
     this.waterMat.uniforms.uTime.value = this.time;
     // Temporal: con nubosidad alta el cielo se cierra, llueve y caen rayos
     this.storm = smooth(0.45, 0.9, st.grid.cloud); this.flash = Math.max(0, (this.flash || 0) - dt * 5);
+    this.wet = Math.max(this.storm * 1.2, this.wet - dt / 75); this.cloudU.uWet.value = clamp(this.wet, 0, 1); if (this.puddles) { this.puddles.visible = this.wet > 0.03; const pm = this.puddles.material; pm.opacity = clamp(this.wet, 0, 1) * 0.72; pm.color.copy(this.scene.background).lerp(_c2.set(0x1d2630), 0.35 + 0.4 * this.night); }
     this.updateRain(dt, st);
     if (this.storm > 0.25) {
       this.boltT = (this.boltT == null ? 4 : this.boltT) - dt;
@@ -511,9 +598,13 @@ export class World {
       // las ventanas se encienden por barrios a medida que cae la noche
       M.win[i].emissiveIntensity = this.power[i] * (0.18 + 1.5 * clamp(n * 1.8 - i * 0.4, 0, 1)) * flick;
     }
-    M.bulb.emissiveIntensity = n * 2.4 * flick; M.pool.opacity = n * 0.5 * flick;
+    this.winU.uLit.value = this.litAt(st.hour); this.winU.uTime.value = this.time;
+    { const W = this.windU, G = st.grid; W.uTime.value = this.time; W.uWind.value = damp(W.uWind.value, clamp(G.wind, 0, 1.2) * (1 + 0.6 * this.storm), 1.5, dt); W.uWindDir.value.set(Math.cos(G.windDir), Math.sin(G.windDir)); this.waterMat.uniforms.uWave.value = 0.55 + W.uWind.value * 1.1; }
+    M.bulb.emissiveIntensity = n * 2.4 * flick; M.pool.opacity = n * 0.34 * flick; M.wash.opacity = smooth(0.25, 0.8, n) * 0.6;
     M.beacon.emissiveIntensity = n > 0.2 ? (Math.sin(this.time * 3.2) > 0 ? 3 : 0.1) : 0.2;
     M.screen.emissiveIntensity = 0.9 + 0.3 * Math.sin(this.time * 5);
+    { const sd = this.sunDir, el = this.sunDisc.visible ? sd.y : 0, k = 0.3 * smooth(0.12, 0.4, el) * (1 - 0.85 * this.storm), U = this.cloudU;
+      U.uCSk.value = k; if (k > 0.001) this.clouds.forEach((c, i) => { const h = (c.position.y - 2) / Math.max(0.2, sd.y); U.uCS.value[i].set(c.position.x - sd.x * h, c.position.z - sd.z * h, c.userData.r[0], c.userData.r[1]); }); }
     for (const c of this.clouds) {
       // las nubes se aclaran si se interponen entre la cámara y Capi
       const ax = st.focus.x - st.cam.x, ay = st.focus.y - st.cam.y, az = st.focus.z - st.cam.z, px = c.position.x - st.cam.x, py = c.position.y - st.cam.y, pz = c.position.z - st.cam.z;
@@ -562,6 +653,55 @@ export function offsetWorld(w, dx, dz) {
 
 // Color del suelo por zona, altura y pendiente.
 const cA = new THREE.Color(), cB = new THREE.Color();
+// Viento visible: las copas y las hojas de palmera se mecen; arriba más que abajo, cada árbol a su ritmo y con ráfagas
+function windSway(m, U, amp, radial) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uWind = U.uWind; sh.uniforms.uWindDir = U.uWindDir; sh.uniforms.uTime = U.uTime;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWind; uniform vec2 uWindDir; uniform float uTime;').replace('#include <project_vertex>', `vec4 mvPosition = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        mvPosition = instanceMatrix * mvPosition;
+        vec3 ip = instanceMatrix[3].xyz; float ph = dot(ip.xz, vec2(0.21, 0.17));
+        float hg = ${radial ? 'clamp(length(transformed.xz), 0.0, 1.0)' : 'clamp(transformed.y * 0.5 + 0.5, 0.0, 1.0)'};
+        float gust = 0.55 + 0.45 * sin(uTime * 0.37 + ip.x * 0.013 + ip.z * 0.007);
+        float sw = (sin(uTime * (1.1 + uWind * 1.7) + ph) * 0.65 + sin(uTime * 2.9 + ph * 1.7) * 0.22) * uWind * gust;
+        mvPosition.xz += uWindDir * (sw + uWind * 0.3 * gust) * hg * ${amp.toFixed(2)};
+        mvPosition.y -= abs(sw) * 0.07 * hg;
+      #endif
+      mvPosition = modelViewMatrix * mvPosition; gl_Position = projectionMatrix * mvPosition;`);
+  };
+  m.customProgramCacheKey = () => 'windSway-' + amp + radial; return m;
+}
+
+// Sombras de nubes: cada nube oscurece un óvalo suave del suelo, proyectado según la posición del sol
+function cloudShade(m, U, key) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uCS = U.uCS; sh.uniforms.uCSk = U.uCSk; sh.uniforms.uWet = U.uWet; const wetOn = key !== 'terrain';
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vCsW; varying float vUpN;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCsW = (modelMatrix * vec4(transformed, 1.0)).xz; vUpN = normalize(mat3(modelMatrix) * objectNormal).y;');
+    let fs = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uCS[9]; uniform float uCSk; uniform float uWet; varying vec2 vCsW; varying float vUpN;').replace('#include <color_fragment>', `#include <color_fragment>
+      if (uCSk > 0.001) { float cs = 0.0; for (int i = 0; i < 9; i++) { vec2 d = (vCsW - uCS[i].xy) / uCS[i].zw; cs = max(cs, 1.0 - smoothstep(0.5, 1.0, length(d))); } diffuseColor.rgb *= 1.0 - uCSk * cs; }
+      ${wetOn ? 'float wetK = uWet * smoothstep(0.82, 0.97, vUpN); diffuseColor.rgb *= 1.0 - 0.32 * wetK;' : ''}`);
+    if (wetOn) fs = fs.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.18, wetK);');   // piso mojado: brilla
+    sh.fragmentShader = fs;
+  };
+  m.customProgramCacheKey = () => 'cloudShade-' + key; return m;
+}
+
+// Cada ventana trae una semilla: con ella se decide si está prendida a esa hora, si la luz es cálida o fría (LED)
+// y si adentro hay una tele encendida (luz azulada que titila).
+function winLife(m, U) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uLit = U.uLit; sh.uniforms.uTime = U.uTime;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aSeed; varying float vSeed;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvSeed = aSeed;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uLit; uniform float uTime; varying float vSeed;').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      float sdw = vSeed, on = step(sdw, uLit), tv = step(0.94, fract(sdw * 13.7));
+      vec3 tint = mix(vec3(1.0), vec3(0.82, 1.0, 1.3), step(0.8, fract(sdw * 7.31)));
+      float fl = 0.6 + 0.4 * sin(uTime * (6.0 + sdw * 9.0) + sdw * 40.0) * sin(uTime * 2.3 + sdw * 11.0);
+      tint = mix(tint, vec3(0.5, 0.72, 1.55) * fl, tv * on);
+      totalEmissiveRadiance *= tint * mix(0.06, 1.0, on) * (0.7 + 0.55 * fract(sdw * 3.7));`);
+  };
+  m.customProgramCacheKey = () => 'winLife'; return m;
+}
+
 function groundColor(c, x, z, h, ny) {
   const wl = waterAt(x, z), ar = westD(x, z), d = Math.max(coastD(x, z), ar);   // distancia a la orilla más cercana (positiva en tierra)
   // bajo el agua: las playas suaves pasan de arena a hondo; las barrancas empinadas se oscurecen enseguida (si no, se transparentan como una pared clara)

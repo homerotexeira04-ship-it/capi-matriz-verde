@@ -162,6 +162,8 @@ export class Vida {
       b.a += b.sp * dt / Math.max(b.rx, b.rz); const x = b.cx + Math.cos(b.a) * b.rx, z = b.cz + Math.sin(b.a) * b.rz, s = Math.sign(b.sp);
       b.g.position.set(x, b.y - 0.12 + Math.sin(t * 1.3 + b.i * 2) * 0.09, z); b.g.rotation.set(Math.sin(t * 1.1 + b.i) * 0.04, Math.atan2(-Math.sin(b.a) * b.rx * s, Math.cos(b.a) * b.rz * s), 0.09 + Math.sin(t * 0.8 + b.i * 1.7) * 0.05);
       if (Math.random() < 5 * dt) st.fx.soft.emit(x + (Math.random() - 0.5) * 0.8, b.y + 0.08, z + (Math.random() - 0.5) * 0.8, 0, 0.05, 0, 1.3, 0.35, 1.0, 0xffffff, 0.5, 0, 1);
+      { const vx = x - (b.px ?? x), vz = z - (b.pz ?? z), v = Math.hypot(vx, vz); b.px = x; b.pz = z;   // estela en V detrás de la popa
+        if (v > 1e-4 && Math.random() < 18 * dt) { const fx = vx / v, fz = vz / v, side = Math.random() < 0.5 ? -1 : 1; st.fx.soft.emit(x - fx * 1.7, b.y + 0.06, z - fz * 1.7, -fz * side * 0.7 - fx * 0.2, 0.02, fx * side * 0.7 - fz * 0.2, 2.2, 0.3, 1.1, 0xffffff, 0.42, 0, 0.6); } }
       if (night > 0.4) st.fx.glow.sprite(x, b.y + 5.7, z, 1.3, 0xffd98a, 0.8 * night);
     }
     // Noche: luciérnagas y estrellas reflejadas

@@ -28,6 +28,8 @@ import { Escuela } from './escuela.js';
 import { Internacional, buildIntlSalto, CLEAR5 } from './intl.js';
 import { Mapa } from './mapa.js';
 import { Muestras } from './muestras.js';
+import { Post } from './post.js';
+import { buildCorte, Corte } from './corte.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -56,6 +58,7 @@ class Game {
     const canvas = $('gl');
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75)); r.shadowMap.enabled = true; r.localClippingEnabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.post = new Post(r);   // resplandor, maqueta y color por hora
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2200);
     this.grid = new EnergyGrid(); this.audio = new AudioSynth(); this.fx = new FX(this.scene);
@@ -77,9 +80,9 @@ class Game {
     await stage('Trazando calles, costanera y puentes…'); buildRoads(w); buildCity(w);
     await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
     await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w); buildIntlSalto(w);
-    await stage('Armando Energimundo junto a la represa…'); buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1]));
+    await stage('Armando Energimundo junto a la represa…'); buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1])); buildCorte(w);
     await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w);
-    await stage('Uniendo las piezas de la maqueta…'); w.finalize();
+    await stage('Uniendo las piezas de la maqueta…'); w.finalize(); w.nightLights(); w.groundShadows(); w.buildPuddles();
     await stage('Calculando caminos para Capi…');
     this.capi = new Capi(this.scene, w, this.fx, this.audio);
     this.actors = new Actors(w, this.scene);
@@ -89,9 +92,9 @@ class Game {
     const ring = this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
-    this.ui = new UI(this); this.mg = new Minigames(this.audio); this.missions = new Missions(this);
+    this.ui = new UI(this); { const ff = $('fadeFace'); if (ff) drawFace(ff.getContext('2d'), 'capi', 0, false, null); } this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.muestras = new Muestras(this.audio); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.muestras = new Muestras(this.audio); this.corte = new Corte(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest); Settings.onFx = v => { this.post.level = this.post.gl2 ? v : 0; }; if (Settings.fx != null && !/[?&]post=/.test(location.search) && window.CAPI_POST == null) this.post.level = this.post.gl2 ? Settings.fx : 0;   // ajuste del personal (Modo SuperCapi)
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -198,7 +201,13 @@ class Game {
     this.grid.hour = A.hour0; this.cam.low = 0; this.cam.distT = this.cam.dist = 150; this.cam.target.set(-14, 3, 14); this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.vida.rainbowT = 0;
   }
   // Modo foto: sin carteles y con la cámara libre
-  togglePhoto() { this.photo = !this.photo; this.keys = {}; if (this.photo) { this.ui.hide(); this.cam.lowP = 0; this.cam.dist0 = this.cam.distT; } else { this.ui.show(); this.cam.distT = this.cam.dist0 || 56; } document.body.classList.toggle('photo', this.photo); this.audio.click(); }
+  togglePhoto() { this.photo = !this.photo; this.keys = {}; if (this.photo) { this.ui.hide(); this.cam.lowP = 0; this.cam.dist0 = this.cam.distT; this.postal(); } else { this.ui.show(); this.cam.distT = this.cam.dist0 || 56; } document.body.classList.toggle('photo', this.photo); this.audio.click(); }
+  // Marco de postal del modo foto: fecha de hoy y sello con Capi (con su atuendo)
+  postal() {
+    document.body.classList.toggle('postal', !this.postalOff);
+    const d = $('pcDate'); if (d) d.textContent = new Date().toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' });
+    const f = $('pcFace'); if (f) drawFace(f.getContext('2d'), 'capi', 0, false, this.extras ? this.extras.colors() : null);
+  }
   // Joystick: palanca o cruceta para moverse y navegar menús; A acción, B saltar, X panel, Y vestuario, LB/RB girar la cámara
   pad(dt) {
     const pads = navigator.getGamepads ? navigator.getGamepads() : []; let p = null; for (const q of pads) if (q && q.connected) { p = q; break; } if (!p) return;
@@ -256,7 +265,7 @@ class Game {
       }
       if (this.mode === 'title') { if (c === 'KeyM' && !e.repeat) this.toggleMute(); if (c === 'Enter' && !$('bLong').disabled && $('credits').classList.contains('hidden')) { if (this.saved && this.saved.phase > 0) this.play(this.saved.mode, this.saved.phase, this.saved); else this.play('larga', 0); } return; }
       if (c === 'KeyP' && !e.repeat && this.mode === 'play' && (this.photo || !this.locked)) { this.togglePhoto(); return; }
-      if (this.photo) { if (c === 'Escape') this.togglePhoto(); else this.keys[c] = true; return; }
+      if (this.photo) { if (c === 'Escape') this.togglePhoto(); else if (c === 'KeyC' && !e.repeat) { this.postalOff = !this.postalOff; this.postal(); this.audio.click(); } else this.keys[c] = true; return; }
       if (this.riding) { if (!e.repeat && ['KeyE', 'Space', 'Enter', 'Escape', 'KeyF'].includes(c)) this.intl.skip(); if (c === 'KeyM' && !e.repeat) this.toggleMute(); return; }
       if (c === 'Escape' && this.tut.on && !this.extras.open && !this.mg.active && !this.ui.dlg) { this.tut.skip(); return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
@@ -353,8 +362,8 @@ class Game {
       if (this.qT > 3 && this.ema > 0.036 && this.quality < 3) {
         this.qT = 0; this.quality++; const sun = this.world.sun;
         if (this.quality === 1) { this.renderer.setPixelRatio(1); this.resize(); }
-        else if (this.quality === 2) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
-        else { sun.castShadow = false; }
+        else if (this.quality === 2) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } this.post.level = Math.min(this.post.level, 1); }
+        else { sun.castShadow = false; this.post.level = 0; }
       }
     }
     const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
@@ -402,9 +411,10 @@ class Game {
     const st = { grid: G, hour: G.hour, night, focus: cam.target, cam: this.camera.position, barrios: play ? [pct >= 33, pct >= 63, pct >= 88] : [true, true, true], demo: !play, fx: this.fx, zoom: cam.dist, cine: !!this.cine, capi: c.pos, talking: this.ui.talking, needs, busesOn: G.buses, audio: this.audio };
     w.update(dt, st); this.actors.update(dt, st);
     c.setLed(pct / 100, pct >= 100); c.lamp.material.emissiveIntensity = 0.5 + night * 3;
-    if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 2.7, c.pos.z + 2.6); this.capiLight.intensity = night * 120; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 3.2, c.pos.z); this.capiLight.intensity = night * 60; }
+    if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 3.4, c.pos.z + 2.6); this.capiLight.intensity = night * 40; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 4.6, c.pos.z); this.capiLight.intensity = night * 16; }
+    if (c.rimU) c.rimU.uRim.value = lerp(0.14, 0.3, night); this.fx.setLight(lerp(1, 0.4, night) * (1 - 0.25 * (w.storm || 0)));   // halo suave: con la noche oscura y el resplandor, más quemaba
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.corte.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
@@ -423,7 +433,8 @@ class Game {
     if ((this.curT = (this.curT || 0) - dt) <= 0) { this.curT = 0.08; this.cursor(); }
     if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });
     const r = this.renderer;
-    r.autoClear = true; r.shadowMap.autoUpdate = true; this.camera.layers.set(0);
+    r.autoClear = true; r.shadowMap.autoUpdate = true; this.camera.layers.set(0); r.info.autoReset = false; r.info.reset();   // contadores de todo el cuadro (escena + postproceso)
+    this.post.begin();
     r.render(this.scene, this.camera);
     if (play && !this.cine) {   // segunda pasada: silueta de Capi a través de los obstáculos
       r.autoClear = false; r.shadowMap.autoUpdate = false; this.camera.layers.set(1); this.scene.overrideMaterial = this.xray;
@@ -431,6 +442,7 @@ class Game {
       r.render(this.scene, this.camera);
       this.scene.background = bg; this.scene.overrideMaterial = null; this.camera.layers.set(0);
     }
+    this.post.end({ hour: G.hour, night, storm: w.storm || 0, dist: cam.dist, focus: cam.target, camera: this.camera, title: !play });
   }
 }
 

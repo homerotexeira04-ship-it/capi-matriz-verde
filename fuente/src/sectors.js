@@ -47,15 +47,52 @@ export function flag(w, x, y, z, fw, fh, mast) {
 }
 
 export function windows(w, cx, cz, bw, bd, y0, bh, barrio) {
+  const D = deco(w);
   const wb = w.winBatch[barrio], nf = Math.max(1, Math.floor((bh - 0.8) / 1.7)), quad = new THREE.PlaneGeometry(0.78, 1.0);
   const face = (len, fx, fz, ry) => {
     const nc = Math.max(1, Math.floor((len - 0.8) / 1.45));
     for (let f = 0; f < nf; f++) for (let c = 0; c < nc; c++) {
       const u = (c - (nc - 1) / 2) * 1.45;
       wb.add(quad, 0xffffff, cx + fx * (bw / 2 + 0.05) + (fz ? u : 0), y0 + 1.35 + f * 1.7, cz + fz * (bd / 2 + 0.05) + (fx ? u : 0), 1, 1, 1, 0, ry, 0, 0);
+      // persianas de enrollar, a media altura (cada casa a su gusto)
+      if (D() < 0.36) { const k = 0.2 + D() * 0.55; w.cityBatch.boxB(cx + fx * (bw / 2 + 0.08) + (fz ? u : 0), y0 + 1.35 + f * 1.7 + 0.5 - k, cz + fz * (bd / 2 + 0.08) + (fx ? u : 0), 0.86, k, 0.04, SHUT[Math.floor(D() * SHUT.length)], ry); }
     }
   };
   face(bw, 0, 1, 0); face(bw, 0, -1, Math.PI); face(bd, 1, 0, Math.PI / 2); face(bd, -1, 0, -Math.PI / 2);
+}
+// Detalles de ciudad uruguaya, con su propio azar (no cambia nada de la ciudad que ya existía)
+const SHUT = [0xd9cfb8, 0x8a7a66, 0x9aa3ab, 0xb8a27a, 0xe6e0d2];
+const AWN = [[0xc0392b, 0xf4f1ea], [0x1d6fb8, 0xf4f1ea], [0x2e8b57, 0xf4e3b0], [0xe0a526, 0x6a3a1a], [0x6a2c91, 0xf4f1ea]];
+const ROPA = [0xe5484d, 0x2ed3c6, 0xffc420, 0xf4f1ea, 0x1d6fb8, 0xff8fab, 0x90be6d];
+function deco(w) { return w.drand || (w.drand = rng(4242)); }
+function cityLife(w, cx, cz, bw, bd, y0, bh, roof, barrio) {
+  const b = w.cityBatch, D = deco(w), fz = cz + bd / 2;
+  // tanque de agua en la azotea: el negro de plástico con tapa cónica, o el de hormigón sobre patas
+  if (D() < 0.8) {
+    const tx = cx + (D() - 0.5) * bw * 0.45, tz = cz + (D() - 0.5) * bd * 0.45;
+    if (D() < 0.6) { b.boxB(tx, roof, tz, 1.3, 0.25, 1.3, 0x9a958c); b.cyl(tx, roof + 0.25, tz, 0.55, 0.5, 1.1, 0x23272e, 10); b.cyl(tx, roof + 1.35, tz, 0.07, 0.56, 0.24, 0x2b3038, 10); b.boxB(tx + 0.5, roof, tz, 0.07, 1.2, 0.07, 0x6a6e75); }
+    else { for (const [lx, lz] of [[-0.55, -0.55], [0.55, -0.55], [0.55, 0.55], [-0.55, 0.55]]) b.boxB(tx + lx, roof, tz + lz, 0.14, 0.9, 0.14, 0xb5ada0); b.boxB(tx, roof + 0.9, tz, 1.45, 0.95, 1.45, 0xc9c1b2); b.boxB(tx, roof + 1.85, tz, 1.55, 0.1, 1.55, 0xb5ada0); }
+  }
+  // antena de televisión
+  if (D() < 0.45) { const ax = cx + (D() - 0.5) * bw * 0.6, az = cz + (D() - 0.5) * bd * 0.6; b.boxB(ax, roof, az, 0.06, 2.3, 0.06, 0x7d8188); for (let k = 0; k < 3; k++) b.boxB(ax, roof + 1.5 + k * 0.3, az, 1.1 - k * 0.25, 0.04, 0.04, 0x7d8188); }
+  // balcones con baranda de hierro en el frente de los edificios de apartamentos
+  const nf = Math.max(1, Math.floor((bh - 0.8) / 1.7)), nc = Math.max(1, Math.floor((bw - 0.8) / 1.45));
+  if (bh > 5.5 && D() < 0.7) for (let f = 1; f < nf; f++) for (let c = 0; c < nc; c++) {
+    if (D() > 0.5) continue; const x = cx + (c - (nc - 1) / 2) * 1.45, y = y0 + 1.35 + f * 1.7 - 0.62;
+    b.boxB(x, y, fz + 0.38, 1.28, 0.1, 0.76, 0xcfc8ba); b.boxB(x, y + 0.1, fz + 0.74, 1.28, 0.5, 0.04, 0x3d4148);
+    for (const sx of [-0.62, 0.62]) b.boxB(x + sx, y + 0.1, fz + 0.38, 0.04, 0.5, 0.72, 0x3d4148);
+  }
+  // aire acondicionado colgado en una pared lateral
+  for (let k = 0, n = Math.floor(D() * 3); k < n; k++) { const side = D() < 0.5 ? -1 : 1, f = Math.floor(D() * nf), z = cz + (D() - 0.5) * (bd - 1.6); b.boxB(cx + side * (bw / 2 + 0.2), y0 + 0.85 + f * 1.7, z, 0.36, 0.42, 0.62, 0xdfe3e6); b.boxB(cx + side * (bw / 2 + 0.39), y0 + 0.92 + f * 1.7, z, 0.02, 0.28, 0.48, 0x9aa0a6); }
+  // toldo de comercio en la planta baja
+  if (bw > 3.5 && D() < 0.42) { const [c1, c2] = AWN[Math.floor(D() * AWN.length)], aw = Math.min(bw * 0.8, 6.5);
+    b.box(cx, y0 + 2.35, fz + 0.55, aw, 0.08, 1.15, c1, 0, 0.36); for (let k = 0; k < 5; k++) b.box(cx - aw / 2 + aw * (k + 0.5) / 5, y0 + 2.36, fz + 0.56, aw / 10, 0.09, 1.16, c2, 0, 0.36);
+    b.boxB(cx, y0 + 1.95, fz + 1.08, aw, 0.24, 0.04, c1); }
+  // ropa tendida en las azoteas de las casas bajas
+  if (bh < 5.6 && D() < 0.4) { const z = cz + (D() - 0.5) * bd * 0.4, l = Math.min(bw * 0.7, 4.2);
+    for (const sx of [-1, 1]) b.boxB(cx + sx * l / 2, roof, z, 0.06, 1.15, 0.06, 0x8a8f96); b.boxB(cx, roof + 1.1, z, l, 0.025, 0.025, 0xdddddd);
+    for (let k = 0, n = 3 + Math.floor(D() * 3); k < n; k++) { const x = cx - l / 2 + l * (k + 0.5) / n, h = 0.35 + D() * 0.25; b.boxB(x, roof + 1.1 - h, z, 0.3 + D() * 0.2, h, 0.02, ROPA[Math.floor(D() * ROPA.length)]); }
+  }
 }
 export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
   const b = w.cityBatch, y0 = 2.2, R = w.rand, trim = 0xf3ecdc;
@@ -70,6 +107,7 @@ export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
   if (R() < 0.45) b.boxB(cx + (R() - 0.5) * bw * 0.4, top, cz + (R() - 0.5) * bd * 0.4, 1.1, 0.5, 0.8, 0xb8bcc2);
   b.boxB(cx, y0, cz + bd / 2 + 0.03, 1.0, 1.5, 0.08, 0x5b4636);
   windows(w, cx, cz, bw, bd, y0, bh, barrio);
+  cityLife(w, cx, cz, bw, bd, y0, bh, top + (style === 1 ? 1.9 : 0), barrio);
   w.addSolid(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2); w.addOcc(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2, y0 + bh + (style === 1 ? 1.9 : 0.3));
 }
 
@@ -388,15 +426,25 @@ export function buildHydro(W) {
   flag(W, POS.dam.x1 + 5.2, W.groundAt(POS.dam.x1 + 5.2, -104.4), -104.4, 2.4, 1.6, 8);
   w.updaters.push((dt, st) => { const u = st.grid.hydroUnit, avg = (u[0] + u[1] + u[2] + u[3]) / 4; rotA.forEach((r, i) => { r.rotation.y += dt * (0.25 + avg / CAP.hydro) * 7.5 * (1 + i * 0.03); }); });
   for (let x = -44; x <= 20; x += 4) { const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), new THREE.MeshStandardMaterial({ color: 0xff7b25, flatShading: true })); buoy.position.set(x, RES, -62.5); w.scene.add(buoy); (w.dyn.buoys = w.dyn.buoys || []).push(buoy); }
+  const spray = new THREE.Mesh(new THREE.PlaneGeometry(13, 6.5).translate(0, 3.25, 0), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide, uniforms: { uA: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'varying vec2 vUv; uniform float uA; vec3 hue(float h){ return clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0); } void main(){ float r = length(vec2((vUv.x-0.5)*2.0, vUv.y)); float t = (r-0.78)/0.2; if (t < 0.0 || t > 1.0) discard; float a = smoothstep(0.0,0.25,t)*smoothstep(1.0,0.75,t)*smoothstep(0.0,0.35,vUv.y); gl_FragColor = vec4(hue(0.78*(1.0-t)), a*uA*0.5); }' }));
+  spray.visible = false; spray.renderOrder = 8; W.scene.add(spray);
   w.updaters.push((dt, st) => {
     const G = st.grid;
-    fallTex.offset.y += dt * 1.6;
+    fallTex.offset.y += dt * 1.6; fallMat.color.setScalar(lerp(1, 0.48, st.night));   // de noche el agua del vertedero no brilla sola
     gates.forEach((g, i) => {
       const goal = G.hydro.gates[i].reg ? 0.28 : 1;
       g.open = damp(g.open, goal, 1.5, dt); g.mesh.position.y = 4.3 + g.open * 2.3;
       g.fall.scale.x = 0.3 + 0.7 * g.open; g.fall.material.opacity = 0.9;
       if (Math.random() < g.open * 60 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 3.6 * g.open, 0.3, -46.3 + OZ + Math.random(), (Math.random() - 0.5) * 2, 1.5 + Math.random() * 2.5 * g.open, 1 + Math.random() * 2, 0.8, 0.5, 1.3, 0xffffff, 0.8, 5, 1);
+      if (Math.random() < g.open * 7 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 4, 0.6 + Math.random(), -44.5 + OZ + Math.random() * 2, (Math.random() - 0.5) * 0.6, 0.35 + Math.random() * 0.3, 1.2 + Math.random() * 0.8, 4.5, 1.6, 5.5, 0xf4f8fb, 0.2, -0.02, 0.15);   // neblina río abajo
     });
+    // arcoíris en la neblina: con compuertas abiertas, de día y con el sol a la espalda de quien mira
+    { const op = gates.reduce((a, g) => a + g.open, 0) / gates.length, sd = W.sunDir, cx = POS.gates[1] + 2.4, cz = -42 + OZ, cp = st.cam;
+      const vx = cx - cp.x, vz = cz - cp.z, vl = Math.hypot(vx, vz) || 1, back = -(vx * sd.x + vz * sd.z) / vl / Math.max(0.2, Math.hypot(sd.x, sd.z));
+      const a = smooth(0.4, 0.9, op) * smooth(0.15, 0.35, sd.y) * (1 - smooth(0.65, 0.85, sd.y)) * smooth(0.1, 0.5, back) * (1 - W.night) * (1 - (W.storm || 0));
+      spray.visible = a > 0.01; if (spray.visible) { spray.material.uniforms.uA.value = a * 0.8; spray.position.set(cx, 0.2, cz); spray.rotation.set(0, Math.atan2(cp.x - cx, cp.z - cz), 0); } }
     rotors.forEach((r, i) => { r.rotation.y += dt * (G.hydroUnit[i] / CAP.hydro) * 9; if (G.hydroUnit[i] > 1 && Math.random() < 14 * dt) st.fx.soft.emit(POS.turbs[i] + (Math.random() - 0.5) * 1.6, 0.15, -43.6 + OZ, (Math.random() - 0.5), 0.3, 1.5 + Math.random() * 2, 1.0, 0.4, 1.0, 0xffffff, 0.6, 0, 0.8); });
     w.dyn.buoys.forEach((bu, i) => { bu.position.y = RES + Math.sin(w.time * 1.5 + i) * 0.1; });
   });

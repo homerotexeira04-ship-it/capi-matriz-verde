@@ -31,7 +31,10 @@ export const Settings = {
   get fest() { return this.d.fest || null; },
   setFest(k) { this.d.fest = k || null; try { localStorage.setItem(AKEY, JSON.stringify(this.d)); } catch (e) { /* sin almacenamiento */ } if (this.onFest) this.onFest(this.fest); },
   setBig(on) { this.d.big = !!on; try { localStorage.setItem(AKEY, JSON.stringify(this.d)); } catch (e) { /* sin almacenamiento */ } this.apply(); },
-  apply() { document.body.classList.toggle('bigText', this.big); document.querySelectorAll('.bigToggle').forEach(b => { b.textContent = 'Letra grande: ' + (this.big ? 'sí' : 'no'); b.setAttribute('aria-pressed', this.big ? 'true' : 'false'); }); }
+  // efectos de imagen (resplandor, maqueta, color por hora): 2 completos · 1 livianos · 0 apagados; queda guardado en la PC
+  get fx() { return this.d.fx == null ? null : this.d.fx; },
+  setFx(v) { this.d.fx = v; try { localStorage.setItem(AKEY, JSON.stringify(this.d)); } catch (e) { /* sin almacenamiento */ } if (this.onFx) this.onFx(v); this.apply(); },
+  apply() { document.querySelectorAll('.fxToggle').forEach(b => { b.textContent = 'Efectos de imagen: ' + ['apagados', 'livianos', 'completos'][this.fx == null ? 2 : this.fx]; }); document.body.classList.toggle('bigText', this.big); document.querySelectorAll('.bigToggle').forEach(b => { b.textContent = 'Letra grande: ' + (this.big ? 'sí' : 'no'); b.setAttribute('aria-pressed', this.big ? 'true' : 'false'); }); }
 };
 
 // ---------- Contador de visitas: queda guardado en la propia PC, sin datos personales ----------
@@ -140,7 +143,7 @@ export class Guide {
       this.btn('Tormenta', () => { G.cloudTarget = 0.95; G.cloud = 0.95; G.windTarget = 1; }), this.btn('Despejar', () => { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); }),
       this.btn('', () => { if (g.clockStopped != null) { G.clockRate = g.clockStopped; g.clockStopped = null; } else { g.clockStopped = G.clockRate; G.clockRate = 0; } }, 'gClock'));
     sec('Red eléctrica', this.btn('Provocar una avería', () => { if (g.mode === 'play') M.randomFault(); }), this.btn('Reparar todo', () => M.clearFaults()), this.btn('', () => g.setPaused(!g.paused), 'gPause'));
-    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}));
+    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}), this.btn('', () => { const S = window.__capiSettings, v = S.fx == null ? 2 : S.fx; S.setFx((v + 2) % 3); }, 'fxToggle'));
     const S = window.__capiSettings, mark = () => { box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); const kb = box.querySelector('.gKick'); if (kb) { kb.disabled = !S.fest; kb.title = { carnaval: 'Pone el atardecer y trae las llamadas a la rambla', patrimonio: 'Pone la mañana y arranca la visita guiada en la plaza', fiestas: 'Cuenta regresiva y fuegos de Año Nuevo', criolla: 'Pone la tarde y arranca el desfile de tropillas en el ruedo', museos: 'Pone la noche y arranca la proyección en la torre' }[S.fest] || 'Primero elegí una fiesta'; } };
     const kick = this.btn('¡Empezar la fiesta ahora!', () => { this.close(); g.fiestas.kick(); }, 'gKick');
     sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['criolla', 'Semana Criolla'], ['patrimonio', 'Día del Patrimonio'], ['museos', 'Museos en la Noche'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }), kick);

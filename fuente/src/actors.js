@@ -44,6 +44,8 @@ export function makePerson(o) {
   if (o.hat === 'boina') { const bo = part(new THREE.IcosahedronGeometry(0.4, 1), o.hatColor, 0.06, 0.26, 0, head); bo.scale.set(1.1, 0.35, 1.1); }
   if (o.hat === 'gorra') { part(new THREE.SphereGeometry(0.36, 10, 6, 0, 6.3, 0, Math.PI / 2), o.hatColor, 0, 0.14, 0, head); part(BOX(0.4, 0.05, 0.3), o.hatColor, 0, 0.17, 0.38, head); }
   if (o.extra === 'tablet') part(BOX(0.36, 0.28, 0.04), 0x4fd6ff, 0.02, -0.72, 0.16, armL);
+  if (o.extra === 'baston') part(new THREE.CylinderGeometry(0.03, 0.03, 1.05, 5), 0x5a3a22, 0, -0.95, 0.12, armR);   // bastón del abuelo
+  if (o.extra === 'bolsa') { part(BOX(0.34, 0.36, 0.16), o.bag || 0xf2efe6, 0, -0.92, 0.02, armL); part(new THREE.SphereGeometry(0.09, 5, 4), 0x2f7d32, -0.05, -0.68, 0.0, armL); part(new THREE.SphereGeometry(0.07, 5, 4), 0xe5484d, 0.07, -0.7, 0.02, armL); }   // mandados: verduras asomando
   if (o.extra === 'mate') { part(new THREE.SphereGeometry(0.11, 6, 5), 0x7a4b23, 0, -0.84, 0.06, armR); part(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 4), 0xd8d8d8, 0.03, -0.72, 0.08, armR); part(new THREE.CylinderGeometry(0.08, 0.08, 0.42, 6), 0x9aa3ad, -0.16, -0.36, 0.1, armL); }
   [g, legL, legR, armL, armR, head].forEach(fuse);
   g.add(legL, legR, armL, armR, head); g.scale.setScalar(s);
@@ -99,9 +101,12 @@ export class Actors {
     this.citizens = [];
     const cols = [0xef476f, 0xffd166, 0x06d6a0, 0x118ab2, 0xf4a261, 0x9b5de5, 0xf15bb5, 0x2a9d8f, 0xe76f51, 0x8ecae6], skins = [0xe0ac86, 0xc58b62, 0xf1c9a5, 0x9a6b4b];
     for (let i = 0; i < 15; i++) {
-      const p = makePerson({ skin: skins[i % 4], shirt: cols[i % cols.length], pants: [0x2b2d42, 0x4a5568, 0x6b4f3a][i % 3], hair: [0x2a1a10, 0x5a3a1a, 0xc9a35a, 0x777777][i % 4], extra: i % 2 ? 'mate' : null, scale: 0.9 + (i % 3) * 0.04 });
+      // más variedad: abuelos con bastón (pelo canoso, más lentos) y vecinos que vuelven de los mandados
+      const kind = i === 4 || i === 9 ? 'abuelo' : i === 2 || i === 7 || i === 14 ? 'bolsa' : null;
+      const p = makePerson({ skin: skins[i % 4], shirt: kind === 'abuelo' ? [0x8a9099, 0xb5a47a][i % 2] : cols[i % cols.length], pants: [0x2b2d42, 0x4a5568, 0x6b4f3a][i % 3], hair: kind === 'abuelo' ? 0xd8d8d8 : [0x2a1a10, 0x5a3a1a, 0xc9a35a, 0x777777][i % 4], hat: kind === 'abuelo' && i === 9 ? 'boina' : null, hatColor: 0x1e1e22,
+        extra: kind === 'abuelo' ? 'baston' : kind === 'bolsa' ? 'bolsa' : i % 2 ? 'mate' : null, bag: [0xf2efe6, 0xffc420, 0x75aadb][i % 3], scale: kind === 'abuelo' ? 0.88 : 0.9 + (i % 3) * 0.04 });
       scene.add(p.group);
-      if (i < 11) Object.assign(p, { kind: 'rambla', x: -78 + i * 6, z: 72.3 + (i % 3) * 1.0, dir: i % 2 ? 1 : -1, speed: 1.1 + (i % 4) * 0.25 });
+      if (i < 11) Object.assign(p, { kind: 'rambla', x: -78 + i * 6, z: 72.3 + (i % 3) * 1.0, dir: i % 2 ? 1 : -1, speed: kind === 'abuelo' ? 0.6 : 1.1 + (i % 4) * 0.25 });
       else if (i < 13) Object.assign(p, { kind: 'west', x: -80.8 + (i % 2) * 1.2, z: 20 + i * 3, dir: i % 2 ? 1 : -1, speed: 1.2 });
       else Object.assign(p, { kind: 'plaza', a: i * 2, speed: 0.35 });
       this.citizens.push(p);

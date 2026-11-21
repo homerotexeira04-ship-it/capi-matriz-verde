@@ -10,6 +10,13 @@ import { rng, clamp, lerp, damp, smooth, angDiff } from './util.js';
 const $ = id => document.getElementById(id);
 const VC = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.75 });
 const LIT = new THREE.MeshBasicMaterial({ vertexColors: true });
+// haz de los faros sobre el asfalto (de noche)
+const BEAM = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 128; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 128, 0, 0); gr.addColorStop(0, 'rgba(255,240,200,0.9)'); gr.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = gr;
+  g.beginPath(); g.moveTo(22, 128); g.lineTo(42, 128); g.lineTo(64, 0); g.lineTo(0, 0); g.closePath(); g.filter = 'blur(4px)'; g.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }); })();
+const BEAM_G = new THREE.PlaneGeometry(3.4, 7.5).rotateX(-Math.PI / 2).rotateY(Math.PI).translate(0, 0.1, 5.5);
 const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.85, ...o });
 
 // Recorridos de mano única (en sentido del tránsito). El 2 comparte calles con los ómnibus, en el mismo sentido.
@@ -29,6 +36,7 @@ function carMesh(col) {
   for (const sx of [-0.8, 0.8]) for (const sz of [-1.15, 1.15]) b.cyl(sx, 0.32, sz, 0.32, 0.32, 0.22, 0x1c1e22, 10, 0, 0, Math.PI / 2);
   for (const sx of [-0.55, 0.55]) { l.boxB(sx, 0.6, 1.79, 0.36, 0.14, 0.06, 0xfff4c2); l.boxB(sx, 0.62, -1.79, 0.38, 0.12, 0.06, 0xff3030); }
   const m = b.mesh(VC); m.castShadow = true; g.add(m, l.mesh(LIT));
+  const beam = new THREE.Mesh(BEAM_G, BEAM); beam.renderOrder = 7; g.add(beam);
   return g;
 }
 function bikeRider(col, o) {
@@ -245,7 +253,7 @@ export class Urbano {
     this.carObs = []; for (const c of this.cars) this.carObs.push({ x: c.x - Math.sin(c.h) * 1.2, z: c.z - Math.cos(c.h) * 1.2, r: 1.1, ref: null }, { x: c.x + Math.sin(c.h) * 1.2, z: c.z + Math.cos(c.h) * 1.2, r: 1.1, ref: null });
     if (this.g.intl) this.g.intl.addObs(this.carObs);   // los ómnibus eléctricos esperan detrás del internacional
     // ---------- Autos ----------
-    const hl = 0.4 + night * 0.6;
+    const hl = 0.4 + night * 0.6; BEAM.opacity = Math.max(0, night - 0.2) * 0.55;
     for (const c of this.cars) {
       let v = c.vmax;
       for (const cr of c.rt.cross) { const d = ((cr.s - c.s) % c.rt.L + c.rt.L) % c.rt.L; if (d > 1.2 && d < 7 && !this.green(cr.grp, d)) v = Math.min(v, Math.max(0, (d - 2.6) * 2.2)); }
@@ -259,6 +267,7 @@ export class Urbano {
       c.g.position.set(c.x, CITY_Y - 0.06, c.z); c.g.rotation.y = c.h; c.g.visible = near(c.x, c.z, 140);
       w.dynCircles.push({ x: c.x + Math.sin(c.h) * 1.0, z: c.z + Math.cos(c.h) * 1.0, r: 0.95 }, { x: c.x - Math.sin(c.h) * 1.0, z: c.z - Math.cos(c.h) * 1.0, r: 0.95 });
       if (night > 0.3 && c.g.visible) st.fx.glow.sprite(c.x + Math.sin(c.h) * 2.2, CITY_Y + 0.6, c.z + Math.cos(c.h) * 2.2, 1.6, 0xfff0b0, 0.4 * night * hl);
+      if (night > 0.3 && c.g.visible) st.fx.glow.sprite(c.x - Math.sin(c.h) * 1.95, CITY_Y + 0.62, c.z - Math.cos(c.h) * 1.95, 0.9, 0xff2a20, 0.45 * night);   // luces traseras
     }
     // ---------- Ambulancia ----------
     if (this.sirenR) { const on = night > 0.2 ? 1 : 0.35, ph = Math.sin(t * 9) > 0; this.sirenR.emissiveIntensity = ph ? 2.4 * on : 0.1; this.sirenB.emissiveIntensity = ph ? 0.1 : 2.4 * on; }
@@ -341,6 +350,7 @@ export class Urbano {
     const lz = A0.z + (moving ? Math.sin(Math.PI * (T < 40 ? (T - 14) / 26 : (T - 54) / 26)) * 5 : 0);
     this.lancha.position.set(lx, Math.sin(t * 1.4) * 0.08, lz); this.lancha.rotation.y = damp(this.lancha.rotation.y, dir, 1.2, dt); this.lancha.rotation.z = Math.sin(t * 1.1) * 0.03;
     this.lancha.visible = near(lx, lz, 160);
+    if (moving && this.lancha.visible && Math.random() < dt * 22) { const fx = Math.sin(dir), fz = Math.cos(dir), side = Math.random() < 0.5 ? -1 : 1; st.fx.soft.emit(lx - fx * 3.4, 0.08, lz - fz * 3.4, -fz * side * 1.1 - fx * 0.4, 0.03, fx * side * 1.1 - fz * 0.4, 2.6, 0.35, 1.3, 0xffffff, 0.5, 0, 0.5); }   // estela en V
     if (moving && this.lancha.visible && Math.random() < dt * 14) { const bx = lx - Math.sin(dir) * 3.6, bz = lz - Math.cos(dir) * 3.6; st.fx.soft.emit(bx + (Math.random() - 0.5), 0.1, bz, (Math.random() - 0.5) * 0.6, 0.3, (Math.random() - 0.5) * 0.6, 1.4, 0.3, 1.2, 0xffffff, 0.45, 0, 0.4); }
     if (night > 0.3 && this.lancha.visible) st.fx.glow.sprite(lx - Math.sin(dir) * 2.3, 3.35, lz - Math.cos(dir) * 2.3, 2.2, 0xfff0b0, 0.5 * night);
     // ---------- Kayaks ----------

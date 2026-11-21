@@ -20,8 +20,8 @@ const SKEY = 'capi-estadisticas', AKEY = 'capi-ajustes', WORD = 'energimundo';
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
 const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(r).padStart(2, '0')} s`; };
-export const MG_NAMES = { sync: 'Sincronización de fase', crank: 'Freno del aerogenerador', gates: 'Compuerta del embalse', helio: 'Matriz solar', route: 'Subestación', seq: 'Caldera de biomasa', rhythm: 'Compás de carga', led: 'Cambio a LED', solar: 'Carga con sol', cometa: 'Cometa en la rambla', bici: 'Bicicleta generadora', cinta: 'Cinta de chips', despacho: 'Centro de Control', torre: 'Torre del aerogenerador' };
-const MIS = { viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', pico: 'Desafío 100% Renovable' };
+export const MG_NAMES = { sync: 'Sincronización de fase', crank: 'Freno del aerogenerador', gates: 'Compuerta del embalse', helio: 'Matriz solar', route: 'Subestación', seq: 'Caldera de biomasa', rhythm: 'Compás de carga', led: 'Cambio a LED', solar: 'Carga con sol', cometa: 'Cometa en la rambla', bici: 'Bicicleta generadora', cinta: 'Cinta de chips', despacho: 'Centro de Control', torre: 'Torre del aerogenerador', casa: 'La casa eficiente', carga: 'Carga programada', h2: 'Electrolizador' };
+const MIS = { viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', transicion: 'La Segunda Transición', pico: 'Desafío 100% Renovable' };
 const BUCKETS = ['menos de 2 min', '2 a 5 min', '5 a 10 min', '10 a 20 min', 'más de 20 min'];
 
 // ---------- Ajustes que valen para todos los visitantes (letra grande) ----------

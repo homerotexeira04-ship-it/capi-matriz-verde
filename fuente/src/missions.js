@@ -8,7 +8,7 @@ const N = ' ';
 
 export const SEQ = {
   corta: ['viento', 'rio', 'sol', 'urbano', 'pico'],
-  larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'pico']
+  larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'transicion', 'pico']
 };
 const DEF = {
   viento: { title: 'Vientos en la Cuchilla', scn: { hour: 9, rate: 1 / 60, hold: 11.5, wind: 0.95, gust: 0.08, extra: 0 } },
@@ -17,6 +17,7 @@ const DEF = {
   urbano: { title: 'Circuito Verde Urbano', scn: { hour: 17.4, rate: 1 / 45, hold: 19.7, wind: 0.25, gust: 0.06, extra: 0, energy: 1 / 50 } },
   ahorro: { title: 'Ciudad que Ahorra', scn: { hour: 11.6, rate: 1 / 60, hold: 13.6, wind: 0.5, gust: 0.06, extra: 0 } },
   tormenta: { title: 'Sudestada sobre la Red', scn: { hour: 14.5, rate: 1 / 60, hold: 16.5, wind: 1, gust: 0.3, extra: 0, cloud: 0.95, energy: 1 / 70 } },
+  transicion: { title: 'La Segunda Transición', scn: { hour: 18.3, rate: 1 / 60, hold: 18.95, wind: 1, gust: 0.08, extra: 0, energy: 1 / 40 } },
   pico: { title: 'Desafío 100% Renovable', scn: { hour: 19.3, rate: 1 / 45, hold: 19.8, wind: 0.6, gust: 0.1, extra: 0 } },
   libre: { title: 'Modo libre', scn: { hour: null, rate: 1 / 20, hold: null, wind: 0.6, gust: 0.14, extra: 0 } }
 };
@@ -49,6 +50,13 @@ const INTRO = {
     L('valeria', 'Ya la tenemos encima. Con ráfagas tan fuertes un molino se frenó solo para protegerse, y un rayo hizo saltar el transformador del parque.'),
     L('valeria', 'Además las nubes taparon el sol y el embalse sube rápido: hay que volver a regular la compuerta 3. Las baterías aguantan mientras tanto, pero no para siempre.'),
     L('capi', 'Voy saliendo. ¡Que no me vuele el casco!')],
+  // Datos: MIEM (segunda transición: movilidad eléctrica e hidrógeno verde); ACAU (2025: 14.443 eléctricos, uno de cada
+  // cinco 0 km); UTE (horario valle de 0 a 7, casi cinco veces más barato que la punta); Kahirós (Fray Bentos).
+  transicion: [
+    L('valeria', 'Capi, casi toda la electricidad de Uruguay ya sale del agua, el viento, el sol y la biomasa. Pero los autos, los camiones y muchas fábricas todavía queman combustible traído de afuera.'),
+    L('valeria', 'Cambiar eso es lo que en Uruguay llaman la segunda transición energética. Se apoya en dos patas: la movilidad eléctrica y el hidrógeno verde.', 1),
+    L('lucia', 'Y va rápido: en 2025, uno de cada cinco autos 0 km que se vendieron en Uruguay fue eléctrico. El tema es que casi todos enchufan al llegar a casa, justo en la hora pico.'),
+    L('valeria', 'Andá al Barrio Sur y programá tres cargadores para que carguen de madrugada. Después, a la planta de hidrógeno verde, al sur de la biomasa: hay que aprovechar el viento que sobra de noche.')],
   pico: [
     L('valeria', 'Queda la prueba grande: la hora pico nocturna, sin sol. Cuando estés listo, vení a verme al Centro de Control, en la subestación de la ciudad.')]
 };
@@ -59,6 +67,11 @@ const OUTRO = {
   sol: [L('valeria', 'Baterías cargadas. El sol del mediodía queda guardado para la noche: eso es mover energía en el tiempo.')],
   urbano: [L('valeria', 'Biomasa firme y transporte eléctrico en marcha. Desde ahora podés tomar el ómnibus en cualquier parada para viajar rápido entre sectores.')],
   tormenta: [L('mateo', 'Pasó lo peor. Viste cómo es: cuando una fuente se cae, las otras la sostienen. Por eso conviene tener de todo un poco.'), L('valeria', 'Red estable en plena sudestada. Eso se llama una matriz diversificada, Capi.')],
+  transicion: [
+    L('valeria', 'Mirá la noche que pasó: los autos cargaron de madrugada con el viento que sobraba, y la hora pico quedó libre para la ciudad.'),
+    L('lucia', 'Y cargar en casa de 0 a 7, en el horario valle de UTE, sale casi cinco veces más barato que en la hora pico. Ahorra la familia y descansa la red.', 1),
+    L('valeria', 'El hidrógeno guarda ese viento para mover camiones pesados en viajes largos, donde las baterías se quedan cortas. En Fray Bentos, el proyecto Kahirós es el primero del país: hidrógeno hecho con el sol para seis camiones que llevan madera.'),
+    L('capi', 'Electricidad limpia en el enchufe, en la ruta y hasta en el tanque. ¡Esa es la segunda transición!')],
   pico: []
 };
 const SPEECH = [
@@ -82,9 +95,9 @@ export class Missions {
   get short() { return this.mode === 'corta'; }
   get title() { return DEF[this.key].title; }
   lines(arr) { return arr.filter(l => !l.x || (!this.short && !(l.x === 3 && this.swap))); }
-  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, s.phase + (mode === 'larga' && !s.v && s.phase >= 4 ? 1 : 0))), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
+  load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; let ph = s.phase; if (mode === 'larga' && !s.v && ph >= 4) ph++; if (mode === 'larga' && (s.v || 1) < 3 && ph >= 6) ph++; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, ph)), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
   forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
-  save() { if (this.school) return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 2, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { if (this.school) return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 3, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
   reached(k) { const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
@@ -98,6 +111,7 @@ export class Missions {
     G.bat.connected = D('sol'); G.bat.soc = D('sol') ? 0.82 : 0.3; G.bat.mode = 'auto';
     G.bio.chips = G.bio.on = G.bio.routed = D('urbano'); G.bio.fault = false; G.bio.pressure = D('urbano') ? 1 : 0; G.buses = D('urbano');
     G.eff = this.seq.includes('ahorro') && D('ahorro') ? 0.06 : 0; G.headBonus = 0; G.bioBoost = 1;
+    const ti = this.seq.indexOf('transicion'); G.ev.on = ti >= 0 && n >= ti; G.ev.smart = ti >= 0 && n > ti ? 1 : 0; G.h2.on = ti >= 0 && n > ti; G.h2.filling = 0;
   }
   scenario(key, instant) {
     const G = this.g.grid, s = DEF[key].scn;
@@ -173,6 +187,14 @@ export class Missions {
         const dam = [{ text: 'Regular la compuerta 3: el río viene crecido', targets: ['gate:2'], done: G.hydro.gates[2].reg }];
         return (this.flags.first === 'dam' ? dam.concat(wind) : wind.concat(dam)).concat([{ text: `Recuperar el 100${N}% renovable en plena sudestada`, targets: [], done: o.pct >= 100 && !w.length && !G.windP.txFault && G.hydro.gates[2].reg }]);
       }
+      case 'transicion': {
+        const left = [0, 1, 2].filter(i => !this.flags['ev' + i]);
+        return [
+          { text: `Programar 3 cargadores del Barrio Sur para la madrugada (${3 - left.length}/3)`, targets: left.map(i => 'ev:' + i), done: !left.length },
+          { text: 'Arrancar el electrolizador de la planta de hidrógeno verde', targets: ['h2:0'], done: G.h2.on },
+          { text: 'Cargar el camión forestal en la hidrolinera', targets: ['h2:fill'], done: this.flag('fill') },
+          { text: 'Mirar la noche en cámara rápida', targets: [], done: this.flag('night') }];
+      }
       case 'pico': {
         const m = this.m5;
         if (this.ceremony) return [{ text: 'Ir al escenario de la Plaza Matriz para la ceremonia', targets: ['fest'], done: this.flag('cer') }];
@@ -224,6 +246,15 @@ export class Missions {
     }
     if (k === 'solar') { if (!this.reached('sol')) return { state: 'locked' }; const u = G.solar.a[i]; return u.on && !u.fault ? { state: 'ok', label: `Inspeccionar la matriz ${n}` } : { state: 'need', label: `Limpiar y reorientar la matriz ${n}`, mg: 'helio' }; }
     if (k === 'bat') { if (!this.reached('sol')) return { state: 'locked' }; return G.bat.connected ? { state: 'ok', label: 'Inspeccionar el banco de baterías' } : G.solar.a.every(u => u.on) ? { state: 'need', label: 'Habilitar el Banco de Baterías', mg: 'route' } : { state: 'off', label: 'Banco de baterías: primero las matrices solares' }; }
+    if (k === 'ev') {
+      if (!this.reached('transicion')) return { state: 'locked' };
+      return this.key === 'transicion' && this.active && !this.flags['ev' + i] ? { state: 'need', label: 'Programar la carga del auto para la madrugada', mg: 'carga' } : { state: 'ok', label: 'Ver el cargador programado' };
+    }
+    if (k === 'h2') {
+      if (!this.reached('transicion')) return { state: 'locked' };
+      if (s === 'fill') return !G.h2.on ? { state: 'off', label: 'Hidrolinera: primero hay que arrancar el electrolizador' } : this.key === 'transicion' && this.active && !this.flags.fill ? { state: 'need', label: 'Cargar el camión de hidrógeno' } : { state: 'ok', label: 'Ver la hidrolinera' };
+      return G.h2.on ? { state: 'ok', label: 'Ver el electrolizador' } : { state: 'need', label: 'Arrancar el electrolizador', mg: 'h2' };
+    }
     if (k === 'bio') {
       if (!this.reached('urbano')) return { state: 'locked' };
       if (s === 'chips') return G.bio.chips ? { state: 'ok', label: 'Inspeccionar el acopio de chips' } : { state: 'need', label: 'Cargar chips de madera en la cinta' };
@@ -248,8 +279,9 @@ export class Missions {
     if (d.state === 'off') return U.note(d.label);
     if (d.state === 'ok' && !d.replay) return U.note(this.info(id));
     if (d.mg) {
-      const titles = { sync: 'Sincronización de fase', crank: `Freno del aerogenerador ${i + 1}`, seq: 'Secuencia de arranque de la caldera', gates: `Control de la compuerta ${i + 1}`, helio: `Matriz solar ${i + 1}`, route: 'Enrutamiento de subestación', rhythm: 'Compás de carga rápida', led: 'Cambio a LED', solar: 'Carga con sol del mediodía' };
+      const titles = { sync: 'Sincronización de fase', crank: `Freno del aerogenerador ${i + 1}`, seq: 'Secuencia de arranque de la caldera', gates: `Control de la compuerta ${i + 1}`, helio: `Matriz solar ${i + 1}`, route: 'Enrutamiento de subestación', rhythm: 'Compás de carga rápida', led: 'Cambio a LED', solar: 'Carga con sol del mediodía', carga: 'Carga programada', h2: 'Electrolizador' };
       const opts = { title: titles[d.mg], from: k === 'bat' ? 'SOLAR' : 'CALDERA', to: k === 'bat' ? 'BATERÍAS' : 'TERMINAL' };
+      if (k === 'ev') Object.assign(opts, { need: [3, 4, 5][i], who: ['el auto fucsia', 'el auto azul', 'el auto blanco'][i] });
       return g.minigame(d.mg, opts, () => {
         let msg = 'Transformador reconectado.';
         if (k === 'wind') { if (s === 'tx') G.windP.txFault = false; else { G.windP.t[i].fault = false; msg = `Freno liberado: el aerogenerador ${i + 1} vuelve a girar.`; } }
@@ -259,6 +291,8 @@ export class Missions {
         else if (k === 'bat') { G.bat.connected = true; G.bat.mode = 'auto'; msg = 'Banco de baterías conectado: los excedentes ahora se guardan.'; }
         else if (k === 'bio') { if (s === 'boiler') { G.bio.on = true; G.bio.fault = false; msg = 'Caldera encendida: la presión sube y entrega potencia firme.'; } else { G.bio.routed = true; msg = 'Potencia enrutada: los cargadores rápidos de la terminal tienen energía.'; } }
         else if (k === 'term') { if (d.mg === 'solar') { this.flags.sunCharged = true; msg = 'Ómnibus cargados con sol del mediodía: energía que sobraba y ahora mueve la ciudad.'; } else { this.flags.charged = true; msg = 'Flota cargada al compás del candombe. ¡Lista para salir!'; } }
+        else if (k === 'ev') { this.flags['ev' + i] = true; const n = [0, 1, 2].filter(j => this.flags['ev' + j]).length; G.ev.smart = n / 3; msg = n < 3 ? 'Cargador programado: el auto carga de 0 a 7, cuando sobra energía y la luz cuesta casi cinco veces menos.' : 'Los tres autos cargan de madrugada: la hora pico quedó más liviana.'; }
+        else if (k === 'h2') { G.h2.on = true; msg = 'Electrolizador en marcha: separa el agua en hidrógeno y oxígeno usando solo la energía renovable que sobra.'; }
         else if (k === 'led') { this.flags['led' + i] = true; G.eff = 0.02 * [0, 1, 2].filter(j => this.flags['led' + j]).length; msg = G.eff > 0.05 ? `Tres casas con LED y el barrio se contagia: la demanda de la ciudad baja un 6${N}%.` : 'Casa con luces LED: la misma luz gastando unas seis veces menos.'; }
         G.step(0); fxOk(); U.note(msg);
       });
@@ -266,9 +300,13 @@ export class Missions {
     // Acciones instantáneas
     g.capi.work(1.1); g.audio.spark();
     if (id === 'wind:tx') { G.windP.tx = true; setTimeout(fxOk, 900); U.note('Transformador en línea: el parque eólico inyecta energía a la red.'); }
+    if (id === 'h2:fill') { this.flags.fill = true; G.h2.filling = 7; g.capi.work(1.6); setTimeout(fxOk, 1200); U.note('Camión cargado: 68 kg de hidrógeno en menos de media hora, para más de 700 km sin humo. Son los números del proyecto Kahirós, en Fray Bentos.', 7); return; }
     if (id === 'bio:chips') { G.bio.chips = true; g.fx.puff(it.x, it.y + 1, it.z, 14, 0xc9a66b, 2); U.note('Cinta cargada con chips de madera de residuos forestales.'); }
   }
   info(id) {
+    if (id.startsWith('ev:')) return 'Cargador programado: el auto carga de 0 a 7, en el horario valle de UTE, y a la mañana está listo.';
+    if (id === 'h2:0') { const G = this.g.grid; return `Electrolizador: ${G.out.h2.toFixed(1).replace('.', ',')} MW del viento y el sol que sobran. Lleva hechos ${Math.round(G.h2.kg)} kg de hidrógeno.`; }
+    if (id === 'h2:fill') return 'Hidrolinera: carga el tanque de un camión en menos de media hora.';
     if (id.startsWith('led')) return 'Lámparas LED: la misma luz con unas seis veces menos electricidad que una incandescente.';
     const G = this.g.grid, [k, s] = id.split(':'), i = +s, r = v => v.toFixed(1).replace('.', ',');
     if (k === 'wind') return s === 'tx' ? `Transformador del parque: ${r(G.out.wind)} MW hacia la ciudad.` : `Aerogenerador ${i + 1}: ${r(G.windUnit[i])} MW con viento al ${Math.round(G.wind * 100)}${N}%.`;
@@ -328,6 +366,19 @@ export class Missions {
     else g.extras.choose('Semanas sin lluvia', 'El embalse bajó y la represa rinde menos. ¿Con qué la reemplazamos?', [['Con el viento y el sol que haya', 'No cuesta nada, pero depende del clima'], ['Con más biomasa', 'Firme, mientras alcancen los chips']], i => {
       G.headBonus = -0.25; if (i === 1) G.bioBoost = 1.25; this.ev = { t: 80, undo: () => { G.headBonus = 0; G.bioBoost = 1; } }; U.note(i === 0 ? 'A mirar el cielo: hoy mandan el viento y el sol.' : 'La caldera trabaja a pleno para cubrir a la represa.', 5);
     });
+  }
+
+  // ---- Segunda transición: la noche en cámara rápida, con los autos cargando en el valle y el electrolizador andando ----
+  nightLapse(st) {
+    const g = this.g, G = g.grid, U = g.ui, f = this.flags;
+    if (!f.lapse && st.slice(0, 3).every(s => s.done) && !g.locked && !g.mg.active) {
+      f.lapse = 'ask';
+      U.dialog([L('valeria', 'Todo listo. Ahora mirá qué pasa esta madrugada: adelanto el reloj hasta la medianoche y lo pongo en cámara rápida. Seguí la barra de arriba y las luces de los cargadores.')], () => { f.lapse = 'run'; G.hour = 23.6; G.holdAt = 7; G.clockRate = 0.7; G.energyRate = 0.7; G.step(0); });
+    }
+    if (f.lapse !== 'run' || f.night) return;
+    const h = G.hour, hh = Math.floor(h), mm = Math.floor((h % 1) * 60), clock = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    U.timer(`Noche en cámara rápida · ${clock} · autos ${Math.round(G.out.ev)} MW · hidrógeno ${Math.round(G.out.h2)} MW`, false);
+    if (Math.abs(h - 7) < 1e-3) { f.night = true; G.clockRate = 1 / 60; G.energyRate = 1 / 20; G.holdAt = null; U.timer(null); }
   }
 
   // ---- Final: hora pico nocturna ----
@@ -410,6 +461,7 @@ export class Missions {
       if (left <= 0 && cur < st.length && !this.lapse) { this.active = false; U.timer(null); U.dialog([L('valeria', 'Se nos fue el sol antes de completar la carga. No pasa nada: mañana sale de nuevo. Adelanto el reloj y seguimos donde quedamos.')], () => { this.scenario('sol', false); this.active = true; }); }
     }
     if (K === 'tormenta' && G.out.pct < 99.9) this.fossilT = (this.fossilT || 0) + dt;
+    if (K === 'transicion') this.nightLapse(st);
     if (K === 'urbano' && this.busT > 0) { this.busT -= dt; if (this.busT <= 0) this.flags.busesSeen = true; }
     if (K === 'pico' && this.m5 && !this.flags.m5won) {
       const m = this.m5;

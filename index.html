@@ -156,6 +156,7 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #ride{display:flex;align-items:center;gap:7px;width:100%;margin-top:7px;padding:5px 9px;border-radius:10px;border:2px solid var(--sun);background:linear-gradient(90deg,#123a66,#0f2140);color:var(--cream);font-size:12.5px;font-weight:900;text-align:left;cursor:pointer;animation:ridePulse 1.8s ease-in-out infinite} #ride.hidden{display:none} @media (hover:none) and (pointer:coarse){#ride kbd{display:none}} #ride span{flex:1} #ride:hover,#ride:focus-visible{background:#1d4f86} @keyframes ridePulse{50%{box-shadow:0 0 0 3px rgba(255,210,63,.35)}} @media (prefers-reduced-motion:reduce){#ride{animation:none}}
 #favLine{margin-top:5px;font-size:12.5px;color:#9be7ff;font-weight:900} #bAlb{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900} #bAlb:hover{border-color:var(--sun)}
 #album .oBox,#arcade .oBox{width:min(620px,96vw)}
+@media (min-width:900px){#arcade .oBox{width:min(900px,96vw)} #arList{grid-template-columns:repeat(3,1fr)}}
 #escuela .eBox{width:min(860px,97vw)} .eLevel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap} .eLevel .btn{min-width:180px;display:grid;justify-items:center;line-height:1.15;padding:6px 14px} .eLevel .btn small{font-size:12px;font-weight:800;opacity:.85} .eLevel .btn.on{background:var(--sun);color:#2a1a00;border-color:#fff3b0}
 #eList{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:9px;width:100%}
 .eCard{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 11px;border-radius:14px;border:3px solid color-mix(in srgb,var(--c) 70%,#fff 0%);background:linear-gradient(135deg,color-mix(in srgb,var(--c) 26%,#0c1a34),#0c1a34 70%);color:var(--cream);font:inherit;cursor:pointer;box-shadow:0 4px 0 #071226;transition:transform .12s}
@@ -633,7 +634,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
     <dt>Idea y diseño de juego</dt><dd>Homero Texeira</dd>
     <dt>Un juego del museo</dt><dd>Energimundo</dd>
     <dt>Programación, arte 3D y música</dt><dd>Generados por código con la asistencia de Claude (Anthropic)</dd>
-    <dt>Sonidos grabados</dt><dd>Tambores: Versilian Community Sample Library (CC0). Caballos: foxen10, madklown, 0_ciz (CC0) y GoodListener (CC BY 3.0). Fuegos artificiales: Jonathan Shaw / InspectorJ (CC BY 3.0), Florian Reichelt y Tobiasz «unfa» Karoń (CC0). Vía freesound.org</dd>
+    <dt>Sonidos grabados</dt><dd>Tambores: Versilian Community Sample Library (CC0). Caballos: foxen10, madklown, 0_ciz (CC0) y GoodListener (CC BY 3.0). Fuegos artificiales: Jonathan Shaw / InspectorJ (CC BY 3.0), Florian Reichelt y Tobiasz «unfa» Karoń (CC0), vía freesound.org. Ambiente, de Wikimedia Commons: benteveo de Eurico Zimbres (CC BY-SA 2.5) y Paulo rsmenezes (CC BY-SA 4.0); tero de Eurico Zimbres (CC BY-SA 2.5); el agua de Dsw4 (CC BY 3.0) y Benzband (CC BY-SA 3.0). Los recortes CC BY-SA siguen con esa licencia</dd>
     <dt>Motor gráfico</dt><dd>Three.js</dd>
     <dt>Tipografías</dt><dd>Lilita One y Nunito</dd>
     <dt>Datos de la matriz eléctrica</dt><dd>Ministerio de Industria, Energía y Minería · Balance Energético 2025</dd>
@@ -653,7 +654,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   <div class="tBtns">
     <button class="btn hidden" id="bCont" type="button">Continuar</button>
     <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
-    <button class="btn" id="bLong" type="button" disabled>Historia larga<small>7 misiones · unos 20 minutos</small></button>
+    <button class="btn" id="bLong" type="button" disabled>Historia larga<small>8 misiones · unos 25 minutos</small></button>
     <button class="btn school" id="bSchool" type="button" disabled>Modo escuela<small>Una misión por energía, con medalla</small></button>
   </div>
   <div class="tBtns2"><button class="btn ghost" id="bArc" type="button">Minijuegos</button><button class="btn ghost" id="bCred" type="button">Créditos</button><button class="btn ghost bigToggle" id="bBig" type="button" aria-pressed="false">Letra grande: no</button></div>
@@ -676,7 +677,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
 <script id="cgBoot">
 // Descarga del juego con avance real (los bytes que van llegando). Abierto como archivo (el kiosco) se carga directo.
 (function () {
-  var BYTES = 1380032, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
+  var BYTES = 1587637, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
   var $ = function (i) { return d.getElementById(i); }, fill = $('cgFill'), run = $('cgRun'), pct = $('cgPct'), lab = $('cgLabel'), bar = $('cgBar');
   // qué parte de la barra le toca a la descarga: la calcula la propia descarga con la velocidad que trae (al principio
   // se usa lo que tardó la vez anterior en esta PC); rest es lo que tarda después en armarse todo en esta PC

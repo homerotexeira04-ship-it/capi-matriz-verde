@@ -1,8 +1,10 @@
-// Sonidos grabados de verdad: tambores de candombe, caballos y fuegos artificiales.
+// Sonidos grabados de verdad: tambores de candombe, caballos, fuegos artificiales y el ambiente (el río en la orilla,
+// el vertedero de la represa, el benteveo y el tero).
 // Cada uno suena desde su lugar en el mundo: cerca se oye fuerte y brillante, lejos más bajo y apagado,
 // y a la izquierda o a la derecha según hacia dónde mire la cámara. Los fuegos llegan después del destello,
 // como en la realidad (el sonido viaja a 343 m/s). Autores y licencias: sonidos/CREDITOS.txt y la pantalla de créditos.
-import { clamp } from './util.js';
+import { clamp, damp, TAU } from './util.js';
+import { POS } from './terrain.js';
 import piano_a from '../sonidos/piano_a.mp3';
 import piano_b from '../sonidos/piano_b.mp3';
 import piano_m from '../sonidos/piano_m.mp3';
@@ -26,10 +28,18 @@ import caballo_relincho_a from '../sonidos/caballo_relincho_a.mp3';
 import caballo_relincho_b from '../sonidos/caballo_relincho_b.mp3';
 import caballo_resoplido_a from '../sonidos/caballo_resoplido_a.mp3';
 import caballo_resoplido_b from '../sonidos/caballo_resoplido_b.mp3';
+import benteveo_a from '../sonidos/benteveo_a.mp3';
+import benteveo_b from '../sonidos/benteveo_b.mp3';
+import benteveo_c from '../sonidos/benteveo_c.mp3';
+import tero_a from '../sonidos/tero_a.mp3';
+import tero_b from '../sonidos/tero_b.mp3';
+import rio from '../sonidos/rio.mp3';
+import vertedero from '../sonidos/vertedero.mp3';
 
 const RAW = { piano_a, piano_b, piano_m, repique_a, repique_b, repique_m, chico_a, chico_b, chico_m, palo, madera_a, madera_b,
   fw_estallido_a, fw_estallido_b, fw_trueno_a, fw_trueno_b, fw_crepitar_a, fw_crepitar_b, fw_final,
-  caballo_relincho_a, caballo_relincho_b, caballo_resoplido_a, caballo_resoplido_b };
+  caballo_relincho_a, caballo_relincho_b, caballo_resoplido_a, caballo_resoplido_b,
+  benteveo_a, benteveo_b, benteveo_c, tero_a, tero_b, rio, vertedero };
 const SOUND = 343;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -126,6 +136,29 @@ class Cuerda {
         if (this.sec === 'repicado') this.frase = pick(REPIQUE);
         if (--this.left <= 0) this.section();
       }
+    }
+  }
+}
+
+// Un sonido continuo (el agua) armado con un tramo grabado que se repite encadenado con fundidos suaves, cada vez
+// desde otro punto del tramo y a una velocidad apenas distinta: no se oye la costura ni la repetición.
+const FIN = new Float32Array(32).map((_, i) => Math.sin(i / 31 * Math.PI / 2)), FOUT = FIN.slice().reverse();
+class Lecho {
+  constructor(m, name) { this.m = m; this.n = name; this.b = null; this.next = 0; this.live = false; }
+  update(x, y, z, ref, max, gain) {
+    const m = this.m, c = m.ctx, B = m.buf[this.n]; if (!B) return;
+    if (!this.b) this.b = m.bus();
+    const s = m.spat(x, y, z, ref, max), g = s.g * gain, now = c.currentTime;
+    m.set(this.b, g, s.f, s.pan, 0.35);
+    if (g < 0.003) { this.live = false; return; }   // fuera de alcance: no se programa nada
+    if (!this.live) { this.live = true; this.next = now + 0.05; }
+    while (this.next < now + 1.2) {   // con margen: un cuadro lento no deja un hueco
+      const X = 0.8, off = (B.off || 0) + 0.05 + Math.random() * B.duration * 0.3, len = Math.max(2 * X + 0.6, B.duration - off - 0.08), r = rnd(0.95, 1.05);
+      const src = c.createBufferSource(), v = c.createGain(), t = Math.max(this.next, now + 0.02), dur = len / r;
+      src.buffer = B; src.playbackRate.value = r; v.gain.value = 0;
+      v.gain.setValueCurveAtTime(FIN, t, X); v.gain.setValueCurveAtTime(FOUT, t + dur - X, X);
+      src.connect(v); v.connect(this.b.in); src.start(t, off, len); src.onended = () => { try { v.disconnect(); } catch (e) { /* nada */ } };
+      this.next = t + dur - X;
     }
   }
 }
@@ -229,6 +262,50 @@ export class Muestras {
     if (!this.ok || this.ctx.state !== 'running') { this.cu.lvl = 0; return; }
     if (paused !== this.paused) { this.paused = paused; this.out.gain.setTargetAtTime(paused ? 0.18 : 0.9, this.ctx.currentTime, 0.15); }   // en pausa, el mundo se oye de lejos
     this.cu.update(dt, drums, title);
+  }
+  // ---------- ambiente grabado ----------
+  // A = { w: mundo, G: red, hour, storm }
+  ambiente(dt, A) {
+    if (!this.ok || !this.buf.rio || this.ctx.state !== 'running') return;
+    const w = A.w, G = A.G;
+    // el agua más cercana (río, lago o arroyo): se oye el chapoteo contra la orilla desde ese lado
+    if ((this.wT = (this.wT || 0) - dt) <= 0) { this.wT = 0.3; this.agua = this.nearWater(w); }
+    const q = this.agua;
+    (this.rioL = this.rioL || new Lecho(this, 'rio')).update(q ? q.x : this.lx, q ? q.y : 0, q ? q.z : this.lz, 7, 36, q ? 0.6 : 0);
+    // el vertedero de la represa: más fuerte cuantas más compuertas están abiertas de más
+    let op = 0, gx = 0; G.hydro.gates.forEach((g, i) => { const o = g.reg ? 0.28 : 1; op += o; gx += POS.gates[i] * o; });
+    this.spill = this.spill == null ? op / 4 : damp(this.spill, op / 4, 0.7, dt);
+    (this.vertL = this.vertL || new Lecho(this, 'vertedero')).update(gx / op, 1.5, -90, 24, 200, 0.3 + 0.8 * this.spill);
+    // pájaros: el benteveo canta desde los árboles de día; el tero, desde lo abierto (y alguna vez de noche)
+    const day = A.hour > 6.4 && A.hour < 19.6, rain = (A.storm || 0) > 0.25;
+    if ((this.bT = (this.bT == null ? 4 : this.bT) - dt) <= 0) {
+      this.bT = rnd(5, 13); const t = day && !rain ? this.treeNear(w, 36) : null;
+      if (t) this.at(pick(['benteveo_a', 'benteveo_b', 'benteveo_b', 'benteveo_c', 'benteveo_c']), t.x, t.y, t.z, { ref: 13, max: 90, gain: rnd(0.5, 0.75), rate: rnd(0.97, 1.03) });
+    }
+    if ((this.tT = (this.tT == null ? 9 : this.tT) - dt) <= 0) {
+      this.tT = (day ? rnd(10, 22) : rnd(28, 50)); const p = rain ? null : this.openNear(w);
+      if (p) this.at(pick(['tero_a', 'tero_b']), p.x, p.y, p.z, { ref: 18, max: 160, gain: rnd(0.45, 0.7) * (day ? 1 : 0.7), rate: rnd(0.96, 1.04) });
+    }
+  }
+  nearWater(w) {
+    const lx = this.lx, lz = this.lz, wet = (x, z) => w.terrainAt(x, z) < w.waterAt(x, z) - 0.15;
+    if (wet(lx, lz)) return { x: lx, y: w.waterAt(lx, lz) + 0.3, z: lz };
+    for (const r of [4, 8, 13, 19, 26, 34]) for (let k = 0; k < 16; k++) {
+      const a = k / 16 * TAU, x = lx + Math.cos(a) * r, z = lz + Math.sin(a) * r;
+      if (wet(x, z)) return { x, y: w.waterAt(x, z) + 0.3, z };
+    }
+    return null;
+  }
+  treeNear(w, R) {
+    const out = []; for (const t of w.trees) if (t.type !== 'bush' && Math.abs(t.x - this.lx) < R && Math.abs(t.z - this.lz) < R) out.push(t);
+    if (!out.length) return null; const t = pick(out); return { x: t.x, y: (t.y || w.terrainAt(t.x, t.z)) + 2.5 + 2 * (t.s || 1), z: t.z };
+  }
+  openNear(w) {   // un lugar abierto (pasto, cancha, costanera) a unas decenas de metros
+    for (let k = 0; k < 10; k++) {
+      const a = Math.random() * TAU, r = rnd(14, 42), x = this.lx + Math.cos(a) * r, z = this.lz + Math.sin(a) * r, h = w.terrainAt(x, z);
+      if (h > w.waterAt(x, z) + 0.4 && w.groundAt(x, z) - h < 0.25) return { x, y: h + 0.5, z };
+    }
+    return null;
   }
   get level() { return this.ok ? this.cu.lvl : 0; }
 }

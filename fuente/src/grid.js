@@ -2,7 +2,11 @@
 // Lógica pura (sin gráficos) para poder probarla por separado.
 import { clamp, lerp, keyAt } from './util.js';
 
-export const CAP = { hydro: 36, wind: 8, solar: 12, bio: 40, batP: 60, batE: 120, bus: 16 };
+export const CAP = { hydro: 36, wind: 8, solar: 12, bio: 40, batP: 60, batE: 120, bus: 16, ev: 22, h2: 14 };
+// Carga de los autos eléctricos de la ciudad. Sin programar, la gente enchufa al llegar a casa y la carga cae en la
+// hora pico; programados, la misma energía entra de madrugada, en el horario valle de UTE (de 0 a 7).
+const evAtHome = h => { const d = ((h - 20.2 + 36) % 24) - 12; return Math.exp(-(d * d) / 3.2); };   // pico a las 20 h, unas 3,2 h·MW por MW
+const evValley = h => (h >= 0.3 && h < 6.6 ? 1 : h < 0.3 ? h / 0.3 : h < 7 ? (7 - h) / 0.4 : 0) * 0.47;   // casi lo mismo, repartido de 0 a 7
 const DEMAND = [[0, 108], [3, 96], [6, 118], [9, 160], [12, 165], [15, 156], [18, 186], [20, 210], [21.5, 216], [23, 184], [24, 108]];
 
 export class EnergyGrid {
@@ -18,9 +22,11 @@ export class EnergyGrid {
     this.bio = { on: false, fault: false, chips: false, pressure: 0, routed: false };
     this.bat = { connected: false, soc: 0.2, mode: 'auto', p: 0 };
     this.buses = false;
+    this.ev = { on: false, smart: 0 };   // smart: qué parte de los autos carga programada de madrugada (0 a 1)
+    this.h2 = { on: false, kg: 0 };      // electrolizador: carga flexible que toma solo la energía renovable que sobra
     this.fossil = 0; this.freq = 50;
     this.windUnit = [0, 0, 0, 0, 0]; this.hydroUnit = [0, 0, 0, 0]; this.solarUnit = [0, 0, 0, 0];
-    this.out = { hydro: 0, wind: 0, solar: 0, bio: 0, bat: 0, fossil: 0, gen: 0, demand: 160, ren: 0, pct: 0, surplus: 0, unmet: 0 };
+    this.out = { hydro: 0, wind: 0, solar: 0, bio: 0, bat: 0, fossil: 0, gen: 0, demand: 160, ren: 0, pct: 0, surplus: 0, unmet: 0, ev: 0, h2: 0 };
     this.step(0);
   }
   sun(h = this.hour) { const s = Math.sin(Math.PI * (h - 6) / 12); return s > 0 ? Math.pow(s, 0.75) : 0; }
@@ -39,10 +45,10 @@ export class EnergyGrid {
     if (dt > 0 && this.clockRate > 0) {
       const prev = this.hour; let next = prev + dt * this.clockRate;
       if (this.holdAt != null) {
-        let gap = this.holdAt - prev; if (gap < 0) gap += 24;
+        let gap = this.holdAt - prev; if (gap < -1e-6) gap += 24;   // un error de redondeo no cuenta como «ya pasó»
         if (gap <= dt * this.clockRate + 1e-6) next = this.holdAt;
       }
-      this.hour = ((next % 24) + 24) % 24;
+      this.hour = next >= 24 ? next - 24 : next < 0 ? next + 24 : next;   // sin módulo: 18,95 se queda en 18,95
     }
     // Clima
     this.windBase += clamp(this.windTarget - this.windBase, -0.12 * dt, 0.12 * dt);
@@ -70,7 +76,8 @@ export class EnergyGrid {
     o.bio = CAP.bio * this.bio.pressure * (this.bioBoost || 1);
 
     // Demanda
-    o.demand = (this.demandAt(this.hour) + this.demandExtra + (this.buses ? CAP.bus * (0.6 + 0.4 * this.night()) : 0)) * this.demandMul * (1 - (this.eff || 0));
+    o.ev = this.ev.on ? CAP.ev * ((1 - this.ev.smart) * evAtHome(this.hour) + this.ev.smart * evValley(this.hour)) : 0;
+    o.demand = (this.demandAt(this.hour) + this.demandExtra + (this.buses ? CAP.bus * (0.6 + 0.4 * this.night()) : 0) + o.ev) * this.demandMul * (1 - (this.eff || 0));
     o.ren = o.hydro + o.wind + o.solar + o.bio;
 
     // Baterías: positivo = descarga hacia la red, negativo = carga con excedentes
@@ -91,6 +98,9 @@ export class EnergyGrid {
     o.fossil = this.fossil;
     o.unmet = Math.max(0, short - this.fossil);
     o.surplus = Math.max(0, net + pb);
+    // Hidrógeno verde: el electrolizador toma lo que sobra (después de cargar las baterías) y nunca le pide al respaldo fósil
+    o.h2 = this.h2.on ? Math.min(CAP.h2, o.surplus) : 0; o.surplus -= o.h2;
+    if (o.h2 > 0 && dh > 0) this.h2.kg += o.h2 * dh * 1000 / 55;   // unos 55 kWh de electricidad por kilo de hidrógeno
     o.gen = Math.min(o.ren, o.demand + Math.max(0, -pb)) + dis + o.fossil;
     o.pct = 100 * clamp((Math.min(o.ren, o.demand) + dis) / o.demand, 0, 1);
     if (o.pct > 99.95) o.pct = 100;

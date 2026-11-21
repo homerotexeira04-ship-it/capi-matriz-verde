@@ -25,6 +25,9 @@ export const ESCUELA = [
   { key: 'tormenta', name: 'Clima y matriz diversificada', icon: 'tormenta', color: '#6a7fa8', min: 4, outfit: null,
     sub: 'Sostener la red en plena sudestada',
     learn: ['Con ráfagas muy fuertes, un molino se frena solo para protegerse.', 'Las baterías sostienen la red mientras se reparan las fallas.', 'Con varias fuentes distintas, si una se cae, las otras la sostienen.'] },
+  { key: 'transicion', name: 'Segunda transición', icon: 'transicion', color: '#1f9e74', min: 4, outfit: null,
+    sub: 'Autos que cargan de madrugada e hidrógeno verde',
+    learn: ['Los autos eléctricos conviene cargarlos de madrugada, de 0 a 7: sobra energía y la luz es más barata.', 'El hidrógeno verde se hace separando el agua con electricidad renovable que sobra.', 'Llevar la energía renovable al transporte es la segunda transición energética de Uruguay.'] },
   { key: 'pico', name: 'La red completa', icon: 'pico', color: '#e6007e', min: 5, outfit: 5,
     sub: 'Pasar la hora pico nocturna 100 % renovable',
     learn: ['La hora pico es cuando la ciudad pide más energía: a la noche y sin sol.', 'Hay que arreglar cada falla rápido y usar bien las baterías.', 'En 2025, el 98 % de la electricidad generada en Uruguay fue renovable.'] }
@@ -41,11 +44,16 @@ export function drawIcon(g, k, cx, cy, r, col = '#ffffff') {
   if (k === 'urbano') { g.translate(cx, cy); g.rotate(0.7); g.beginPath(); g.ellipse(0, 0, 32 * s, 60 * s, 0, 0, 7); g.fill(); g.globalCompositeOperation = 'destination-out'; g.lineWidth = 6 * s; g.beginPath(); g.moveTo(0, 56 * s); g.lineTo(0, -50 * s); g.stroke(); }
   if (k === 'ahorro') { g.beginPath(); g.arc(cx, cy - 14 * s, 34 * s, Math.PI * 0.8, Math.PI * 2.2); g.lineTo(cx + 15 * s, cy + 30 * s); g.lineTo(cx - 15 * s, cy + 30 * s); g.closePath(); g.fill(); g.fillRect(cx - 15 * s, cy + 36 * s, 30 * s, 7 * s); g.fillRect(cx - 12 * s, cy + 47 * s, 24 * s, 7 * s); g.lineWidth = 6 * s; for (const a of [-2.6, -1.57, -0.55]) { g.beginPath(); g.moveTo(cx + Math.cos(a) * 46 * s, cy - 14 * s + Math.sin(a) * 46 * s); g.lineTo(cx + Math.cos(a) * 60 * s, cy - 14 * s + Math.sin(a) * 60 * s); g.stroke(); } }
   if (k === 'tormenta') { for (const [x, y, rr] of [[-22, -10, 24], [6, -22, 30], [30, -6, 22]]) { g.beginPath(); g.arc(cx + x * s, cy + y * s, rr * s, 0, 7); g.fill(); } g.fillRect(cx - 44 * s, cy - 8 * s, 92 * s, 22 * s); g.beginPath(); g.moveTo(cx + 6 * s, cy + 18 * s); g.lineTo(cx - 12 * s, cy + 46 * s); g.lineTo(cx + 2 * s, cy + 46 * s); g.lineTo(cx - 8 * s, cy + 70 * s); g.lineTo(cx + 22 * s, cy + 36 * s); g.lineTo(cx + 8 * s, cy + 36 * s); g.lineTo(cx + 18 * s, cy + 18 * s); g.closePath(); g.fill(); }
+  if (k === 'transicion') {   // enchufe con su cable
+    g.fillRect(cx - 9 * s, cy - 62 * s, 7 * s, 22 * s); g.fillRect(cx + 9 * s, cy - 62 * s, 7 * s, 22 * s);
+    g.beginPath(); g.moveTo(cx - 30 * s, cy - 42 * s); g.lineTo(cx + 36 * s, cy - 42 * s); g.lineTo(cx + 30 * s, cy - 4 * s); g.quadraticCurveTo(cx + 3 * s, cy + 16 * s, cx - 24 * s, cy - 4 * s); g.closePath(); g.fill();
+    g.lineWidth = 10 * s; g.beginPath(); g.moveTo(cx + 3 * s, cy + 8 * s); g.bezierCurveTo(cx + 3 * s, cy + 46 * s, cx + 40 * s, cy + 30 * s, cx + 40 * s, cy + 62 * s); g.stroke();
+  }
   if (k === 'pico') { g.beginPath(); g.moveTo(cx + 12 * s, cy - 64 * s); g.lineTo(cx - 34 * s, cy + 8 * s); g.lineTo(cx - 2 * s, cy + 8 * s); g.lineTo(cx - 14 * s, cy + 64 * s); g.lineTo(cx + 34 * s, cy - 10 * s); g.lineTo(cx + 2 * s, cy - 10 * s); g.closePath(); g.fill(); }
   g.restore();
 }
 // ---------- Medallas "premium": metal dorado con canto estriado, esmalte, letras en oro e isotipo de Energimundo dorado ----------
-const SHORT = { viento: 'EÓLICA', rio: 'HIDRÁULICA', sol: 'SOLAR', urbano: 'BIOMASA', ahorro: 'EFICIENCIA', tormenta: 'CLIMA', pico: 'RED COMPLETA' };
+const SHORT = { viento: 'EÓLICA', rio: 'HIDRÁULICA', sol: 'SOLAR', urbano: 'BIOMASA', ahorro: 'EFICIENCIA', tormenta: 'CLIMA', transicion: 'TRANSICIÓN', pico: 'RED COMPLETA' };
 const METAL = {
   gold: ['#fff4c8', '#f3c94c', '#b8841a', '#f8d870', '#8a5a0c'],
   silver: ['#ffffff', '#cfd6df', '#8a95a3', '#e6ebf1', '#5d6774']
@@ -236,7 +244,7 @@ export class Escuela {
     });
     $('eCount').textContent = `Medallas: ${this.count()} de ${ESCUELA.length}`; $('eReset').textContent = 'Borrar medallas'; $('eReset').disabled = !this.count();
   }
-  key(code) { const m = /^(?:Digit|Numpad)([1-7])$/.exec(code); if (m) this.start(ESCUELA[+m[1] - 1].key); }
+  key(code) { const m = /^(?:Digit|Numpad)([1-8])$/.exec(code); if (m) this.start(ESCUELA[+m[1] - 1].key); }
   start(k) {
     const g = this.g; $('escuela').classList.add('hidden'); if (g.extras.open === 'escuela') g.extras.open = null;
     this.cur = k; g.play('larga', SEQ.larga.indexOf(k), null, this.level, { school: k });
@@ -252,7 +260,7 @@ export class Escuela {
     else prize = 'Tu premio: la medalla queda guardada en el Modo escuela de esta computadora.';
     $('eWinT').textContent = `¡Medalla de ${E.name}!`; $('eWinS').textContent = (first ? '' : 'Otra vez, ¡y con todo! ') + `Medallas: ${this.count()} de ${ESCUELA.length}. Lo que aprendiste:`;
     const ul = $('eLearn'); ul.textContent = ''; for (const t of E.learn) { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }
-    if (this.count() === ESCUELA.length) prize += ' ¡Y juntaste las siete medallas: sos Guardián de la Matriz Verde!';
+    if (this.count() === ESCUELA.length) prize += ' ¡Y juntaste todas las medallas: sos Guardián de la Matriz Verde!';
     $('ePrize').textContent = prize; this.shine(drawMedal($('eMedal'), E, true));
     g.extras.open = 'eWin'; $('eWin').classList.remove('hidden'); this.winOpen = true; g.audio.fanfare(); g.confetti(80); g.capi.celebrate && g.capi.celebrate(3);
     setTimeout(() => { try { $('eCert').focus({ preventScroll: true }); } catch (e) { /* sin foco */ } }, 40);

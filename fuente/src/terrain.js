@@ -38,7 +38,7 @@ export const POS = {
 };
 
 // Zonas planas (sin ondulación) con borde difuminado: [x0, x1, z0, z1]
-const FLAT = [[-90, 24, -12, 104], [40, 82, 50, 72], [42, 56, 2, 14], [-52, -40, -48, -8], [27, 41, 19, 31], [2, 44, -32, 10], [-18, 6, -24, -6], [-16, 50, -110, -54], [-94, -34, -112, -46]];
+const FLAT = [[-90, 24, -12, 104], [40, 82, 50, 72], [50, 78, 79, 94], [42, 56, 2, 14], [-52, -40, -48, -8], [27, 41, 19, 31], [2, 44, -32, 10], [-18, 6, -24, -6], [-16, 50, -110, -54], [-94, -34, -112, -46]];
 function flatMask(x, z) {
   let m = 0;
   for (const r of FLAT) {
@@ -91,6 +91,7 @@ export const ZONES = [
   { id: 'eolica', name: 'Parque Eólico de las Cuchillas', x: 70, z: -12, color: '#e8f1f2' },
   { id: 'solar', name: 'Parque Solar y Baterías', x: 18, z: -80, color: '#ffb703', rect: [-18, 50, -112, -54] },
   { id: 'biomasa', name: 'Planta de Biomasa', x: 60, z: 62, color: '#90be6d' },
+  { id: 'hidrogeno', name: 'Planta de Hidrógeno Verde', x: 64, z: 86, color: '#57e389', rect: [50, 78, 77, 96] },
   { id: 'norte', name: 'Barrio Norte y Costanera', x: -44, z: -3, color: '#f4a261', rect: [-86, 4, -24, 12] },
   { id: 'puerto', name: 'Puerto de Salto', x: -96, z: 50, color: '#5ad1ff', rect: [-120, -84, 30, 70] },
   { id: 'sur', name: 'Barrio Sur', x: -28, z: 118, color: '#f4a261', rect: [-42, -8, 97, 136] },

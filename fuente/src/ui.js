@@ -263,6 +263,7 @@ export class UI {
       { zone: 'solar', x: 545, y: 72, name: 'BATERÍAS', mw: o.bat, cap: 50, col: '#5ad1ff', bat: true },
       { zone: null, x: 210, y: 386, name: 'RESPALDO FÓSIL', mw: o.fossil, cap: 140, col: '#b08a7a' }
     ];
+    if (G.h2.on) N.push({ zone: 'hidrogeno', x: 120, y: 236, name: 'HIDRÓGENO', mw: -o.h2, cap: 14, col: '#57e389', h2: true });
     for (const n of N) {
       const act = Math.abs(n.mw) > 0.5, lv = clamp(Math.abs(n.mw) / n.cap, 0, 1);
       g.strokeStyle = act ? n.col : '#27406b'; g.lineWidth = act ? 3 + lv * 5 : 3; g.setLineDash(act ? [10, 9] : []); g.lineDashOffset = (n.mw < 0 ? 1 : -1) * t * (20 + lv * 90);
@@ -274,9 +275,10 @@ export class UI {
       g.fillStyle = '#fff7e6'; g.font = '900 19px Nunito,sans-serif'; g.fillText(val, x, y - (sub ? 6 : 0));
       if (sub) { g.font = '800 12px Nunito,sans-serif'; g.fillStyle = '#a9bbd6'; g.fillText(sub, x, y + 13); }
     };
-    for (const n of N) node(n.x, n.y, 42, n.col, n.name, (n.bat && !G.bat.connected) ? '—' : Math.round(n.mw) + ' MW', n.bat ? (G.bat.connected ? Math.round(G.bat.soc * 100) + '% carga' : 'sin conectar') : Math.round(clamp(Math.abs(n.mw) / n.cap, 0, 1) * 100) + '%');
+    for (const n of N) node(n.x, n.y, 42, n.col, n.name, (n.bat && !G.bat.connected) ? '—' : Math.round(n.h2 ? -n.mw : n.mw) + ' MW', n.bat ? (G.bat.connected ? Math.round(G.bat.soc * 100) + '% carga' : 'sin conectar') : n.h2 ? Math.round(G.h2.kg) + ' kg' : Math.round(clamp(Math.abs(n.mw) / n.cap, 0, 1) * 100) + '%');
     const ok = o.pct >= 100;
     node(city.x, city.y, 62, ok ? '#57e389' : '#ffc93c', 'CIUDAD · DEMANDA', Math.round(o.demand) + ' MW', G.freq.toFixed(1).replace('.', ',') + ' Hz · ' + Math.round(o.pct) + ' %');
+    if (G.ev.on) { g.textAlign = 'center'; g.font = '800 12px Nunito,sans-serif'; g.fillStyle = '#a9bbd6'; g.fillText(`incluye autos eléctricos: ${Math.round(o.ev)} MW`, city.x, city.y + 92); }
     g.textAlign = 'left'; g.font = '800 13px Nunito,sans-serif'; g.fillStyle = '#a9bbd6';
     g.fillText('G total = hidro + eólica + solar + biomasa + baterías = ' + Math.round(o.ren + Math.max(0, o.bat)) + ' MW', 16, H - 16);
     g.textAlign = 'right'; g.fillStyle = ok ? '#57e389' : '#ff6b4a'; g.fillText(ok ? 'EQUILIBRIO ÓPTIMO' : 'DÉFICIT RENOVABLE: ' + Math.round(o.fossil + o.unmet) + ' MW', W - 16, H - 16);

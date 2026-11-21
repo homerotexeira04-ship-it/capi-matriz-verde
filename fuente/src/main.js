@@ -17,6 +17,8 @@ import { Extras } from './extras.js';
 import { Vida, buildSalto, CLEAR } from './vida.js';
 import { Social, buildSocial, CLEAR2 } from './social.js';
 import './arcade.js';
+import './casa.js';
+import { buildTransicion, CLEAR6 } from './transicion.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
@@ -78,12 +80,12 @@ class Game {
       if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
       const ii = $('logoIso');
       if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-      w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4, CLEAR5);
+      w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4, CLEAR5, CLEAR6);
       return w;
     });
     await L.step('calles', () => { buildRoads(w); buildCity(w); });
     await L.step('represa', () => { buildHydro(w); });
-    await L.step('centrales', () => { buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); });
+    await L.step('centrales', () => { buildWind(w); buildSolar(w); buildBiomass(w); buildTransicion(w); buildLines(w); });
     await L.step('barrios', () => { buildBarrios(w); buildStops(w); buildIntlSalto(w); });
     await L.step('museo', () => { buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1])); buildCorte(w); });
     await L.step('flora', () => { buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w); });
@@ -510,7 +512,8 @@ class Game {
     }
     // cuerda de tambores de verdad: el desfile de Carnaval o la del baile final en la plaza
     this.muestras.frame(dt, this.audio.llamada ? this.vecinos.drumAt() : this.fiestas.cuerdaAt(), !play, this.paused);
-    this.audio.realDrums = this.muestras.ok; this.audio.duck = this.muestras.level;
+    this.muestras.ambiente(dt, { w, G, hour: G.hour, storm: w.storm || 0 });   // río, vertedero, benteveo y tero grabados
+    this.audio.realDrums = this.muestras.ok; this.audio.realAmb = this.muestras.ok && !!this.muestras.buf.rio; this.audio.duck = this.muestras.level;
     this.audio.update(dt, { pct, title: !play, amb, festSoft: this.fiestas.soft, carnaval: this.fiestas.mode === 'carnaval', wind: G.wind, windNear, waterNear, humNear: Math.max(near(POS.substation[0], POS.substation[1], 14), near(POS.windTx[0], POS.windTx[1], 14), near(POS.bioSub[0], POS.bioSub[1], 14), near(POS.batYard[0], POS.batYard[1], 16)), deficit: play && G.freq < 49.5 });
     if ((this.curT = (this.curT || 0) - dt) <= 0) { this.curT = 0.08; this.cursor(); }
     if (play) this.ui.update(dt, { capi: c.pos, heading: c.heading, yaw: cam.yaw, inter: w.interList, panel: this.panel, capiTalk: this.ui.talking === 'capi', colors: this.extras.colors(), buses: G.buses, sparks: this.extras.sparks.filter(q => !this.extras.got.has(q.i)) });

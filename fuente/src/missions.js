@@ -21,6 +21,8 @@ const DEF = {
   libre: { title: 'Modo libre', scn: { hour: null, rate: 1 / 20, hold: null, wind: 0.6, gust: 0.14, extra: 0 } }
 };
 
+export const missionTitle = k => (DEF[k] || {}).title;   // el nombre de cada misión, para certificados
+
 const INTRO = {
   ahorro: [
     L('lucia', 'Capi, hasta ahora sumamos energía limpia. Pero hay otra forma de ayudar a la red: gastar menos sin perder comodidad.'),

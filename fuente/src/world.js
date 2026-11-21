@@ -105,10 +105,14 @@ void main(){
   col*=uLight*(0.62+0.5*diff);
   float spec=pow(max(dot(n,normalize(uSunDir+v)),0.0),90.0);
   // reflejo del sol: un camino suave y destellos que titilan, en vez de una mancha blanca dura
-  vec2 cell=floor(vWorld.xz*1.3); float h=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
-  float tw=step(0.7,fract(h*7.0+uTime*(0.25+0.5*h)));
-  col+=uSunColor*(smoothstep(0.2,0.95,spec)*0.3+smoothstep(0.3,0.7,spec)*tw*0.6);
-  gl_FragColor=vec4(col,uOpacity);
+  // destellos: puntitos redondos y suaves que se prenden y apagan, y se desvanecen a lo lejos para no titilar en píxeles
+  vec2 q=vWorld.xz*2.2, cell=floor(q), f=fract(q)-0.5; float h=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+  vec2 o=(vec2(fract(h*13.7),fract(h*31.3))-0.5)*0.5; float ph=fract(h*7.0+uTime*(0.3+0.6*h));
+  float px=fwidth(q.x)+fwidth(q.y), near=1.0-smoothstep(0.25,0.7,px);
+  float tw=smoothstep(0.2,0.04,length(f-o))*smoothstep(0.0,0.15,ph)*smoothstep(0.45,0.2,ph)*near;
+  col+=uSunColor*(smoothstep(0.2,0.95,spec)*0.3+smoothstep(0.35,0.75,spec)*tw*0.75);
+  // Fresnel: mirada de refilón, el agua refleja y casi no deja ver el fondo; desde arriba sí se ve la orilla
+  gl_FragColor=vec4(col,mix(uOpacity,1.0,clamp(fres*1.7,0.0,1.0)));
   #include <colorspace_fragment>
   #include <fog_fragment>
 }`;
@@ -514,7 +518,9 @@ export class World {
       // las nubes se aclaran si se interponen entre la cámara y Capi
       const ax = st.focus.x - st.cam.x, ay = st.focus.y - st.cam.y, az = st.focus.z - st.cam.z, px = c.position.x - st.cam.x, py = c.position.y - st.cam.y, pz = c.position.z - st.cam.z;
       const t = clamp((px * ax + py * ay + pz * az) / (ax * ax + ay * ay + az * az), 0, 1), d = Math.hypot(px - ax * t, py - ay * t, pz - az * t);
-      c.material.color.copy(this.cloudMat.color); c.material.opacity = lerp(c.material.opacity, lerp(0.12, 0.94, smooth(16, 42, d)), Math.min(1, dt * 4));
+      // y se desvanecen del todo si la cámara les pasa cerca (si no, una nube a medio aclarar se ve como una lámina de vidrio)
+      const near = smooth(28, 70, Math.hypot(px, py, pz)), op = Math.min(lerp(0, 0.94, smooth(16, 42, d)), 0.94 * near);
+      c.material.color.copy(this.cloudMat.color); c.material.opacity = lerp(c.material.opacity, op, Math.min(1, dt * 4)); c.material.depthWrite = c.material.opacity > 0.9; c.visible = c.material.opacity > 0.02;
       c.position.x += (1.2 + st.grid.wind * 4) * dt * Math.cos(st.grid.windDir); c.position.z += (1.2 + st.grid.wind * 4) * dt * Math.sin(st.grid.windDir) * 0.4; if (c.position.x > B.maxX + 30) c.position.x = B.minX - 30; if (c.position.z > B.maxZ + 20) c.position.z = B.minZ - 20; }
     for (const it of this.interList) {
       const g = it.group; g.visible = it.state !== 'locked' && it.state !== 'hidden' && !st.cine;
@@ -558,7 +564,8 @@ export function offsetWorld(w, dx, dz) {
 const cA = new THREE.Color(), cB = new THREE.Color();
 function groundColor(c, x, z, h, ny) {
   const wl = waterAt(x, z), ar = westD(x, z), d = Math.max(coastD(x, z), ar);   // distancia a la orilla más cercana (positiva en tierra)
-  if (h < wl - 0.15) { c.set(0x2c556b).lerp(cA.set(0xcdbb8c), smooth(wl - 3.4, wl - 0.1, h)); return; }
+  // bajo el agua: las playas suaves pasan de arena a hondo; las barrancas empinadas se oscurecen enseguida (si no, se transparentan como una pared clara)
+  if (h < wl - 0.15) { c.set(0x24495e).lerp(cA.set(0xcdbb8c), smooth(wl - 2.6, wl - 0.1, h) * smooth(0.55, 0.85, ny)); return; }
   const banks = Math.min(channelD(x, z) - 8, 99);
   if ((d < 5.2 && h < 2.6) || h < wl + 0.5) { c.set(0xe8d6a4).lerp(cA.set(0xd8c08a), noise2(x * 0.4, z * 0.4)); return; }
   const g = fbm(x * 0.07, z * 0.07);

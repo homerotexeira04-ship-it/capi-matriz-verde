@@ -1,6 +1,6 @@
 // Modo escuela: se elige una energía en la portada, se juega solo esa misión y al final hay medalla, atuendo y certificado.
 // Las medallas quedan guardadas en esta computadora (se pueden borrar desde el mismo menú).
-import { SEQ } from './missions.js';
+import { SEQ, missionTitle } from './missions.js';
 import { OUTFITS } from './extras.js';
 
 const $ = id => document.getElementById(id);
@@ -275,7 +275,7 @@ export class Escuela {
   cert() {
     const g = this.g, E = BY[this.cur], M = g.missions; $('eWin').classList.add('hidden'); this.winOpen = false; g.extras.open = null;
     g.extras.showDiploma(() => { this.winOpen = true; g.extras.open = 'eWin'; $('eWin').classList.remove('hidden'); }, {
-      kicker: 'CERTIFICADO', title: this.count() === ESCUELA.length ? 'Las siete medallas de Energimundo' : 'Medalla de ' + E.name, desc: `por completar la misión «${M.title}» junto a Capi, en el Modo escuela de Energimundo.`,
+      kicker: 'CERTIFICADO', title: this.count() === ESCUELA.length ? 'Las siete medallas de Energimundo' : 'Medalla de ' + E.name, desc: `por completar la misión «${missionTitle(this.cur) || M.title}» junto a Capi, en el Modo escuela de Energimundo.`,
       story: 'Modo escuela · ' + E.name, extra: `Medallas: ${this.count()} de ${ESCUELA.length}`, medal: E
     });
   }

@@ -20,7 +20,7 @@ import './arcade.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
-import { Fiestas } from './fiestas.js';
+import { Fiestas, FIESTAS } from './fiestas.js';
 import { buildBarrios, CLEAR3 } from './barrios.js';
 import { Urbano } from './urbano.js';
 import { buildMuseo, Museo, CLEAR4 } from './museo.js';
@@ -30,6 +30,7 @@ import { Mapa } from './mapa.js';
 import { Muestras } from './muestras.js';
 import { Post } from './post.js';
 import { buildCorte, Corte } from './corte.js';
+import { Loader, nextFrame } from './carga.js';
 
 const $ = id => document.getElementById(id);
 const FOV = 40;
@@ -54,7 +55,8 @@ const SHOTS = [
   { x: -64, z: 0, d: 150, yaw: -1.05, low: 0.1, h: 11.5, t: 10 }
 ];
 class Game {
-  constructor() {
+  constructor(L) {
+    this.L = L; this.loaded = false;
     const canvas = $('gl');
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75)); r.shadowMap.enabled = true; r.localClippingEnabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -62,46 +64,70 @@ class Game {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(FOV, 1, 1, 2200);
     this.grid = new EnergyGrid(); this.audio = new AudioSynth(); this.fx = new FX(this.scene);
+    // un toque durante la carga ya habilita el sonido (los navegadores lo piden), pero queda en silencio hasta terminar
+    this.audio.hold = true;
+    for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => this.audio.start(), { capture: true, passive: true });
     this.ready = this.init(r);
   }
 
-  // Construcción del diorama por etapas, con barra de progreso en la pantalla de inicio
+  // Construcción del diorama por etapas, con la barra de la pantalla de carga (carga.js)
   async init(r) {
-    const steps = 10; let k = 0;
-    const stage = async (txt) => { const el = $('load'); if (el) { el.textContent = txt; el.style.setProperty('--p', Math.round(k++ / steps * 100) + '%'); } await new Promise(res => requestAnimationFrame(() => setTimeout(res, 0))); };
-    await stage('Levantando el relieve y el río…');
-    // WorldBuilder
-    const w = this.world = new World(this.scene, r);
-    const li = $('logoLargo');
-    if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
-    const ii = $('logoIso');
-    if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
-    w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4, CLEAR5);
-    await stage('Trazando calles, costanera y puentes…'); buildRoads(w); buildCity(w);
-    await stage('Represa, molinos, paneles y biomasa…'); buildHydro(w); buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w);
-    await stage('Barrio Norte, puerto y Barrio Jardín…'); buildBarrios(w); buildStops(w); buildIntlSalto(w);
-    await stage('Armando Energimundo junto a la represa…'); buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1])); buildCorte(w);
-    await stage('Plantando ceibos, palmeras y naranjos…'); buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w);
-    await stage('Uniendo las piezas de la maqueta…'); w.finalize(); w.nightLights(); w.groundShadows(); w.buildPuddles();
-    await stage('Calculando caminos para Capi…');
-    this.capi = new Capi(this.scene, w, this.fx, this.audio);
-    this.actors = new Actors(w, this.scene);
-    this.capi.nav = new NavGrid(w);
-    await stage('Despertando a los vecinos…');
+    const L = this.L, w = this.world = await L.step('relieve', () => {
+      const w = new World(this.scene, r);
+      const li = $('logoLargo');
+      if (li && li.naturalWidth) w.logoTex = canvasTex(720, 200, (g) => { g.fillStyle = '#0f2140'; g.fillRect(0, 0, 720, 200); g.strokeStyle = '#ffc93c'; g.lineWidth = 10; g.strokeRect(5, 5, 710, 190); const k = Math.min(640 / li.naturalWidth, 150 / li.naturalHeight), iw = li.naturalWidth * k, ih = li.naturalHeight * k; g.drawImage(li, (720 - iw) / 2, (200 - ih) / 2, iw, ih); });
+      const ii = $('logoIso');
+      if (ii && ii.naturalWidth) w.isoTex = canvasTex(256, 256, (g) => { g.clearRect(0, 0, 256, 256); const k = Math.min(250 / ii.naturalWidth, 250 / ii.naturalHeight), iw = ii.naturalWidth * k, ih = ii.naturalHeight * k; g.drawImage(ii, (256 - iw) / 2, (256 - ih) / 2, iw, ih); });
+      w.clear = CLEAR.concat(CLEAR2, CLEAR3, CLEAR4, CLEAR5);
+      return w;
+    });
+    await L.step('calles', () => { buildRoads(w); buildCity(w); });
+    await L.step('represa', () => { buildHydro(w); });
+    await L.step('centrales', () => { buildWind(w); buildSolar(w); buildBiomass(w); buildLines(w); });
+    await L.step('barrios', () => { buildBarrios(w); buildStops(w); buildIntlSalto(w); });
+    await L.step('museo', () => { buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1])); buildCorte(w); });
+    await L.step('flora', () => { buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w); });
+    await L.step('unir', () => { w.finalize(); });
+    await L.step('luces', () => { w.nightLights(); w.groundShadows(); w.buildPuddles(); });
+    await L.step('capi', () => { this.capi = new Capi(this.scene, w, this.fx, this.audio); this.actors = new Actors(w, this.scene); });
+    await L.step('caminos', () => { this.capi.nav = new NavGrid(w); });
+    await L.step('sistemas', () => this.systems());
+    await L.step('fiestas', async sub => { const ks = Object.keys(FIESTAS); for (const [i, k] of ks.entries()) { this.fiestas.prebuild(k); await sub((i + 1) / ks.length); } });
+    await L.step('mapa', () => { this.mapa.build(true); });
+    await L.step('sonidos', sub => { this.muestras.onProgress = u => { sub(u); }; return this.muestras.predecode().then(() => { this.muestras.onProgress = null; }); });
+    await L.step('sombreadores', () => this.warmCompile());
+    await L.step('placa', () => this.warmGPU());
+    await L.step('cuadros', async sub => {   // los primeros cuadros de verdad, todavía tapados por la pantalla de carga
+      this.last = performance.now(); requestAnimationFrame(t => this.frame(t));
+      const t0 = performance.now();   // al menos 2 cuadros; hasta 8 si salen rápido (en una PC lenta no se alarga de más)
+      for (let i = 1; i <= 8; i++) { await nextFrame(); if (i >= 2 && performance.now() - t0 > 700) break; if (i % 2 === 0) await sub(i / 8); }
+    });
+    this.refreshTitle();
+    this.titleIdle = 0; this.lastInput = performance.now();
+    this.loaded = true; document.body.classList.remove('loading');
+    const t = $('title'); if (t) t.inert = false;
+    this.audio.release();
+    await L.finish();
+  }
+  // Todos los sistemas del juego: personajes, misiones, interfaz, fiestas, mapa, sonido…
+  systems() {
+    const w = this.world;
     this.capiLight = new THREE.PointLight(0xfff0c8, 0, 22, 1.6); this.scene.add(this.capiLight);
+    // las luces también en la capa de la silueta de Capi: así cada pasada ve las mismas luces y las sombras usan
+    // siempre la misma versión de sus sombreadores (si no, al empezar a jugar se compilaban otras y trababa un cuadro)
+    this.scene.traverse(o => { if (o.isLight) o.layers.enable(1); });
     const ring = this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 9; this.scene.add(ring);
     this.xray = new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false, fog: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     this.ui = new UI(this); { const ff = $('fadeFace'); if (ff) drawFace(ff.getContext('2d'), 'capi', 0, false, null); } this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
-    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.muestras = new Muestras(this.audio); this.corte = new Corte(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest); Settings.onFx = v => { this.post.level = this.post.gl2 ? v : 0; }; if (Settings.fx != null && !/[?&]post=/.test(location.search) && window.CAPI_POST == null) this.post.level = this.post.gl2 ? Settings.fx : 0;   // ajuste del personal (Modo SuperCapi)
+    this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.muestras = new Muestras(this.audio); this.corte = new Corte(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
-    this.ptr = new Map(); this.drag = null; this.autoQuality = true; this.quality = 0; this.ema = 0.016; this.qT = 0;
+    this.ptr = new Map(); this.drag = null; this.autoQuality = false; this.quality = 0;
     this.bind(); this.resize();
     if (this.kioskCfg) this.audio.start();   // el lanzador del kiosco permite sonido sin tocar nada
-    for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => this.audio.start(), { capture: true, passive: true });
     this.missions.preset(0); this.grid.step(0); this.grid.fossil = this.grid.out.demand - this.grid.out.ren; this.grid.step(0);
     const level = mode => this.extras.choose('¿Cómo querés jugar?', 'Podés cambiar de idea la próxima vez.', [['Explorador', 'Más tranquilo: los minijuegos van más despacio y hay más margen'], ['Ingeniero', 'El desafío completo']], i => this.play(mode, 0, null, i ? 'ingeniero' : 'explorador'));
     $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
@@ -109,10 +135,73 @@ class Game {
     $('bSchool').onclick = () => this.escuela.open();
     $('bCred').onclick = () => this.showCredits(null);
     document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
-    await stage('¡Listo!');
-    this.refreshTitle(); $('load').style.removeProperty('--p');
-    this.last = performance.now();
-    requestAnimationFrame(t => this.frame(t));
+    w.updateRain(0, {});   // la lluvia se arma ahora (escondida) para que la placa de video la conozca antes de jugar
+  }
+
+  // ---------- Calentar la placa de video ----------
+  // Se muestra todo lo que existe, también lo escondido (las otras fiestas, la maqueta en corte, la lluvia, los
+  // accesorios de Capi…), y sin recortes por cámara: así cada sombreador se compila y cada malla y textura sube a la
+  // placa ahora, y no en medio del juego, que es lo que traba un cuadro la primera vez que algo aparece.
+  revealAll() {
+    const saved = [];
+    this.scene.traverse(o => { if (o === this.scene || o.isLight) return; saved.push(o, o.visible, o.frustumCulled); o.visible = true; o.frustumCulled = false; });
+    return () => { for (let i = 0; i < saved.length; i += 3) { saved[i].visible = saved[i + 1]; saved[i].frustumCulled = saved[i + 2]; } };
+  }
+  // compila los sombreadores en paralelo (si el navegador puede) para la misma salida que usa el juego
+  async warmCompile() {
+    const r = this.renderer, restore = this.revealAll();
+    try {
+      this.post.begin();
+      if (r.compileAsync) await Promise.race([r.compileAsync(this.scene, this.camera), new Promise(res => setTimeout(res, 20000))]);
+      else r.compile(this.scene, this.camera);
+    } finally { r.setRenderTarget(null); restore(); }
+  }
+  // Un cuadro con todo a la vista: escena con sombras y la pasada de silueta de Capi, como en el juego, pero en una
+  // imagen chiquita (lo que importa es que la placa conozca cada cosa, no pintar millones de puntos).
+  warmGPU() {
+    const r = this.renderer, cam = this.camera, sc = this.scene, P = this.post, restore = this.revealAll();
+    const rt = P.on ? new THREE.WebGLRenderTarget(64, 36, { samples: P.gl2 ? 4 : 0, colorSpace: THREE.SRGBColorSpace, depthBuffer: true, stencilBuffer: true }) : null;
+    const vp = r.getViewport(new THREE.Vector4());
+    try {
+      r.info.autoReset = false; r.info.reset();
+      r.setRenderTarget(rt); if (!rt) r.setViewport(0, 0, 64, 36);
+      r.autoClear = true; r.shadowMap.autoUpdate = true; r.shadowMap.needsUpdate = true; cam.layers.set(0);
+      r.render(sc, cam);
+      r.autoClear = false; r.shadowMap.autoUpdate = false; cam.layers.set(1); sc.overrideMaterial = this.xray;
+      const bg = sc.background; sc.background = null; r.render(sc, cam); sc.background = bg; sc.overrideMaterial = null;
+      cam.layers.set(0); r.autoClear = true;
+      this.warmShadowVariants();
+      // esperar a que la placa termine de verdad (si no, ese trabajo caería en el primer cuadro visible)
+      const gl = r.getContext(); r.setRenderTarget(null); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      this.warmInfo = { programs: r.info.programs.length, geometries: r.info.memory.geometries, textures: r.info.memory.textures, calls: r.info.render.calls };
+    } finally {
+      sc.overrideMaterial = null; cam.layers.set(0); r.autoClear = true; r.shadowMap.autoUpdate = true;
+      r.setRenderTarget(null); r.setViewport(vp); if (rt) rt.dispose(); restore();
+    }
+  }
+
+  // Las sombras usan un mismo sombreador para casi todo, y three lo vuelve a preparar según el tipo de malla (común
+  // o repetida, con o sin color propio) y de qué lado se ve; qué combinación aparece depende de qué hay en cámara.
+  // Con una escenita de prueba, fuera de la vista y con las mismas luces que el diorama, quedan todas listas.
+  warmShadowVariants() {
+    const r = this.renderer, s = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, 16 / 9, 0.5, 60), all = [];
+    const sun = new THREE.DirectionalLight(0xffffff, 1); sun.castShadow = true; sun.shadow.mapSize.set(64, 64);
+    sun.position.set(0, 20, -20); sun.target.position.set(0, 0, -20);
+    s.add(sun, sun.target, new THREE.PointLight(0xffffff, 0), new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+    const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5), mats = [THREE.FrontSide, THREE.BackSide, THREE.DoubleSide].map(side => new THREE.MeshBasicMaterial({ side }));
+    for (let k = 0; k < 2; k++) for (const m of mats) for (const kind of ['comun', 'repetida', 'conColor']) {
+      let o; if (kind === 'comun') o = new THREE.Mesh(geo, m);
+      else { o = new THREE.InstancedMesh(geo, m, 1); o.setMatrixAt(0, new THREE.Matrix4()); if (kind === 'conColor') o.setColorAt(0, new THREE.Color(1, 1, 1)); }
+      o.position.set(0, 0, -20); o.castShadow = true; s.add(o); all.push(o);   // cada una cambia de tipo respecto de la anterior
+    }
+    cam.position.set(0, 1, 0); cam.lookAt(0, 1, 10);   // la cámara mira para el otro lado: solo se dibujan las sombras
+    try {
+      r.shadowMap.autoUpdate = false; r.shadowMap.needsUpdate = false; r.render(s, cam);   // primero, solo para que queden puestas las luces
+      r.shadowMap.autoUpdate = true; r.shadowMap.needsUpdate = true; r.render(s, cam);
+    } finally {
+      r.shadowMap.autoUpdate = true; for (const o of all) if (o.isInstancedMesh) o.dispose();
+      geo.dispose(); mats.forEach(m => m.dispose()); sun.shadow.dispose();
+    }
   }
 
   refreshTitle() {
@@ -210,6 +299,7 @@ class Game {
   }
   // Joystick: palanca o cruceta para moverse y navegar menús; A acción, B saltar, X panel, Y vestuario, LB/RB girar la cámara
   pad(dt) {
+    if (!this.loaded) return;
     const pads = navigator.getGamepads ? navigator.getGamepads() : []; let p = null; for (const q of pads) if (q && q.connected) { p = q; break; } if (!p) return;
     const b = i => !!(p.buttons[i] && p.buttons[i].pressed), ax = p.axes[0] || 0, ay = p.axes[1] || 0, S = this.padS = this.padS || {};
     const dirs = { ArrowLeft: ax < -0.5 || b(14), ArrowRight: ax > 0.5 || b(15), ArrowUp: ay < -0.5 || b(12), ArrowDown: ay > 0.5 || b(13) }, A = b(0);
@@ -256,6 +346,7 @@ class Game {
     window.addEventListener('pointermove', e => { this.mouse = e.pointerType === 'mouse' ? { x: e.clientX, y: e.clientY } : null; }, { passive: true });
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('keydown', e => {
+      if (!this.loaded) { e.preventDefault(); return; }   // hasta que termine la carga no se toca nada
       const c = e.code;
       if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;   // escribiendo el nombre del diploma
       if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(c)) e.preventDefault();
@@ -356,16 +447,7 @@ class Game {
     requestAnimationFrame(t => this.frame(t)); this.kiosk(now);
     const real = (now - this.last) / 1000, cdt = Math.min(0.05, Math.max(0.001, real)), dt = this.paused ? 1e-6 : cdt; this.last = now; this.time += dt;
     if (this.mode === 'play' && !this.paused && real < 1) this.stats.play(real);
-    // Calidad adaptativa: si el equipo no llega a ~30 FPS, baja resolución y sombras por pasos
-    if (this.mode === 'play' && this.autoQuality && real < 0.5) {
-      this.ema = lerp(this.ema, real, 0.05); this.qT += real;
-      if (this.qT > 3 && this.ema > 0.036 && this.quality < 3) {
-        this.qT = 0; this.quality++; const sun = this.world.sun;
-        if (this.quality === 1) { this.renderer.setPixelRatio(1); this.resize(); }
-        else if (this.quality === 2) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } this.post.level = Math.min(this.post.level, 1); }
-        else { sun.castShadow = false; this.post.level = 0; }
-      }
-    }
+    // Calidad: siempre alta (resolución, sombras de 2048 y efectos completos); no baja sola
     const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
     // --- Entrada ---
     const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
@@ -446,10 +528,42 @@ class Game {
   }
 }
 
-async function boot() {
-  try { const g = new Game(); await g.ready; window.__bootMs = Math.round(performance.now()); window.__game = g; }
-  catch (e) { console.error(e); $('load').textContent = 'No se pudo iniciar el motor 3D: ' + e.message; }
+// ---------- Arranque ----------
+// Las etapas de la pantalla de carga. ms: lo que tarda en una PC de referencia; después cada PC guarda lo suyo.
+const STEPS = [
+  { id: 'fuentes', label: 'Preparando letras y logos…', ms: 140 },
+  { id: 'relieve', label: 'Levantando el relieve y el río…', ms: 330 },
+  { id: 'calles', label: 'Trazando calles, manzanas y la costanera…', ms: 230 },
+  { id: 'represa', label: 'Construyendo la represa de Salto Grande…', ms: 120 },
+  { id: 'centrales', label: 'Molinos, paneles solares y biomasa…', ms: 140 },
+  { id: 'barrios', label: 'Barrio Norte, el puerto y Barrio Jardín…', ms: 260 },
+  { id: 'museo', label: 'Armando Energimundo y la maqueta en corte…', ms: 120 },
+  { id: 'flora', label: 'Plantando ceibos, palmeras y naranjos…', ms: 300 },
+  { id: 'unir', label: 'Uniendo las piezas de la maqueta…', ms: 260 },
+  { id: 'luces', label: 'Ventanas, sombras y charcos…', ms: 160 },
+  { id: 'capi', label: 'Despertando a Capi y a los vecinos…', ms: 140 },
+  { id: 'caminos', label: 'Calculando caminos para caminar…', ms: 150 },
+  { id: 'sistemas', label: 'Misiones, minijuegos y menús…', ms: 220 },
+  { id: 'fiestas', label: 'Colgando las guirnaldas de las fiestas…', ms: 260 },
+  { id: 'mapa', label: 'Dibujando el mapa grande…', ms: 330 },
+  { id: 'sonidos', label: 'Afinando tambores, caballos y fuegos…', ms: 260 },
+  { id: 'sombreadores', label: 'Preparando luces y colores en la placa de video…', ms: 700 },
+  { id: 'placa', label: 'Subiendo la maqueta a la placa de video…', ms: 500 },
+  { id: 'cuadros', label: 'Probando los primeros cuadros…', ms: 320 }
+];
+// las tipografías que se usan para dibujar carteles y caras (no alcanza con las que ya muestra la página)
+async function preloadAssets() {
+  const F = document.fonts;
+  const fonts = F && F.load ? Promise.all(['400 32px "Lilita One"', '700 20px Nunito', '800 20px Nunito', '900 20px Nunito'].map(f => F.load(f).catch(() => null))) : Promise.resolve();
+  const imgs = [...document.images].map(i => (i.complete && i.naturalWidth) ? Promise.resolve() : (i.decode ? i.decode().catch(() => {}) : Promise.resolve()));
+  await Promise.race([Promise.all([fonts, ...imgs]), new Promise(r => setTimeout(r, 4000))]);   // sin red ni letras: se sigue igual
 }
-const fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
-const imgs = [...document.images].map(i => i.decode ? i.decode().catch(() => {}) : Promise.resolve());
-Promise.all([fonts, ...imgs]).then(() => setTimeout(boot, 30));
+async function boot() {
+  const L = new Loader(STEPS), t = $('title'); if (t) t.inert = true;
+  try {
+    await L.step('fuentes', preloadAssets);
+    const g = new Game(L); await g.ready;
+    window.__bootMs = Math.round(performance.now()); window.__game = g;
+  } catch (e) { L.fail(e, !!window.CAPI_KIOSCO); }
+}
+boot();

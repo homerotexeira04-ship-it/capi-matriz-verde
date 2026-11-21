@@ -33,6 +33,7 @@ const RAW = { piano_a, piano_b, piano_m, repique_a, repique_b, repique_m, chico_
 const SOUND = 343;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
+const bytes = b64 => { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
 
 // Dónde empieza de verdad el golpe (el MP3 trae unos milisegundos de silencio al principio)
 function onset(b) {
@@ -132,18 +133,36 @@ class Cuerda {
 export class Muestras {
   constructor(audio) { this.a = audio; this.buf = {}; this.ok = false; this.started = false; this.lx = 0; this.ly = 0; this.lz = 0; this.rx = 1; this.rz = 0; this.fwN = 0; this.cu = new Cuerda(this); this.bedV = null; }
   get ctx() { return this.a.ctx; }
+  // Durante la pantalla de carga: decodifica todos los MP3 en un contexto "sin parlantes" (no necesita que nadie
+  // toque la pantalla). Un AudioBuffer sirve después en cualquier contexto, así que al arrancar el sonido ya están listos.
+  predecode() {
+    if (this.pre) return this.pre;
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; let oc = null;
+    try { oc = OAC ? new OAC(2, 1, 48000) : null; } catch (e) { oc = null; }
+    if (!oc) return (this.pre = Promise.resolve(false));
+    const keys = Object.keys(RAW); let n = 0;
+    const one = k => new Promise(res => {
+      let once = false; const fin = b => { if (once) return; once = true; if (b) { b.off = onset(b); this.buf[k] = b; } n++; if (this.onProgress) this.onProgress(n / keys.length); res(); };
+      try { const p = oc.decodeAudioData(bytes(RAW[k]).buffer, b => fin(b), () => fin(null)); if (p && p.catch) p.catch(() => fin(null)); } catch (e) { fin(null); }
+    });
+    const all = Promise.all(keys.map(one)), cap = new Promise(r => setTimeout(r, 12000));   // si el navegador no contesta, se sigue igual
+    return (this.pre = Promise.race([all, cap]).then(() => !!this.buf.piano_a && !!this.buf.chico_a));
+  }
   init() {
     const c = this.a.ctx; if (!c || this.started || !this.a.master) return; this.started = true;
     this.out = c.createGain(); this.out.gain.value = 0.9; this.out.connect(this.a.master);
-    const keys = Object.keys(RAW); let left = keys.length;
-    const done = (k, b) => { if (b) { b.off = onset(b); this.buf[k] = b; } if (--left === 0) this.ok = !!this.buf.piano_a && !!this.buf.chico_a; };
-    for (const k of keys) {
-      try {
-        const s = atob(RAW[k]), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
-        let once = false; const fin = b => { if (!once) { once = true; done(k, b); } };
-        const p = c.decodeAudioData(u.buffer, b => fin(b), () => fin(null)); if (p && p.catch) p.catch(() => fin(null));
-      } catch (e) { done(k, null); }
-    }
+    // lo que no se pudo decodificar en la carga se decodifica ahora con el contexto de verdad
+    (this.pre || Promise.resolve()).then(() => {
+      const keys = Object.keys(RAW).filter(k => !this.buf[k]); let left = keys.length;
+      const done = (k, b) => { if (b) { b.off = onset(b); this.buf[k] = b; } if (--left <= 0) this.ok = !!this.buf.piano_a && !!this.buf.chico_a; };
+      if (!keys.length) { left = 1; done(null, null); return; }
+      for (const k of keys) {
+        try {
+          let once = false; const fin = b => { if (!once) { once = true; done(k, b); } };
+          const p = c.decodeAudioData(bytes(RAW[k]).buffer, b => fin(b), () => fin(null)); if (p && p.catch) p.catch(() => fin(null));
+        } catch (e) { done(k, null); }
+      }
+    });
   }
   // quien escucha: Capi (o el centro de la cámara en la pantalla de inicio), con la derecha de la cámara para el paneo
   listen(p, cam) {

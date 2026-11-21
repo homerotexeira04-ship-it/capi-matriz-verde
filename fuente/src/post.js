@@ -1,6 +1,7 @@
 // Postproceso del diorama: resplandor de las luces (fuerte de noche), desenfoque de maqueta arriba y abajo
 // cuando la cámara se aleja, color según la hora del día y viñeta suave.
-// Tres niveles: 2 completo · 1 sin desenfoque de maqueta y con resplandor liviano · 0 apagado (render directo).
+// El juego usa siempre el nivel 2 (completo). Los niveles 1 y 0 quedan solo para pruebas (?post=1 o ?post=0 en la dirección)
+// y para equipos sin WebGL 2, que no pueden hacer el antialias en la textura.
 import * as THREE from 'three';
 import { clamp, lerp } from './util.js';
 

@@ -14,12 +14,12 @@ const LEAD = [
 const CLAVE = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0], PIANO = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0], BASS = [[0, 0], [6, 7], [8, 12], [12, 7]];
 
 export class AudioSynth {
-  constructor() { this.ctx = null; this.muted = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; this.title = true; this.soft = 0; this.realDrums = false; this.duck = 0; this.ev = { bird: 2, cric: 1, bell: 9, bus: 6, lap: 3 }; }
+  constructor() { this.ctx = null; this.muted = false; this.hold = false; this.step16 = 0; this.next = 0; this.pct = 0; this.alarmT = 0; this.deficit = false; this.title = true; this.soft = 0; this.realDrums = false; this.duck = 0; this.ev = { bird: 2, cric: 1, bell: 9, bus: 6, lap: 3 }; }
   start() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; const c = this.ctx = new AC();
-      this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 0.55;
+      this.master = c.createGain(); this.master.gain.value = this.muted || this.hold ? 0 : 0.55;
       const comp = c.createDynamicsCompressor(); this.master.connect(comp); comp.connect(c.destination);
       this.music = c.createGain(); this.music.gain.value = 0.34; this.music.connect(this.master);
       this.sfx = c.createGain(); this.sfx.gain.value = 0.8; this.sfx.connect(this.master);
@@ -35,7 +35,9 @@ export class AudioSynth {
       this.next = c.currentTime + 0.3;
     } catch (e) { this.ctx = null; }
   }
-  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 0.55, this.ctx.currentTime, 0.05); }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m || this.hold ? 0 : 0.55, this.ctx.currentTime, 0.05); }
+  // mientras carga el juego el sonido queda en silencio (aunque ya se haya habilitado con un toque); después entra suave
+  release() { this.hold = false; if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.55, this.ctx.currentTime, 0.35); }
 
   tone(f, dur, type = 'square', vol = 0.1, when = 0, f2 = null, dest = null, attack = 0.005) {
     if (!this.ctx) return; const c = this.ctx, t = c.currentTime + when, o = c.createOscillator(), g = c.createGain();

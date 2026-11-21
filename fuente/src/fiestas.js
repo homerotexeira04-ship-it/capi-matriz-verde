@@ -80,6 +80,8 @@ export class Fiestas {
     const tag = document.getElementById('festTag'); if (tag) { tag.textContent = k ? TAG[k] : ''; tag.classList.toggle('hidden', !k); }
     document.body.dataset.fest = k || '';
   }
+  // En la pantalla de carga se arman todas las fiestas (escondidas): elegir otra en el menú no traba el juego
+  prebuild(k) { if (FIESTAS[k] && !this.sets[k]) { this.sets[k] = this.build(k); this.sets[k].root.visible = k === this.mode; } }
   // Opciones extra en el menú de los personajes de fiesta: regalo de accesorio y bicicleta generadora
   extraOptions(who) {
     const out = [], k = ACC_OF[who], g = this.g;

@@ -53,7 +53,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
   - **Escenario a pedal:** las bicicletas generadoras son un minijuego; si Capi pedalea bien, el escenario se prende con luces y música.
   - Cafetería con mesas y sombrillas, estacionamiento, sendero con las seis estaciones de energía (solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica) y parada de ómnibus propia (tecla 0 en el menú de paradas).
   - Cuatro chispas de saber en el predio y una toma del museo en la demostración de la pantalla de inicio.
-- **Carga por etapas:** al abrir el juego, una barra muestra cómo se arma la maqueta.
+- **Pantalla de carga real:** al abrir el juego, una barra muestra lo que falta de verdad: primero la descarga (en la web, con los megas que van llegando), después cada etapa de la maqueta, los sonidos grabados, el mapa grande y la preparación de la placa de video, con datos de energía mientras tanto. Cada computadora recuerda cuánto tardó cada etapa, así la barra avanza parejo la próxima vez. Recién con todo listo aparece la pantalla de inicio: hasta ese momento no se puede tocar nada, para que el juego no se trabe ni falle al empezar. Si algo sale mal, la misma pantalla lo dice y ofrece reintentar (en el kiosco reintenta solo).
 - Si nadie toca nada en la pantalla de inicio, la cámara pasea sola por el diorama hasta que alguien se acerca.
 - **Sonido en la pantalla de inicio:** una versión tranquila de la música y el ambiente del diorama (río, viento, pájaros como el benteveo y el tero, bicicletas, ómnibus eléctricos y grillos de noche). Durante la demostración el sonido sigue a la cámara: tambores en la plaza al atardecer, agua en la represa, viento en el parque eólico. En el kiosco arranca solo; en la web, con el primer clic o tecla, porque así lo exigen los navegadores. La tecla M lo silencia.
 - **Sonidos grabados con distancia:** los tambores de candombe, los caballos y los fuegos artificiales son grabaciones reales que suenan desde su lugar en el mundo: más fuerte y con más agudos cerca, más bajos y apagados lejos, y a la izquierda o a la derecha según hacia dónde mire la cámara. Cuando la cuerda de tambores pasa cerca, la música se corre para no pisarle el ritmo; en pausa, el mundo se oye de lejos. Van dentro del juego, así que funcionan sin internet.
@@ -76,7 +76,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Vecinos más variados:** abuelos con bastón que caminan despacio y vecinos que vuelven de los mandados con la bolsa.
 - **Transiciones con Capi:** los viajes se cortan con un círculo que se abre desde el centro con la cara de Capi.
 - **Modo foto con postal (tecla P):** un marco de postal con "Saludos desde Salto", un sello con Capi y la fecha del día. La tecla C lo saca o lo vuelve a poner.
-- **Calidad automática:** si la computadora no llega a unos 30 cuadros por segundo, el juego baja la resolución, las sombras y los efectos por pasos. En el Modo SuperCapi, sección Pantalla, el botón «Efectos de imagen» elige completos, livianos o apagados y queda guardado en esa PC (útil en un kiosco con poca placa de video). En la web también se puede agregar `?post=0`, `?post=1` o `?post=2` al final de la dirección.
+- **Siempre en calidad alta:** resolución completa, sombras finas y todos los efectos de imagen; el juego no baja la calidad por su cuenta.
 
 ## Sala de turbinas en corte
 

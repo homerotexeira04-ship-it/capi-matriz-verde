@@ -18,7 +18,7 @@ export function drawSuperFace(g, t, col, scan) {
   if (scan != null) { const y = Math.floor(scan * 24) % 24; R(12, y, 12, 1, 'rgba(46,230,255,.55)'); }
 }
 const SKEY = 'capi-estadisticas', AKEY = 'capi-ajustes', WORD = 'energimundo';
-const PIN = '1979', HOLD = 3000;   // pantallas táctiles: mantener apretado el logo de Energimundo y escribir el PIN (año en que Salto Grande empezó a generar)
+const PIN = '2025', HOLD = 3000;   // pantallas táctiles: mantener apretado el logo de Energimundo y escribir el PIN (año en que abrió Energimundo)
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
 const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(r).padStart(2, '0')} s`; };
@@ -120,14 +120,13 @@ export class Guide {
     const pad = $('pinPad'), dots = $('pinDots');
     const show = () => { dots.textContent = '●'.repeat(this.pin.length) + '○'.repeat(4 - this.pin.length); };
     const press = k => {
-      if (this.pinLock && performance.now() < this.pinLock) return;
       if (k === 'x') { this.pin = this.pin.slice(0, -1); show(); return; }
       if (this.pin.length >= 4) return; this.pin += k; show(); this.g.audio.click();
       if (this.pin.length < 4) return;
       if (this.pin === PIN) { this.closePin(); this.pinBad = 0; this.secret(performance.now() + 1e9); return; }
       this.pinBad = (this.pinBad || 0) + 1; pad.classList.remove('bad'); void pad.offsetWidth; pad.classList.add('bad'); this.g.audio.bad();
-      if (this.pinBad >= 3) { this.pinBad = 0; this.pinLock = performance.now() + 30000; $('pinMsg').textContent = 'Demasiados intentos: esperá 30 segundos.'; setTimeout(() => { $('pinMsg').textContent = 'PIN del personal'; }, 30000); }
-      setTimeout(() => { this.pin = ''; show(); }, 350);
+      if (this.pinBad >= 3) $('pinMsg').textContent = 'Pista: el año en que abrió Energimundo';   // después de tres intentos
+      this.pin = ''; show();   // se vacía enseguida: se puede volver a escribir sin esperar
     };
     pad.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => press(b.dataset.k); });
     $('pinClose').onclick = () => this.closePin();
@@ -137,7 +136,7 @@ export class Guide {
   openPin() {
     const g = this.g; if (g.attract) g.stopAttract();
     if (g.extras.open) { $(g.extras.open).classList.add('hidden'); g.extras.open = null; }
-    this.pin = ''; $('pinDots').textContent = '○○○○'; g.extras.open = 'pinPad'; $('pinPad').classList.remove('hidden'); g.audio.click();
+    this.pin = ''; this.pinBad = 0; $('pinMsg').textContent = 'PIN del personal'; $('pinDots').textContent = '○○○○'; g.extras.open = 'pinPad'; $('pinPad').classList.remove('hidden'); g.audio.click();
   }
   closePin() { if (this.g.extras.open === 'pinPad') this.g.extras.open = null; $('pinPad').classList.add('hidden'); this.pin = ''; }
   // la palabra se escribió: deshacer lo que esas teclas pudieron haber hecho y abrir el panel

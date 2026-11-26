@@ -65,6 +65,30 @@ const SHUT = [0xd9cfb8, 0x8a7a66, 0x9aa3ab, 0xb8a27a, 0xe6e0d2];
 const AWN = [[0xc0392b, 0xf4f1ea], [0x1d6fb8, 0xf4f1ea], [0x2e8b57, 0xf4e3b0], [0xe0a526, 0x6a3a1a], [0x6a2c91, 0xf4f1ea]];
 const ROPA = [0xe5484d, 0x2ed3c6, 0xffc420, 0xf4f1ea, 0x1d6fb8, 0xff8fab, 0x90be6d];
 function deco(w) { return w.drand || (w.drand = rng(4242)); }
+function deco2(w) { return w.drand2 || (w.drand2 = rng(6060)); }   // azar aparte para fachadas y azoteas: no mueve nada de lo anterior
+const ROOF = [0xa65a43, 0xb4664c, 0x8c8f93, 0x9a9da1, 0xe4e1d8, 0xb9bcc0];   // baldosa roja, membrana gris, azotea blanca, membrana de aluminio
+const shade = (c, k) => { const t = new THREE.Color(c); t.offsetHSL(0, 0, k); return t.getHex(); };
+// Fachada con oficio: alféizar bajo cada ventana, faja en cada entrepiso, pretil en la azotea y piso de azotea de otro color
+function facade(w, cx, cz, bw, bd, y0, bh, col, trim, top, style) {
+  const b = w.cityBatch, E = deco2(w), nf = Math.max(1, Math.floor((bh - 0.8) / 1.7)), sill = E() < 0.5 ? trim : shade(col, -0.12);
+  const face = (len, fx, fz, ry) => {
+    const nc = Math.max(1, Math.floor((len - 0.8) / 1.45));
+    for (let f = 0; f < nf; f++) for (let c = 0; c < nc; c++) {
+      const u = (c - (nc - 1) / 2) * 1.45, y = y0 + 1.35 + f * 1.7;
+      b.boxB(cx + fx * (bw / 2 + 0.09) + (fz ? u : 0), y - 0.6, cz + fz * (bd / 2 + 0.09) + (fx ? u : 0), 1.0, 0.09, 0.2, sill, ry);
+    }
+  };
+  face(bw, 0, 1, 0); face(bw, 0, -1, Math.PI); face(bd, 1, 0, Math.PI / 2); face(bd, -1, 0, -Math.PI / 2);
+  // fajas de entrepiso en los edificios de apartamentos (la mitad, para que no queden todos iguales)
+  if (nf >= 2 && E() < 0.55) { const band = E() < 0.5 ? trim : shade(col, -0.08); for (let f = 0; f < nf - 1; f++) b.boxB(cx, y0 + 2.14 + f * 1.7, cz, bw + 0.12, 0.13, bd + 0.12, band); }
+  // azotea: piso de otro color y pretil alrededor
+  const roof = ROOF[Math.floor(E() * ROOF.length)], rw = bw + 0.36, rd = bd + 0.36, t = 0.16, ph = 0.38 + E() * 0.2;
+  b.boxB(cx, top, cz, rw - 0.2, 0.03, rd - 0.2, roof);
+  if (style !== 1) {
+    b.boxB(cx, top, cz + rd / 2 - t / 2, rw, ph, t, trim); b.boxB(cx, top, cz - rd / 2 + t / 2, rw, ph, t, trim);
+    b.boxB(cx + rw / 2 - t / 2, top, cz, t, ph, rd - 2 * t, trim); b.boxB(cx - rw / 2 + t / 2, top, cz, t, ph, rd - 2 * t, trim);
+  } else b.boxB(cx, top + 1.9, cz, bw * 0.66 - 0.1, 0.03, bd * 0.66 - 0.1, roof);
+}
 function cityLife(w, cx, cz, bw, bd, y0, bh, roof, barrio) {
   const b = w.cityBatch, D = deco(w), fz = cz + bd / 2;
   // tanque de agua en la azotea: el negro de plástico con tapa cónica, o el de hormigón sobre patas
@@ -107,6 +131,7 @@ export function building(w, cx, cz, bw, bd, bh, col, barrio, style) {
   if (R() < 0.45) b.boxB(cx + (R() - 0.5) * bw * 0.4, top, cz + (R() - 0.5) * bd * 0.4, 1.1, 0.5, 0.8, 0xb8bcc2);
   b.boxB(cx, y0, cz + bd / 2 + 0.03, 1.0, 1.5, 0.08, 0x5b4636);
   windows(w, cx, cz, bw, bd, y0, bh, barrio);
+  facade(w, cx, cz, bw, bd, y0, bh, col, trim, top, style);
   cityLife(w, cx, cz, bw, bd, y0, bh, top + (style === 1 ? 1.9 : 0), barrio);
   w.addSolid(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2); w.addOcc(cx - bw / 2, cx + bw / 2, cz - bd / 2, cz + bd / 2, y0 + bh + (style === 1 ? 1.9 : 0.3));
 }

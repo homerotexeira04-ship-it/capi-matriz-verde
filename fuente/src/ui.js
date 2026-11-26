@@ -90,7 +90,11 @@ export class UI {
   constructor(game) {
     this.g = game; this.t = 0; this.acc = 0; this.dlg = null; this.toastT = 0; this.noteT = 0; this.zoneId = ''; this.zoneT = 0;
     this.gc = $('gauge').getContext('2d'); this.pc = $('phase').getContext('2d'); this.mc = $('mini').getContext('2d'); this.fc = $('capiFace').getContext('2d'); this.dc = $('dFace').getContext('2d'); this.sc = $('pCv').getContext('2d');
-    this.buildMap();
+    this.buildMap(); this.keysT = 0; this.cardT = 0;
+    const card = $('card');
+    card.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { this.cardHover = true; this.cardWake(); } });
+    card.addEventListener('pointerleave', () => { this.cardHover = false; });
+    card.addEventListener('pointerdown', () => this.cardWake());
     $('dialog').addEventListener('click', () => this.advance());
     $('bPanel').onclick = () => game.togglePanel(); $('pClose').onclick = () => game.togglePanel(false);
     $('bHelp').onclick = () => game.toggleHelp(true); $('hClose').onclick = () => game.toggleHelp(false);
@@ -128,6 +132,17 @@ export class UI {
   }
 
   show() { $('hud').classList.remove('hidden'); }
+  // HUD liviano: la barra de teclas se va sola después de un rato de juego (vuelve al cerrar la Ayuda) y la tarjeta de misión
+  // se achica a lo esencial (título y paso actual) cuando no hay novedades; se agranda sola con cada cambio o al tocarla
+  keysFor(t) { this.keysT = t; document.body.classList.remove('keysOff'); }
+  cardWake(t = 9) { this.cardT = t; $('card').classList.remove('quiet'); }
+  hudLite(dt) {
+    const g = this.g, busy = this.dlg || (g.tut && g.tut.on) || g.cine;
+    if (this.keysT > 0 && !busy) { this.keysT -= dt; if (this.keysT <= 0) document.body.classList.add('keysOff'); }
+    this.sigT = (this.sigT || 0) - dt;
+    if (this.sigT <= 0) { this.sigT = 0.25; const sig = this._mk + '|' + $('sparkCount').textContent + '|' + $('favLine').textContent + '|' + $('mSub').textContent; if (sig !== this._sig) { this._sig = sig; this.cardWake(); } }
+    if (this.cardT > 0 && !busy && !this.cardHover) { this.cardT -= dt; if (this.cardT <= 0) $('card').classList.add('quiet'); }
+  }
   hide() { $('hud').classList.add('hidden'); this.prompt(null); this.timer(null); $('toast').classList.remove('on'); $('note').classList.remove('on'); }
   toast(title, sub = '', t = 3.2) { const el = $('toast'); el.querySelector('h2').textContent = title; el.querySelector('p').textContent = sub; el.classList.add('on'); this.toastT = t; }
   note(text, t = 3.5) { const el = $('note'); el.textContent = text; el.classList.add('on'); this.noteT = t; }
@@ -153,7 +168,7 @@ export class UI {
   }
 
   update(dt, st) {
-    this.t += dt; const G = this.g.grid, o = G.out;
+    this.t += dt; const G = this.g.grid, o = G.out; this.hudLite(dt);
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) $('toast').classList.remove('on'); }
     if (this.noteT > 0) { this.noteT -= dt; if (this.noteT <= 0) $('note').classList.remove('on'); }
     const d = this.dlg;

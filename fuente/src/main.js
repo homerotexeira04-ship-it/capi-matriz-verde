@@ -222,7 +222,7 @@ class Game {
     this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
     this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
-    this.audio.start(); this.fiestas.seen = {}; this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show();
+    this.audio.start(); this.fiestas.seen = {}; this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show(); this.ui.keysFor(45); this.ui.cardWake(12);
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
     this.missions.school = opt.school || null; this.escuela.cur = opt.school || null; ['escuela', 'eWin'].forEach(id => $(id).classList.add('hidden')); this.escuela.winOpen = false; if (this.extras.open === 'escuela' || this.extras.open === 'eWin') this.extras.open = null;
@@ -347,7 +347,7 @@ class Game {
   }
   get locked() { return this.mode !== 'play' || !!this.riding || !!this.ui.dlg || !!this.mg.active || this.panel || this.help || !!this.cine || !!this.extras.open || this.extras.fading || !!this.photo; }
   togglePanel(on) { if (this.mode !== 'play' || this.mg.active || this.ui.dlg) return; this.panel = on == null ? !this.panel : on; if (this.panel) this.ui.openPanel(this.missions.free); else this.ui.closePanel(); this.audio.click(); }
-  toggleHelp(on) { this.help = on; $('help').classList.toggle('hidden', !on); }
+  toggleHelp(on) { if (this.help && !on) this.ui.keysFor(20); this.help = on; $('help').classList.toggle('hidden', !on); }
   toggleMute() { this.muteAt = performance.now(); this.audio.setMuted(!this.audio.muted); $('bMute').textContent = 'Sonido: ' + (this.audio.muted ? 'no' : 'sí'); }
   minigame(type, opts, onWin) { this.capi.goto = null; this.mg.start(type, opts, ok => { if (ok) onWin(); }); }
   inspect(id) {

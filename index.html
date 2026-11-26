@@ -52,6 +52,11 @@ kbd{display:inline-block;min-width:22px;text-align:center;padding:1px 6px;border
 #capiFace{width:64px;height:64px}
 #mTitle{font-family:var(--display);font-weight:400;font-size:18px;color:var(--sun);line-height:1.1;text-wrap:balance}
 #mSub{font-size:12px;color:var(--dim);margin:2px 0 4px}
+/* HUD liviano: tarjeta compacta sin novedades (título y paso actual) y barra de teclas que se retira sola */
+#card.quiet #mExtra,#card.quiet #favLine,#card.quiet #mList li.done,#card.quiet #mList li.next{display:none}
+#card.quiet:has(#mList li.now) #mSub{display:none}
+#card.quiet{cursor:pointer} #card.quiet #capiFace{width:44px;height:44px}
+#keys{transition:opacity .8s} body.keysOff #keys{opacity:0}
 #mList{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13.5px;line-height:1.25}
 #mList li{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start}
 #mList li::before{content:"";width:13px;height:13px;margin-top:2px;border:2px solid var(--ink);border-radius:4px}
@@ -695,7 +700,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
 <script id="cgBoot">
 // Descarga del juego con avance real (los bytes que van llegando). Abierto como archivo (el kiosco) se carga directo.
 (function () {
-  var BYTES = 1506309, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
+  var BYTES = 1508233, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
   var $ = function (i) { return d.getElementById(i); }, fill = $('cgFill'), run = $('cgRun'), pct = $('cgPct'), lab = $('cgLabel'), bar = $('cgBar');
   // qué parte de la barra le toca a la descarga: la calcula la propia descarga con la velocidad que trae (al principio
   // se usa lo que tardó la vez anterior en esta PC); rest es lo que tarda después en armarse todo en esta PC

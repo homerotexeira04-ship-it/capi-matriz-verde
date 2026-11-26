@@ -7,6 +7,7 @@ import { DESTINOS } from './destinos.js';
 import { railY } from './pradera.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
+import { loboGeo } from './animales.js';
 
 const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
@@ -65,9 +66,10 @@ export class Viajes {
     const wb = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), wm); wb.scale.set(1.6, 0.9, 5.2); whale.add(wb);
     const tail = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.2, 1.2), wm); tail.position.z = -5.4; whale.add(tail);
     whale.position.set(pol.ox + 40, -0.6, 84); pol.group.add(whale); this.whale = whale;
-    const lm = new THREE.MeshStandardMaterial({ color: 0x5a4a3c, roughness: 0.8, flatShading: true }), lg = new THREE.SphereGeometry(0.55, 7, 5); lg.scale(1, 0.55, 1.9);
-    this.lobos = []; const R = rng(55);
-    for (const [cu, cv, n] of [[64, 50, 9], [70, 74, 10], [48, 80, 6]]) for (let i = 0; i < n; i++) { const u = cu + (R() - 0.5) * 9, v = cv + (R() - 0.5) * 7, m = new THREE.Mesh(lg, lm); m.position.set(pol.ox + u, Math.max(pol.h(u, v), 0) + 0.25, v); m.rotation.y = R() * 6; pol.group.add(m); this.lobos.push(m); }
+    this.lobos = []; const R = rng(55), spots = [];
+    for (const [cu, cv, n] of [[64, 50, 9], [70, 74, 10], [48, 80, 6]]) for (let i = 0; i < n; i++) { const u = cu + (R() - 0.5) * 9, v = cv + (R() - 0.5) * 7; spots.push({ x: pol.ox + u, y: Math.max(pol.h(u, v), 0) - 0.02, z: v, ry: R() * 6, s: 1.3 + R() * 0.6, ph: R() * 6 }); }
+    const lob = new THREE.InstancedMesh(loboGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }), spots.length); lob.castShadow = true; lob.frustumCulled = false; pol.group.add(lob);
+    this.lobosM = lob; this.lobos = spots;
     // interfaz
     $('giClose').onclick = () => this.closePanel(); $('paClose').onclick = () => { $('pasaporte').classList.add('hidden'); if (g.extras.open === 'pasaporte') g.extras.open = null; };
   }
@@ -230,7 +232,8 @@ export class Viajes {
       this.beam.rotation.y = this.t * 0.9; this.beam.material.opacity = 0.06 + st.night * 0.22;
       const k = (this.t % 40) / 40, wv = this.whale; wv.position.x = DESTINOS[3].ox + lerp(-70, 85, k); wv.position.y = -0.7 + Math.max(0, Math.sin(this.t * 0.7)) * 0.5; wv.rotation.y = Math.PI / 2;
       if (Math.sin(this.t * 0.7) > 0.97 && !this.spout) { this.spout = 1; g.fx.splash(wv.position.x, 1.2, wv.position.z, 10); } else if (Math.sin(this.t * 0.7) < 0.5) this.spout = 0;
-      this.lobos.forEach((m, i) => { m.rotation.x = Math.sin(this.t * 1.3 + i) * 0.08; });
+      const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), V = new THREE.Vector3(), S = new THREE.Vector3();
+      this.lobos.forEach((o, i) => { E.set(-0.04 + Math.max(0, Math.sin(this.t * 0.8 + o.ph)) * 0.1, o.ry, 0); Q.setFromEuler(E); M.compose(V.set(o.x, o.y, o.z), Q, S.setScalar(o.s)); this.lobosM.setMatrixAt(i, M); }); this.lobosM.instanceMatrix.needsUpdate = true;
     }
     if (c.k === 'fray' && Math.random() < dt * 2.4) { const p = DESTINOS[1]; g.fx.puff(p.ox + 64 + (Math.random() - 0.5), 33, 40 + (Math.random() - 0.5), 2, 0xf4f4f4, 1.2); }
   }

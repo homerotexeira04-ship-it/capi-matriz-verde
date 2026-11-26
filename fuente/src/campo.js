@@ -7,6 +7,7 @@ import { RAIL, ESTACION, ARROYO, TAJAMAR, MESAS, DAYMAN, terrainH, newMask } fro
 import { railY, ESTANCIA, BIOLOGA, CAMS, NESTS, CUEVAS } from './pradera.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
+import { animalParts } from './animales.js';
 
 const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
@@ -63,34 +64,6 @@ export function drawAnimal(g, k, x, y, s, col) {
     case 'carancho': E(0, -0.34, 0.12, 0.2); E(0.04, -0.58, 0.08, 0.07); Ln([[0.1, -0.58], [0.16, -0.55]], 0.03); Ln([[0, -0.16], [-0.02, 0]], 0.025); g.fillStyle = col.light; E(0.03, -0.46, 0.08, 0.06); break;
     case 'garza': E(0, -0.62, 0.17, 0.1); Ln([[0.12, -0.66], [0.2, -0.86], [0.16, -1.0], [0.22, -1.08]], 0.045); E(0.25, -1.08, 0.05, 0.035); Ln([[0.29, -1.08], [0.44, -1.06]], 0.025); Ln([[0, -0.54], [0, 0]], 0.025); Ln([[0.05, -0.54], [0.06, 0]], 0.025); break;
   }
-}
-
-// ---------- Modelos 3D de los animales (low poly, una malla fusionada por especie, con instancias) ----------
-function animalGeo(k) {
-  const parts = [], P = (geo, col, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => {
-    const g = geo.index ? geo.toNonIndexed() : geo.clone(); g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz)));
-    const n = g.attributes.position.count, a = new Float32Array(n * 3), c = new THREE.Color(col); for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
-    g.setAttribute('color', new THREE.BufferAttribute(a, 3)); if (g.attributes.uv) g.deleteAttribute('uv'); parts.push(g);
-  };
-  const BX = new THREE.BoxGeometry(1, 1, 1), SP = new THREE.IcosahedronGeometry(1, 0), CN = new THREE.ConeGeometry(1, 1, 4);
-  const legs4 = (h, dx, dz, col, y0 = 0) => { for (const sx of [-dx, dx]) for (const sz of [-dz, dz]) P(BX, col, sx, y0 + h / 2, sz, 0.08, h, 0.08); };
-  switch (k) {
-    case 'venado': legs4(0.62, 0.15, 0.32, 0x8a6a45); P(BX, 0xb88a55, 0, 0.8, 0, 0.36, 0.38, 0.95); P(BX, 0xf2ece0, 0, 0.66, 0, 0.3, 0.1, 0.8); P(BX, 0xb88a55, 0, 1.1, 0.48, 0.16, 0.5, 0.18, -0.5); P(BX, 0xa87a48, 0, 1.36, 0.62, 0.17, 0.17, 0.32); P(BX, 0xf2ece0, 0, 0.92, -0.5, 0.1, 0.16, 0.06);
-      for (const s of [-1, 1]) { P(BX, 0x8a6a45, s * 0.1, 1.48, 0.52, 0.12, 0.05, 0.05, 0, 0, s * 0.6); P(BX, 0xd9c6a0, s * 0.09, 1.62, 0.56, 0.03, 0.32, 0.03, 0.2, 0, s * 0.25); } break;
-    case 'nandu': for (const s of [-0.1, 0.1]) P(BX, 0x8f8a80, s, 0.45, 0, 0.07, 0.9, 0.07); P(SP, 0x9d968a, 0, 1.0, 0, 0.42, 0.34, 0.55); P(BX, 0x8f887c, 0, 1.45, 0.38, 0.08, 0.75, 0.08, 0.25); P(SP, 0x8f887c, 0, 1.82, 0.48, 0.09, 0.08, 0.12); P(BX, 0xd9c39a, 0, 1.8, 0.62, 0.04, 0.03, 0.12); break;
-    case 'aguara': legs4(0.72, 0.13, 0.28, 0x1c1814); P(BX, 0xc8642a, 0, 0.88, 0, 0.3, 0.32, 0.84); P(BX, 0x1c1814, 0, 1.06, 0.12, 0.12, 0.14, 0.46); P(BX, 0xc8642a, 0, 1.08, 0.5, 0.16, 0.3, 0.16, -0.4); P(BX, 0xc8642a, 0, 1.22, 0.66, 0.15, 0.15, 0.3); P(BX, 0x1c1814, 0, 1.2, 0.84, 0.08, 0.08, 0.08);
-      for (const s of [-1, 1]) P(CN, 0xc8642a, s * 0.07, 1.4, 0.6, 0.07, 0.24, 0.05); P(BX, 0xc8642a, 0, 0.8, -0.56, 0.1, 0.1, 0.4, 0.7); P(BX, 0xf2ece0, 0, 0.62, -0.72, 0.1, 0.12, 0.1); break;
-    case 'zorro': legs4(0.3, 0.1, 0.2, 0x4a4640); P(BX, 0x8d8a84, 0, 0.42, 0, 0.24, 0.24, 0.6); P(BX, 0xc9b28a, 0, 0.55, 0.36, 0.17, 0.17, 0.24); P(BX, 0x2a2622, 0, 0.53, 0.5, 0.06, 0.06, 0.06);
-      for (const s of [-1, 1]) P(CN, 0x6d6a64, s * 0.06, 0.7, 0.32, 0.05, 0.14, 0.04); P(BX, 0x7a7670, 0, 0.42, -0.44, 0.13, 0.13, 0.4, 0.6); P(BX, 0x2a2622, 0, 0.27, -0.62, 0.1, 0.1, 0.12); break;
-    case 'mulita': P(SP, 0x8a7d6a, 0, 0.2, 0, 0.24, 0.17, 0.32); P(BX, 0x7a6e5c, 0, 0.12, 0.34, 0.09, 0.08, 0.16, 0.3); for (const s of [-1, 1]) P(CN, 0x7a6e5c, s * 0.05, 0.25, 0.34, 0.03, 0.1, 0.03); P(BX, 0x7a6e5c, 0, 0.12, -0.38, 0.05, 0.05, 0.22, 0.4); break;
-    case 'hornero': P(SP, 0xb5713a, 0, 0.12, 0, 0.09, 0.08, 0.13); P(SP, 0x9a5e30, 0, 0.21, 0.09, 0.06, 0.06, 0.06); P(BX, 0x5a3a20, 0, 0.21, 0.16, 0.015, 0.015, 0.06); P(BX, 0xc8844a, 0, 0.12, -0.14, 0.06, 0.02, 0.1); break;
-    case 'lechucita': for (const s of [-0.04, 0.04]) P(BX, 0xd9c6a0, s, 0.07, 0, 0.02, 0.14, 0.02); P(SP, 0x8a6a48, 0, 0.26, 0, 0.12, 0.15, 0.1); P(SP, 0x8a6a48, 0, 0.44, 0.02, 0.1, 0.09, 0.09); for (const s of [-1, 1]) P(SP, 0xffd23f, s * 0.04, 0.45, 0.1, 0.025, 0.025, 0.01); break;
-    case 'chaja': for (const s of [-0.07, 0.07]) P(BX, 0xd46a5a, s, 0.2, 0, 0.04, 0.4, 0.04); P(SP, 0x7f8488, 0, 0.6, 0, 0.3, 0.24, 0.42); P(BX, 0x7f8488, 0, 0.92, 0.22, 0.09, 0.4, 0.09, 0.3); P(BX, 0x1c1c1e, 0, 0.88, 0.2, 0.11, 0.06, 0.11, 0.3); P(SP, 0x9aa0a4, 0, 1.14, 0.32, 0.08, 0.08, 0.1); P(BX, 0xd62828, 0, 1.12, 0.4, 0.05, 0.04, 0.05); break;
-    case 'carancho': P(SP, 0x3a2c22, 0, 0.32, 0, 0.12, 0.2, 0.12); P(SP, 0xe9dcc0, 0, 0.42, 0.06, 0.1, 0.1, 0.08); P(SP, 0x2a2018, 0, 0.56, 0.02, 0.08, 0.06, 0.08); P(BX, 0xe8732a, 0, 0.53, 0.1, 0.05, 0.04, 0.06); P(BX, 0x3a2c22, 0, 0.2, -0.12, 0.06, 0.18, 0.04, -0.4); break;
-    case 'garza': for (const s of [-0.04, 0.04]) P(BX, 0x2a2622, s, 0.3, 0, 0.02, 0.6, 0.02); P(SP, 0xf6f6f2, 0, 0.7, 0, 0.13, 0.12, 0.26); P(BX, 0xf6f6f2, 0, 0.95, 0.14, 0.04, 0.42, 0.04, 0.35); P(SP, 0xf6f6f2, 0, 1.16, 0.22, 0.05, 0.05, 0.07); P(BX, 0xf2c230, 0, 1.15, 0.34, 0.02, 0.02, 0.16); break;
-    case 'vaca': legs4(0.55, 0.26, 0.5, 0x6a2e1a); P(BX, 0x8a3a22, 0, 0.95, 0, 0.66, 0.6, 1.35); P(BX, 0xf2ece0, 0, 0.72, 0, 0.5, 0.16, 1.1); P(BX, 0xf2ece0, 0, 1.08, 0.82, 0.36, 0.36, 0.38); P(BX, 0x8a3a22, 0, 1.24, 0.72, 0.42, 0.16, 0.2); for (const s of [-1, 1]) P(BX, 0xe8e0d0, s * 0.24, 1.3, 0.74, 0.14, 0.05, 0.05); P(BX, 0x6a2e1a, 0, 0.9, -0.72, 0.05, 0.5, 0.05); break;
-  }
-  return mergeGeometries(parts, false);
 }
 
 // ---------- Tren de la estación: dos coches con cabina (va y vuelve sin dar la vuelta) y uno en el medio ----------
@@ -151,9 +124,9 @@ export class Campo {
     for (const [x, z] of [[TAJAMAR[0] - 6, TAJAMAR[1] - 4], [120, 300], [-20, 318]]) add('garza', x, z, { r: 2, flee: 5, see: 10 });
     for (let i = 0; i < 12; i++) add('vaca', 156 + (R() - 0.5) * 36, 214 + (R() - 0.5) * 30 - (i % 2) * 30, { r: 14, flee: 0, see: 0, slow: true });
     for (const k of kinds) {
-      const list = this.ani.filter(a => a.k === k), m = new THREE.InstancedMesh(animalGeo(k), VC, list.length);
-      m.castShadow = true; m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); sc.add(m); this.sp[k] = { m, list };
-      list.forEach((a, i) => { a.i = i; a.y = terrainH(a.x, a.z); });
+      const list = this.ani.filter(a => a.k === k), P = animalParts(k), mk = (geo, n) => { const m = new THREE.InstancedMesh(geo, VC, n); m.castShadow = true; m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); sc.add(m); return m; };
+      this.sp[k] = { m: mk(P.body, list.length), hm: mk(P.head, list.length), lm: mk(P.leg, list.length * P.hips.length), P, list };
+      list.forEach((a, i) => { a.i = i; a.y = terrainH(a.x, a.z); a.ph = R() * 6; a.amp = 0; a.hp = 0; a.hy = 0; a.peck = R() * 6; });
     }
     // --- flores del pastizal: margaritas, macachines, cardos y senecios (una sola malla con instancias) ---
     const fg = new THREE.OctahedronGeometry(0.16, 0); fg.scale(1, 0.55, 1);
@@ -351,11 +324,11 @@ export class Campo {
   update(dt, st) {
     this.t += dt; this.updateTrain(dt); this.updateSeason(st);
     const g = this.g, c = g.capi.pos, R = this.R, night = st.night > 0.5, far = c.x < 110 && c.z < 200 && g.cam.target.x < 110 && g.cam.target.z < 200;
-    for (const k in this.sp) this.sp[k].m.visible = !far;
+    for (const k in this.sp) { const S2 = this.sp[k]; S2.m.visible = S2.hm.visible = S2.lm.visible = !far; }
     if (Math.hypot(c.x + 34, c.z + 18.5) < 12) this.register('carpincho', 'visto');   // los carpinchos de la orilla de Salto también cuentan
     if (far) return;
     this.updateTropa(dt); this.updateTractor(dt);
-    const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(1, 1, 1), E = new THREE.Euler();
+    const M4 = new THREE.Matrix4(), M5 = new THREE.Matrix4(), M6 = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(1, 1, 1), E = new THREE.Euler();
     // aguará: de noche, cada tanto cruza la pradera a lo lejos (si Capi anda por el campo)
     const ag = this.sp.aguara.list[0];
     if (ag.hidden) {
@@ -363,7 +336,7 @@ export class Campo {
       if (this.agT <= 0) { this.agT = 150 + R() * 120; const a = R() * 6.28, d = 26 + R() * 8; ag.x = clamp(c.x + Math.cos(a) * d, 136, 286); ag.z = clamp(c.z + Math.sin(a) * d, -130, 236); if (terrainH(ag.x, ag.z) > 1) { ag.hidden = false; ag.life = 26; ag.tx = clamp(ag.x - Math.cos(a) * 30 + Math.sin(a) * 30, 136, 286); ag.tz = clamp(ag.z - Math.sin(a) * 30 - Math.cos(a) * 30, -130, 236); } }
     } else { ag.life -= dt; if (ag.life <= 0) ag.hidden = true; }
     for (const k in this.sp) {
-      const { m, list } = this.sp[k];
+      const { m, hm, lm, P, list } = this.sp[k], NH = P.hips.length;
       for (const a of list) {
         const dx = c.x - a.x, dz = c.z - a.z, dc = Math.hypot(dx, dz);
         let hide = a.hidden || (a.night && !night);
@@ -382,11 +355,21 @@ export class Campo {
           if (a.look && dc < 14) a.h += angDiff(a.h, Math.atan2(dx, dz)) * Math.min(1, 3 * dt);
           a.y = terrainH(a.x, a.z) + (a.y0 || 0);
           a.bob = sp > 0 ? Math.abs(Math.sin(this.t * (sp > 3 ? 11 : 7) + a.i)) * (sp > 3 ? 0.12 : 0.04) * (a.bird ? 2 : 1) : 0;
-          a.tilt = damp(a.tilt, a.st === 'idle' && ['venado', 'vaca', 'nandu'].includes(a.k) && dc > 12 ? 0.25 : sp > 3 ? -0.08 : 0, 3, dt);
+          a.tilt = damp(a.tilt, sp > 3 ? -0.06 : 0, 3, dt);
+          // patas: paso cruzado (o alternado en las aves), más largo al correr; cabeza: come cuando está tranquilo y mira a Capi si se acerca
+          a.amp = damp(a.amp, sp > 3 ? 0.7 : sp > 0 ? 0.38 : 0, 6, dt); a.ph += dt * (sp > 3 ? 11 : 3 + sp * 3);
+          const alert = a.st === 'flee' || dc < (a.flee ? a.flee * 1.8 : 9), graze = !alert && a.st === 'idle' && !a.look;
+          let hp = graze ? P.graze * (0.75 + 0.25 * Math.sin(this.t * 0.6 + a.i)) : alert ? -0.12 : 0, hy = 0;
+          if (graze && (a.k === 'nandu' || a.k === 'hornero' || a.k === 'chaja' || a.k === 'garza')) { a.peck += dt * 2.2; hp = P.graze * Math.max(0, Math.sin(a.peck)) ** 3; }
+          if (alert && a.st !== 'flee') hy = clamp(angDiff(a.h, Math.atan2(dx, dz)), -0.9, 0.9);
+          a.hp = damp(a.hp, hp, 5, dt); a.hy = damp(a.hy, hy, 5, dt);
         }
-        V.set(a.x, a.y + a.bob, a.z); E.set(a.tilt, a.h, 0); Q.setFromEuler(E); S.setScalar(hide ? 0.0001 : 1); M4.compose(V, Q, S); m.setMatrixAt(a.i, M4);
+        const sc0 = hide ? 0.0001 : 1;
+        V.set(a.x, a.y + a.bob, a.z); E.set(a.tilt, a.h, 0); Q.setFromEuler(E); S.setScalar(sc0); M4.compose(V, Q, S); m.setMatrixAt(a.i, M4);
+        V.set(...P.pivot); E.set(a.hp, a.hy, 0); Q.setFromEuler(E); S.setScalar(1); M5.compose(V, Q, S); M6.multiplyMatrices(M4, M5); hm.setMatrixAt(a.i, M6);
+        for (let j = 0; j < NH; j++) { V.set(...P.hips[j]); E.set(Math.sin(a.ph + P.gait[j]) * a.amp, 0, 0); Q.setFromEuler(E); M5.compose(V, Q, S); M6.multiplyMatrices(M4, M5); lm.setMatrixAt(a.i * NH + j, M6); }
       }
-      m.instanceMatrix.needsUpdate = true;
+      m.instanceMatrix.needsUpdate = true; hm.instanceMatrix.needsUpdate = true; lm.instanceMatrix.needsUpdate = true;
     }
   }
 }

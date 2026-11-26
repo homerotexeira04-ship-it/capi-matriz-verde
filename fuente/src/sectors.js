@@ -369,9 +369,34 @@ export function buildHydro(W) {
   w.addSolid(D.x0, D.x1, D.z0 - 0.1, D.z0 + 0.2, T + 1.0); w.addSolid(D.x0, D.x1, D.z1 - 0.2, D.z1 + 0.1, T + 1.0);
   for (let x = D.x0 + 4; x <= 20; x += 10) w.lamp(x, -57.5, 0, T);
   // Pórticos de izaje y compuertas móviles
-  const fallTex = canvasTex(32, 64, (g) => { g.fillStyle = '#bfe9fb'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#ffffff'; for (let i = 0; i < 26; i++) g.fillRect((i * 13) % 32, (i * 29) % 64, 3, 10 + (i * 7) % 16); }, { repeat: 1 });
-  fallTex.wrapS = fallTex.wrapT = THREE.RepeatWrapping; fallTex.repeat.set(2, 2);
-  const fallMat = new THREE.MeshBasicMaterial({ map: fallTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+  // Agua del vertedero: una cortina con hilos que bajan (ruido estirado), más blanca abajo donde se rompe, y al pie una
+  // mancha de espuma que se abre y se va río abajo. Todo depende de cuánto está abierta cada compuerta.
+  const NOISE = 'float hs(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hs(i), hs(i + vec2(1.0, 0.0)), f.x), mix(hs(i + vec2(0.0, 1.0)), hs(i + vec2(1.0, 1.0)), f.x), f.y); } float ss(float a, float b, float x){ return a < b ? smoothstep(a, b, x) : 1.0 - smoothstep(b, a, x); }';
+  const VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+  const fallU = { uTime: { value: 0 }, uNight: { value: 0 } };
+  const fallMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: fallU, vertexShader: VS,
+    fragmentShader: `uniform float uTime; uniform float uNight; varying vec2 vUv; ${NOISE}
+void main(){
+  float x = vUv.x, y = vUv.y, fl = y + uTime * 1.5;
+  float s = vn(vec2(x * 13.0, fl * 1.7)) * 0.6 + vn(vec2(x * 29.0 + 3.0, fl * 3.6)) * 0.4;
+  float streak = ss(0.42, 0.86, s), low = ss(0.42, 0.0, y), lip = ss(0.9, 1.0, y);
+  vec3 col = mix(vec3(0.33, 0.6, 0.8), vec3(0.95, 0.98, 1.0), clamp(streak * 0.75 + low * 0.85 + lip * 0.5 + (1.0 - y) * 0.2, 0.0, 1.0));
+  float edge = ss(0.0, 0.1, x) * ss(1.0, 0.9, x);
+  gl_FragColor = vec4(col * mix(1.0, 0.45, uNight), (0.68 + 0.3 * streak) * edge);
+  #include <colorspace_fragment>
+}` });
+  const foamGeo = new THREE.PlaneGeometry(6.2, 17).rotateX(-Math.PI / 2).translate(0, 0, 8.5);   // empieza al pie y se estira río abajo
+  const foamFS = `uniform float uTime; uniform float uNight; uniform float uOpen; varying vec2 vUv; ${NOISE}
+void main(){
+  float d = 1.0 - vUv.y, x = abs(vUv.x - 0.5) * 2.0;
+  vec2 p = vec2(vUv.x * 6.0, vUv.y * 15.0 + uTime * 1.3);
+  float n = vn(p) * 0.55 + vn(p * 2.3 + 7.0) * 0.3 + vn(p * 5.1 + 3.0) * 0.15;
+  float near = ss(0.35, 0.0, d), spread = mix(0.95, 0.45, ss(0.0, 1.0, d));
+  float m = ss(0.5 - near * 0.4, 0.78, n) * ss(spread, spread * 0.55, x) * ss(1.0, 0.05, d);
+  m = max(m, near * ss(0.85, 0.3, x) * 0.85);
+  gl_FragColor = vec4(vec3(0.93, 0.97, 1.0) * mix(1.0, 0.45, uNight), m * uOpen * 0.85);
+  #include <colorspace_fragment>
+}`;
   const gateMat = new THREE.MeshStandardMaterial({ color: 0x2f6f9f, flatShading: true, roughness: 0.7, metalness: 0.3 });
   const gates = [];
   GATES.forEach((gx, i) => {
@@ -381,7 +406,10 @@ export function buildHydro(W) {
     b.boxB(gx, T + 3.3, -55, 1.0, 0.8, 1.0, C.steelD); b.box(gx, T + 2.2, -55.4, 0.08, 2.4, 0.08, C.steelD);
     const gm = new THREE.Mesh(new THREE.BoxGeometry(4.15, 3.4, 0.4), gateMat); gm.position.set(gx, 4.3, -55.4); gm.castShadow = true; w.scene.add(gm);
     const fall = new THREE.Mesh(new THREE.PlaneGeometry(3.9, 8.6), fallMat); fall.position.set(gx, 1.5, -50.3); fall.rotation.x = -(Math.PI / 2 - 0.417); w.scene.add(fall);
-    gates.push({ mesh: gm, fall, open: i < 2 ? 1 : 0.28 });
+    const fu = { uTime: fallU.uTime, uNight: fallU.uNight, uOpen: { value: 0 } };
+    const foam = new THREE.Mesh(foamGeo, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: fu, vertexShader: VS, fragmentShader: foamFS }));
+    foam.position.set(gx, 0.36, -46.6); foam.renderOrder = 6; w.scene.add(foam);   // encima del río (que se dibuja en el orden 5 y tiene olas)
+    gates.push({ mesh: gm, fall, foam: fu, open: i < 2 ? 1 : 0.28 });
     w.addInter('gate:' + i, gx, -52.9, { y: T, ry: Math.PI, h: 5.2 });
   });
   // Sala de turbinas con techo vidriado y rotores visibles
@@ -432,13 +460,14 @@ export function buildHydro(W) {
   spray.visible = false; spray.renderOrder = 8; W.scene.add(spray);
   w.updaters.push((dt, st) => {
     const G = st.grid;
-    fallTex.offset.y += dt * 1.6; fallMat.color.setScalar(lerp(1, 0.48, st.night));   // de noche el agua del vertedero no brilla sola
+    fallU.uTime.value = W.time; fallU.uNight.value = st.night;   // de noche el agua del vertedero no brilla sola
     gates.forEach((g, i) => {
       const goal = G.hydro.gates[i].reg ? 0.28 : 1;
       g.open = damp(g.open, goal, 1.5, dt); g.mesh.position.y = 4.3 + g.open * 2.3;
-      g.fall.scale.x = 0.3 + 0.7 * g.open; g.fall.material.opacity = 0.9;
-      if (Math.random() < g.open * 60 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 3.6 * g.open, 0.3, -46.3 + OZ + Math.random(), (Math.random() - 0.5) * 2, 1.5 + Math.random() * 2.5 * g.open, 1 + Math.random() * 2, 0.8, 0.5, 1.3, 0xffffff, 0.8, 5, 1);
-      if (Math.random() < g.open * 7 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 4, 0.6 + Math.random(), -44.5 + OZ + Math.random() * 2, (Math.random() - 0.5) * 0.6, 0.35 + Math.random() * 0.3, 1.2 + Math.random() * 0.8, 4.5, 1.6, 5.5, 0xf4f8fb, 0.2, -0.02, 0.15);   // neblina río abajo
+      g.fall.scale.x = 0.3 + 0.7 * g.open; g.foam.uOpen.value = smooth(0.25, 0.9, g.open);
+      // salpicaduras: chicas y transparentes (antes eran pocas y grandes, y se veían como bolas de algodón)
+      if (Math.random() < g.open * 34 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 3.6 * g.open, 0.3, -46.3 + OZ + Math.random(), (Math.random() - 0.5) * 2, 1.2 + Math.random() * 2 * g.open, 1 + Math.random() * 2, 0.7, 0.35, 0.9, 0xffffff, 0.32, 5, 1);
+      if (Math.random() < g.open * 5 * dt) st.fx.soft.emit(POS.gates[i] + (Math.random() - 0.5) * 4, 0.6 + Math.random(), -44.5 + OZ + Math.random() * 2, (Math.random() - 0.5) * 0.6, 0.35 + Math.random() * 0.3, 1.2 + Math.random() * 0.8, 4.5, 1.6, 5.5, 0xf4f8fb, 0.12, -0.02, 0.15);   // neblina río abajo
     });
     // arcoíris en la neblina: con compuertas abiertas, de día y con el sol a la espalda de quien mira
     { const op = gates.reduce((a, g) => a + g.open, 0) / gates.length, sd = W.sunDir, cx = POS.gates[1] + 2.4, cz = -42 + OZ, cp = st.cam;
@@ -705,8 +734,17 @@ export function buildLines(w) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
   w.scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x2b3038 })));
   const at = (L, t) => { const d = t * L.len; let i = 1; while (i < L.cum.length - 1 && L.cum[i] < d) i++; const k = (d - L.cum[i - 1]) / Math.max(1e-6, L.cum[i] - L.cum[i - 1]); return [lerp(L.path[i - 1].x, L.path[i].x, k), lerp(L.path[i - 1].y, L.path[i].y, k), lerp(L.path[i - 1].z, L.path[i].z, k)]; };
+  // Descarga: cuando se repara o se conecta una central, un pulso grande corre por su línea hasta la ciudad
+  // (así se ve que lo que hizo Capi allá lejos llega hasta acá), y al llegar sigue por el alimentador del barrio
+  const surges = [];
+  w.surge = name => { const L = w.lines[name]; if (L) surges.push({ L, t: 0, next: name === 'ciudad' ? null : 'ciudad' }); };
   // Pulsos luminosos: velocidad e intensidad según los MW transmitidos
   w.updaters.push((dt, st) => {
+    for (let k = surges.length - 1; k >= 0; k--) {
+      const S2 = surges[k], L = S2.L; S2.t += dt / Math.max(1.1, Math.min(2.6, L.len / 70));
+      for (let j = 0; j < 7; j++) { const tt = S2.t - j * 0.018; if (tt < 0 || tt > 1) continue; const p = at(L, tt); st.fx.glow.sprite(p[0], p[1], p[2], j ? 3.2 - j * 0.35 : 5.5, j ? L.color : 0xffffff, j ? 0.75 - j * 0.09 : 1); }
+      if (S2.t >= 1) { const p = at(L, 1); st.fx.sparks(p[0], p[1], p[2], 30, L.color); surges.splice(k, 1); if (S2.next) w.surge(S2.next); }
+    }
     const o = st.grid.out, mw = { eolica: o.wind, hidro: o.hydro, solar: o.solar + Math.max(0, o.bat), biomasa: o.bio, ciudad: o.pct / 100 };
     for (const k in w.lines) {
       const L = w.lines[k], lv = clamp(mw[k] / L.cap, 0, 1); L.level = damp(L.level, lv, 3, dt);

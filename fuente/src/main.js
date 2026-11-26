@@ -11,7 +11,7 @@ import { Actors } from './actors.js';
 import { AudioSynth } from './audio.js';
 import { UI, drawFace } from './ui.js';
 import { Minigames } from './minigames.js';
-import { Missions } from './missions.js';
+import { Missions, SEQ } from './missions.js';
 import { NavGrid } from './nav.js';
 import { Extras } from './extras.js';
 import { Vida, buildSalto, CLEAR } from './vida.js';
@@ -139,6 +139,7 @@ class Game {
     $('bShort').onclick = () => level('corta'); $('bLong').onclick = () => level('larga');
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
     $('bSchool').onclick = () => this.escuela.open();
+    $('bQuick').onclick = () => this.play('rapida', 0, null, 'explorador');
     $('bCred').onclick = () => this.showCredits(null);
     document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
     w.updateRain(0, {});   // la lluvia se arma ahora (escondida) para que la placa de video la conozca antes de jugar
@@ -212,9 +213,9 @@ class Game {
 
   refreshTitle() {
     const sv = this.saved = this.missions.load(), c = $('bCont');
-    $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false;
+    $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false; $('bQuick').disabled = false;
     c.classList.toggle('hidden', !sv || (sv.phase === 0));
-    if (sv) { const n = sv.mode === 'corta' ? 5 : 7; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
+    if (sv) { const n = (SEQ[sv.mode] || SEQ.larga).length; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
     $('load').textContent = 'Teclado y mouse · también funciona con pantalla táctil';
   }
   play(mode, phase, saved, level, opt = {}) {
@@ -225,10 +226,23 @@ class Game {
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
     this.missions.school = opt.school || null; this.escuela.cur = opt.school || null; ['escuela', 'eWin'].forEach(id => $(id).classList.add('hidden')); this.escuela.winOpen = false; if (this.extras.open === 'escuela' || this.extras.open === 'eWin') this.extras.open = null;
-    const tut = !opt.school && (!!opt.tutorial || (!saved && phase === 0 && !opt.guide));
+    const tut = !opt.school && mode !== 'rapida' && (!!opt.tutorial || (!saved && phase === 0 && !opt.guide));
     if (!opt.guide) this.stats.startGame(opt.school ? 'escuela' : mode, this.missions.level, !saved);
     this.missions.start(mode, phase, true, tut);
     if (tut) this.tut.start();
+    if (mode === 'rapida') {   // la visita rápida arranca al lado del molino frenado, mirándolo
+      const it = this.world.inter['wind:1'], x = it.x - 5, z = it.z + 6; this.capi.teleport(x, z); this.capi.heading = Math.atan2(it.x - x, it.z - z);
+      this.cam.target.set(x, it.y + 1.5, z); this.cam.yawT = this.cam.yaw = Math.atan2(x - it.x, z - it.z); this.cam.distT = this.cam.dist = 30;
+    }
+  }
+  // fin de la visita rápida: tarjeta con el dato y qué hacer después
+  quickEnd() {
+    this.extras.open = 'qWin'; $('qWin').classList.remove('hidden'); this.audio.fanfare(); this.confetti(70); this.capi.celebrate(3); this.stats.mission('rapida');
+    const close = () => { $('qWin').classList.add('hidden'); if (this.extras.open === 'qWin') this.extras.open = null; };
+    $('qShort').onclick = () => { close(); this.play('corta', 0, null, this.missions.level || 'explorador'); };
+    $('qFree').onclick = () => { close(); this.missions.quietFree = false; this.missions.start('rapida', 1, false); };
+    $('qHome').onclick = () => { close(); this.toTitle(); };
+    setTimeout(() => { try { $('qShort').focus({ preventScroll: true }); } catch (e) { /* sin foco */ } }, 40);
   }
   // confeti en pantalla con los colores de Energimundo
   confetti(n = 70) {

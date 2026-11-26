@@ -8,9 +8,11 @@ const N = ' ';
 
 export const SEQ = {
   corta: ['viento', 'rio', 'sol', 'urbano', 'pico'],
-  larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'transicion', 'pico']
+  larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'transicion', 'pico'],
+  rapida: ['rapida']   // visita rápida del kiosco: unos 3 minutos
 };
 const DEF = {
+  rapida: { title: '¡Prendé el viento!', scn: { hour: 18.7, rate: 1 / 60, hold: 19.3, wind: 1, gust: 0.06, extra: -15 } },   // un poco menos de demanda: el primer barrio se prende con margen
   viento: { title: 'Vientos en la Cuchilla', scn: { hour: 9, rate: 1 / 60, hold: 11.5, wind: 0.95, gust: 0.08, extra: 0 } },
   rio: { title: 'La Fuerza del Río', scn: { hour: 11.5, rate: 1 / 60, hold: 13.5, wind: 0.6, gust: 0.08, extra: 15 } },
   sol: { title: 'Cosecha de Sol', scn: { hour: 9.5, rate: 1 / 30, hold: 18.6, wind: 0.8, gust: 0.08, extra: 0, energy: 1 / 12 } },
@@ -25,6 +27,9 @@ const DEF = {
 export const missionTitle = k => (DEF[k] || {}).title;   // el nombre de cada misión, para certificados
 
 const INTRO = {
+  rapida: [
+    L('valeria', '¡Hola, Capi! Soy Valeria, del Centro de Control. Está cayendo la tarde y la ciudad gasta mucho respaldo fósil.'),
+    L('valeria', 'Estás al lado de un molino que quedó frenado, justo con este viento. Acercate a la consola con la luz roja, soltá el freno y después conectá el transformador del parque.')],
   ahorro: [
     L('lucia', 'Capi, hasta ahora sumamos energía limpia. Pero hay otra forma de ayudar a la red: gastar menos sin perder comodidad.'),
     L('lucia', 'En el Barrio Sur, pasando el bulevar, tres vecinos te esperan para cambiar sus lamparitas viejas por LED.'),
@@ -61,6 +66,7 @@ const INTRO = {
     L('valeria', 'Queda la prueba grande: la hora pico nocturna, sin sol. Cuando estés listo, vení a verme al Centro de Control, en la subestación de la ciudad.')]
 };
 const OUTRO = {
+  rapida: [L('valeria', '¡Eso es! La energía del viento ya llega a la ciudad. En Uruguay, el viento da un tercio de la electricidad: en 2025 fue el 34 %.')],
   ahorro: [L('valeria', `La demanda de la ciudad bajó un 6${N}% y los ómnibus cargaron con sol del mediodía. La energía más limpia es la que no hace falta generar.`), L('capi', 'Ahorrar también es generar. ¡Anotado!')],
   viento: [L('valeria', '¡Bien ahí! El parque eólico ya inyecta energía. El viento rinde muchísimo, pero es variable: cuando afloja, alguien tiene que cubrir.')],
   rio: [L('valeria', 'Embalse estable y tres turbinas en línea. El agua es nuestra energía de base: constante y regulable.'), L('capi', 'Cuando sopla el viento guardamos agua, y cuando afloja la turbinamos.', 1), L('valeria', 'Exacto: viento y agua se complementan. Ahora nos falta el sol.', 3)],
@@ -97,13 +103,13 @@ export class Missions {
   lines(arr) { return arr.filter(l => !l.x || (!this.short && !(l.x === 3 && this.swap))); }
   load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; let ph = s.phase; if (mode === 'larga' && !s.v && ph >= 4) ph++; if (mode === 'larga' && (s.v || 1) < 3 && ph >= 6) ph++; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, ph)), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
   forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
-  save() { if (this.school) return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 3, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { if (this.school || this.mode === 'rapida') return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 3, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
-  reached(k) { const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
+  reached(k) { if (this.mode === 'rapida' && k === 'viento') return this.active || this.free; const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
   // Estado de la red tras n misiones completas
   preset(n) {
-    const G = this.g.grid, D = k => this.done(k, n), blocked = this.short ? [1] : [1, 2, 4];
+    const G = this.g.grid, D = k => this.done(k, n), blocked = this.short || this.mode === 'rapida' ? [1] : [1, 2, 4];
     G.hydro.t.forEach((u, i) => { u.on = i < 2 || (i === 2 && D('rio')) || (i === 3 && n >= this.seq.length); u.fault = false; });
     G.hydro.gates.forEach((g, i) => { g.reg = i >= 2 || D('rio'); });
     G.windP.t.forEach((u, i) => { u.on = true; u.fault = !D('viento') && blocked.includes(i); }); G.windP.tx = D('viento'); G.windP.txFault = false;
@@ -133,7 +139,7 @@ export class Missions {
   begin() {
     const g = this.g;
     g.ui.dialog(this.lines(INTRO[this.key]), () => {
-      this.active = true; g.ui.toast('MISIÓN ' + (this.phase + 1), this.title, 3);
+      this.active = true; g.ui.toast(this.mode === 'rapida' ? 'VISITA RÁPIDA' : 'MISIÓN ' + (this.phase + 1), this.title, 3);
       if (this.key === 'tormenta') { const G = g.grid; G.windP.t[0].fault = true; G.windP.txFault = true; G.hydro.gates[2].reg = false; g.audio.thunder(); this.fossilT = 0; g.extras.choose('Sudestada', 'Valeria: “No llegamos a todo a la vez. ¿Qué atendemos primero?”', [['El parque eólico', 'Recuperar potencia cuanto antes'], ['La compuerta de la represa', 'Cuidar el agua del embalse']], i => { this.flags.first = i ? 'dam' : 'wind'; }); }
       if (this.key === 'sol' && !this.done('rio')) g.ui.note('Hoy es feriado: la ciudad consume menos y sobra sol para estrenar las baterías.', 6);
     });
@@ -143,6 +149,10 @@ export class Missions {
   steps() {
     const G = this.g.grid, o = G.out, c = this.g.capi.pos, S = this.short;
     switch (this.key) {
+      case 'rapida': return [
+        { text: 'Soltar el freno del molino de la luz roja', targets: ['wind:1'], done: !G.windP.t[1].fault },
+        { text: 'Conectar el transformador del parque', targets: ['wind:tx'], done: G.windP.tx },
+        { text: 'Mirar cómo la energía llega a la ciudad', targets: [], done: this.flag('seen') }];
       case 'viento': {
         const set = S ? [1] : [1, 2, 4], left = set.filter(i => G.windP.t[i].fault);
         return [
@@ -295,11 +305,12 @@ export class Missions {
         else if (k === 'h2') { G.h2.on = true; msg = 'Electrolizador en marcha: separa el agua en hidrógeno y oxígeno usando solo la energía renovable que sobra.'; }
         else if (k === 'led') { this.flags['led' + i] = true; G.eff = 0.02 * [0, 1, 2].filter(j => this.flags['led' + j]).length; msg = G.eff > 0.05 ? `Tres casas con LED y el barrio se contagia: la demanda de la ciudad baja un 6${N}%.` : 'Casa con luces LED: la misma luz gastando unas seis veces menos.'; }
         G.step(0); fxOk(); U.note(msg);
+        const line = { wind: 'eolica', gate: 'hidro', turb: 'hidro', solar: 'solar', bat: 'solar', bio: 'biomasa', h2: null }[k]; if (line && g.world.surge) g.world.surge(line);   // la energía viaja hasta la ciudad
       });
     }
     // Acciones instantáneas
     g.capi.work(1.1); g.audio.spark();
-    if (id === 'wind:tx') { G.windP.tx = true; setTimeout(fxOk, 900); U.note('Transformador en línea: el parque eólico inyecta energía a la red.'); }
+    if (id === 'wind:tx') { G.windP.tx = true; setTimeout(() => { fxOk(); if (g.world.surge) g.world.surge('eolica'); }, 900); U.note('Transformador en línea: el parque eólico inyecta energía a la red.'); }
     if (id === 'h2:fill') { this.flags.fill = true; G.h2.filling = 7; g.capi.work(1.6); setTimeout(fxOk, 1200); U.note('Camión cargado: 68 kg de hidrógeno en menos de media hora, para más de 700 km sin humo. Son los números del proyecto Kahirós, en Fray Bentos.', 7); return; }
     if (id === 'bio:chips') { G.bio.chips = true; g.fx.puff(it.x, it.y + 1, it.z, 14, 0xc9a66b, 2); U.note('Cinta cargada con chips de madera de residuos forestales.'); }
   }
@@ -449,7 +460,7 @@ export class Missions {
     }
     if (g.tut && g.tut.on) { U.mission('Primeros pasos', `Tutorial · antes de la misión 1`, g.tut.items()); return; }
     const SC = this.school && g.escuela ? g.escuela.info(this.school) : null;
-    U.mission(SC ? `Modo escuela · ${SC.name}` : `Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : this.schoolDone ? '¡Misión completa!' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
+    U.mission(SC ? `Modo escuela · ${SC.name}` : this.mode === 'rapida' ? `Visita rápida · ${this.title}` : `Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : this.schoolDone ? '¡Misión completa!' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
     if (!this.active) return;
     if (G.out.pct < 97) this.flags.low = true;
     if (!this.flags.full && this.flags.low && G.out.pct >= 99.9 && !this.lapse) { this.flags.full = true; g.celebrate100(); }
@@ -462,6 +473,11 @@ export class Missions {
     }
     if (K === 'tormenta' && G.out.pct < 99.9) this.fossilT = (this.fossilT || 0) + dt;
     if (K === 'transicion') this.nightLapse(st);
+    // visita rápida: con el transformador conectado, la cámara va a la ciudad para ver llegar la energía
+    if (K === 'rapida' && G.windP.tx && !this.flags.seen) {
+      if (this.qT == null) { this.qT = 7.5; setTimeout(() => { if (this.key === 'rapida') { g.inspect('ciudad'); U.note('La energía del viento corre por la línea hasta la ciudad y se prenden las luces del barrio.', 6); } }, 1600); }
+      this.qT -= dt; if (this.qT <= 0) { this.flags.seen = true; this.qT = null; }
+    }
     if (K === 'urbano' && this.busT > 0) { this.busT -= dt; if (this.busT <= 0) this.flags.busesSeen = true; }
     if (K === 'pico' && this.m5 && !this.flags.m5won) {
       const m = this.m5;
@@ -489,6 +505,7 @@ export class Missions {
       const done = K, fs = Math.round(this.fossilT || 0), extra = K !== 'tormenta' ? null : L('valeria', (this.flags.first === 'dam' ? 'Cuidaste el agua primero, y el viento tardó un poco más en volver.' : 'Recuperaste potencia rápido, aunque el embalse siguió perdiendo agua un rato.') + (fs > 0 ? ` La ciudad pasó ${fs} segundos con respaldo fósil.` : ' Y la ciudad no necesitó respaldo fósil.'));
       setTimeout(() => {
         if (this.school) { this.schoolDone = true; const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); const fin = () => { this.pending = 0; g.escuela.complete(done); }; return out.length ? U.dialog(out, fin) : fin(); }
+        if (this.mode === 'rapida') { const out = this.lines(OUTRO[done]); return U.dialog(out, () => { this.pending = 0; g.quickEnd(); }); }
         const next = () => { this.pending = 0; this.flags = {}; this.phase++; this.save(); this.step = 0; this.preset(this.phase); this.scenario(this.key, false); this.begin(); };
         const go = done !== 'viento' ? next : () => g.extras.choose('¿Por dónde seguimos?', 'Valeria: “Tenemos dos frentes abiertos. Elegí vos el orden: igual vamos a ir a los dos.”', [['A la Central Hidroeléctrica', 'El río: energía de base, firme y regulable'], ['Al Parque Solar', 'El sol del mediodía, guardado en baterías']], i => { this.swap = i === 1; this.seq = SEQ[this.mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } next(); });
         const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); if (out.length) U.dialog(out, go); else go();

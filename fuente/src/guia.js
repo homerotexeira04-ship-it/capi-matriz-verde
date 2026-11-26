@@ -23,7 +23,7 @@ const today = () => { const d = new Date(); return d.getFullYear() + '-' + Strin
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
 const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(r).padStart(2, '0')} s`; };
 export const MG_NAMES = { sync: 'Sincronización de fase', crank: 'Freno del aerogenerador', gates: 'Compuerta del embalse', helio: 'Matriz solar', route: 'Subestación', seq: 'Caldera de biomasa', rhythm: 'Compás de carga', led: 'Cambio a LED', solar: 'Carga con sol', cometa: 'Cometa en la rambla', bici: 'Bicicleta generadora', cinta: 'Cinta de chips', despacho: 'Centro de Control', torre: 'Torre del aerogenerador', casa: 'La casa eficiente', carga: 'Carga programada', h2: 'Electrolizador' };
-const MIS = { viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', transicion: 'La Segunda Transición', pico: 'Desafío 100% Renovable' };
+const MIS = { rapida: 'Visita rápida', viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', transicion: 'La Segunda Transición', pico: 'Desafío 100% Renovable' };
 const BUCKETS = ['menos de 2 min', '2 a 5 min', '5 a 10 min', '10 a 20 min', 'más de 20 min'];
 
 // ---------- Ajustes que valen para todos los visitantes (letra grande) ----------
@@ -63,7 +63,7 @@ export class Stats {
   text() {
     const d = this.d, avg = d.sessions ? d.sessionSec / d.sessions : 0, L = [];
     L.push(`Capi: Guardián de la Matriz Verde · Museo Energimundo`, `Estadísticas desde el ${fmtDate(d.since)} hasta el ${fmtDate(today())}`, '');
-    L.push(`Partidas nuevas: ${d.games} (historia corta ${d.mode.corta}, historia larga ${d.mode.larga}, modo escuela ${d.mode.escuela || 0}) · Partidas continuadas: ${d.cont}`);
+    L.push(`Partidas nuevas: ${d.games} (visita rápida ${d.mode.rapida || 0}, historia corta ${d.mode.corta}, historia larga ${d.mode.larga}, modo escuela ${d.mode.escuela || 0}) · Partidas continuadas: ${d.cont}`);
     L.push(`Medallas del modo escuela entregadas: ${d.medallas || 0}`);
     L.push(`Nivel elegido: Explorador ${d.level.explorador}, Ingeniero ${d.level.ingeniero}`);
     L.push(`Historias terminadas: corta ${d.done.corta}, larga ${d.done.larga}`);
@@ -202,7 +202,7 @@ export class Guide {
     document.querySelectorAll('.gFps').forEach(b => { b.textContent = g.medidor.on ? 'Ocultar el medidor de cuadros' : 'Mostrar el medidor de cuadros'; });
     $('gSince').textContent = fmtDate(d.since);
     const avg = d.sessions ? d.sessionSec / d.sessions : 0, tiles = [
-      ['Partidas nuevas', d.games, `corta ${d.mode.corta} · larga ${d.mode.larga}`], ['Historias terminadas', d.done.corta + d.done.larga, `corta ${d.done.corta} · larga ${d.done.larga}`],
+      ['Partidas nuevas', d.games, `rápida ${d.mode.rapida || 0} · corta ${d.mode.corta} · larga ${d.mode.larga}`], ['Historias terminadas', d.done.corta + d.done.larga, `corta ${d.done.corta} · larga ${d.done.larga}`],
       ['Duración media de la visita', mmss(avg), `${d.sessions} visitas`], ['Tiempo total jugado', mmss(d.playSec), `${d.cont} partidas continuadas`],
       ['Tutorial', `${d.tut.done} de ${d.tut.start}`, `completos · ${d.tut.skip} salteados`], ['Nivel elegido', `${d.level.explorador} / ${d.level.ingeniero}`, 'Explorador / Ingeniero'],
       ['Chispas encontradas', d.sparks, `${d.favors} favores cumplidos`], ['Feria de minijuegos', d.feria, 'juegos sueltos']];

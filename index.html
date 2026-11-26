@@ -161,6 +161,7 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #pinPad .oBox{width:min(340px,92vw)} #pinDots{font-size:30px;letter-spacing:10px;color:var(--sun);margin:4px 0} #pinMsg{margin:0;color:var(--dim)}
 #pinKeys{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%} #pinKeys .btn{font-size:28px;padding:14px 0;min-height:64px}
 #pinPad.bad .oBox{animation:pinShake .35s} @keyframes pinShake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+#qWin .oBox{width:min(520px,94vw)} #qWin h2{color:var(--sun);font-size:30px;margin:4px 0} .qBtns{display:grid;gap:9px;width:100%} .qBtns .btn{font-size:19px}
 #fpsBox{position:fixed;top:74px;right:12px;z-index:60;background:rgba(6,18,38,.88);color:#d6ffe7;font:700 12px/1.4 ui-monospace,Consolas,Menlo,monospace;padding:6px 10px;border-radius:9px;border:2px solid #2a4374;pointer-events:none;white-space:pre} #fpsBox.hidden{display:none}
 @media (min-width:900px){#arcade .oBox{width:min(900px,96vw)} #arList{grid-template-columns:repeat(3,1fr)}}
 #escuela .eBox{width:min(860px,97vw)} .eLevel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap} .eLevel .btn{min-width:180px;display:grid;justify-items:center;line-height:1.15;padding:6px 14px} .eLevel .btn small{font-size:12px;font-weight:800;opacity:.85} .eLevel .btn.on{background:var(--sun);color:#2a1a00;border-color:#fff3b0}
@@ -175,7 +176,7 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #eLearn{margin:0;padding:0 0 0 20px;text-align:left;display:grid;gap:5px;font-size:15px;line-height:1.35;color:var(--cream)} #ePrize{color:var(--sun)!important;font-weight:900}
 .eWinBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 body.bigText .eTxt b{font-size:21px} body.bigText .eTxt small{font-size:15px} body.bigText #eLearn{font-size:18px}
-.tBtns .btn.school{background:linear-gradient(135deg,#1fb5ad,#2f6fe4);color:#fff}
+.tBtns .btn.school{background:linear-gradient(135deg,#1fb5ad,#2f6fe4);color:#fff} .tBtns .btn.quick{background:linear-gradient(135deg,#ffd23f,#ff9f2a);color:#3a2500}
 #domo .oBox{width:min(560px,96vw)} #domoCv{width:min(440px,84vw,62vh);height:auto;aspect-ratio:1;border-radius:50%;background:#050b18;box-shadow:0 0 0 6px #26262b,0 10px 30px rgba(0,0,0,.5)}
 #domo #domoTx{min-height:3.2em;font-size:16px;color:var(--cream);max-width:460px} body.bigText #domo #domoTx{font-size:19px}
 #mExtra{display:flex;flex-wrap:wrap;row-gap:5px;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:6px;border-top:2px solid #2a4374;font-size:12.5px;color:var(--sun)}
@@ -607,6 +608,11 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   <p id="scMsg">Encendiendo circuitos…</p>
   <div class="scTrack"><i id="scBar"></i></div><b id="scPct">0 %</b>
 </div></div>
+<div id="qWin" class="ov hidden"><div class="oBox pane">
+  <h2>¡Prendiste el viento!</h2>
+  <p>En 2025, el 34&nbsp;% de la electricidad de Uruguay salió del viento, y el 98&nbsp;% de fuentes renovables: agua, viento, biomasa y sol.</p>
+  <div class="qBtns"><button class="btn" id="qShort" type="button">Jugar la historia corta</button><button class="btn ghost" id="qFree" type="button">Seguir explorando</button><button class="btn ghost" id="qHome" type="button">Volver al inicio</button></div>
+</div></div>
 <div id="lpRing" class="hidden" aria-hidden="true"></div>
 <div id="pinPad" class="ov hidden"><div class="oBox pane">
   <h2>SuperCapi</h2><p id="pinMsg">PIN del personal</p><div id="pinDots" aria-live="polite">○○○○</div>
@@ -664,6 +670,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   <p>Sos Capi, carpincho e ingeniero jefe de energía limpia. Recorré el diorama, repará las centrales y llevá la red al 100&nbsp;% renovable antes de la hora pico.</p>
   <div class="tBtns">
     <button class="btn hidden" id="bCont" type="button">Continuar</button>
+    <button class="btn quick" id="bQuick" type="button" disabled>Visita rápida<small>3 minutos · prendé el viento</small></button>
     <button class="btn" id="bShort" type="button" disabled>Historia corta<small>5 misiones · unos 10 minutos</small></button>
     <button class="btn" id="bLong" type="button" disabled>Historia larga<small>8 misiones · unos 25 minutos</small></button>
     <button class="btn school" id="bSchool" type="button" disabled>Modo escuela<small>Una misión por energía, con medalla</small></button>
@@ -688,7 +695,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
 <script id="cgBoot">
 // Descarga del juego con avance real (los bytes que van llegando). Abierto como archivo (el kiosco) se carga directo.
 (function () {
-  var BYTES = 1501230, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
+  var BYTES = 1506309, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
   var $ = function (i) { return d.getElementById(i); }, fill = $('cgFill'), run = $('cgRun'), pct = $('cgPct'), lab = $('cgLabel'), bar = $('cgBar');
   // qué parte de la barra le toca a la descarga: la calcula la propia descarga con la velocidad que trae (al principio
   // se usa lo que tardó la vez anterior en esta PC); rest es lo que tarda después en armarse todo en esta PC

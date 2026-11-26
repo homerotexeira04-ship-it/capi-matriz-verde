@@ -6,6 +6,7 @@ Videojuego 3D del museo **Energimundo** sobre la matriz eléctrica renovable del
 
 Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha el parque eólico, la represa, el parque solar con baterías y la planta de biomasa para que la red funcione con energía 100 % renovable, y después lleva esa energía limpia al transporte.
 
+- **Visita rápida:** unos 3 minutos, pensada para cuando hay fila en el museo. Capi aparece al pie de un aerogenerador frenado, se arregla con un minijuego, se conecta el parque a la red y el primer barrio se ilumina. Al final se puede seguir con la historia corta, quedarse explorando o volver al inicio.
 - **Historia corta:** 5 misiones, unos 10 minutos.
 - **Historia larga:** 8 misiones, unos 25 minutos. Suma la misión de ahorro (cambiar lamparitas por LED y cargar los ómnibus con sol), la sudestada, la segunda transición (autos que cargan de madrugada e hidrógeno verde) y una decisión de año seco.
 - 17 minijuegos, 26 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante, un sello dorado de Energimundo y un código QR para seguir jugando en casa.
@@ -23,6 +24,8 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Tutorial jugable** de cuatro pasos antes de la primera misión (caminar, mirar, saltar y hablar con la Ing. Valeria), con instrucciones para teclado, pantalla táctil o joystick. Si alguien se traba, aparece una ayuda extra y el tutorial sigue solo.
 - **Letra grande:** opción en la pantalla de inicio y en la ayuda, que queda guardada.
 - **Neblina sobre el río al amanecer**, que se levanta a media mañana.
+- **Agua del vertedero:** cuando se abren las compuertas de la represa, el agua cae en cortina con espuma al pie y rocío, y de noche brilla con las luces.
+- **La energía viaja por los cables:** al arreglar una central, un pulso de luz sale por su línea hasta la subestación y de ahí a la ciudad, y al llegar saltan chispas.
 - **Modo SuperCapi** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Antes del menú aparece una pantalla de carga de 2,5 segundos con la cara de Capi partida al medio: mitad Capi de siempre y mitad Capi robot. Se abre con el teclado o, en pantallas táctiles, manteniendo apretado el logo de Energimundo e ingresando un PIN; cómo hacerlo está en las instrucciones de la carpeta del kiosco. También tiene un **medidor de cuadros** (cuadros por segundo, tiempo por cuadro y tirones, con la hora y el lugar del último) para revisar cómo anda el juego en cada PC.
 - **Modo festivo** (se elige desde el modo SuperCapi y queda guardado en la PC), con cinco fiestas:
   - **Carnaval:** banderines, estandartes de comparsa y llamadas por el bulevar al caer la tarde: el estandarte, dos bailarinas y la cuerda de tambores dan vueltas por el tramo abierto del bulevar, y el minimapa marca dónde están. Los tambores son grabaciones reales y la cuerda va cambiando el ritmo: arranca con la madera, se asienta en la base, el repique se suelta, el tempo se acelera de a poco y de vez en cuando hacen un corte todos juntos. Cerca se oye fuerte y brillante; a medida que Capi se aleja se va apagando. La Mama Vieja, el Gramillero y el Escobero bailan en la plaza.

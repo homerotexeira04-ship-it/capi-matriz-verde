@@ -1,7 +1,7 @@
 // Arranque del juego: render, cámara isométrica orbital, entrada (teclado, ratón y táctil) y bucle principal.
 import * as THREE from 'three';
 import { clamp, lerp, damp, angDiff } from './util.js';
-import { B, POS, ZONES, CITY_Y, coastD, westD, channelD, MUSEO_OFF } from './terrain.js';
+import { B, BND, POS, ZONES, CITY_Y, coastD, westD, channelD, MUSEO_OFF, ESTACION } from './terrain.js';
 import { EnergyGrid } from './grid.js';
 import { World, canvasTex, offsetWorld } from './world.js';
 import { buildCity, buildHydro, buildWind, buildSolar, buildBiomass, buildRoads, buildLines, buildFlora, buildStops, buildSur } from './sectors.js';
@@ -20,6 +20,10 @@ import './arcade.js';
 import './casa.js';
 import { buildTransicion, CLEAR6 } from './transicion.js';
 import { Medidor } from './medidor.js';
+import { buildPradera } from './pradera.js';
+import { Campo } from './campo.js';
+import { buildDestinos } from './destinos.js';
+import { Viajes } from './viajes.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
@@ -92,11 +96,12 @@ class Game {
     await L.step('centrales', () => { buildWind(w); buildSolar(w); buildBiomass(w); buildTransicion(w); buildLines(w); });
     await L.step('barrios', () => { buildBarrios(w); buildStops(w); buildIntlSalto(w); });
     await L.step('museo', () => { buildMuseo(offsetWorld(w, MUSEO_OFF[0], MUSEO_OFF[1])); buildCorte(w); });
-    await L.step('flora', () => { buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w); });
+    await L.step('flora', () => { buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w); buildPradera(w); });
     await L.step('unir', () => { w.finalize(); });
     await L.step('luces', () => { w.nightLights(); w.groundShadows(); w.buildPuddles(); });
     await L.step('capi', () => { this.capi = new Capi(this.scene, w, this.fx, this.audio); this.actors = new Actors(w, this.scene); });
     await L.step('caminos', () => { this.capi.nav = new NavGrid(w); });
+    await L.step('viajes', () => { buildDestinos(w); });
     await L.step('sistemas', () => this.systems());
     await L.step('fiestas', async sub => { const ks = Object.keys(FIESTAS); for (const [i, k] of ks.entries()) { this.fiestas.prebuild(k); await sub((i + 1) / ks.length); } });
     await L.step('mapa', () => { this.mapa.build(true); });
@@ -128,6 +133,7 @@ class Game {
     this.ui = new UI(this); { const ff = $('fadeFace'); if (ff) drawFace(ff.getContext('2d'), 'capi', 0, false, null); } this.mg = new Minigames(this.audio); this.missions = new Missions(this);
     this.stats = new Stats(); window.__capiSettings = Settings; Settings.apply(); this.guide = new Guide(this);
     this.extras = new Extras(this); this.vida = new Vida(this); this.social = new Social(this); this.tut = new Tutorial(this); this.vecinos = new Vecinos(this); this.fiestas = new Fiestas(this); this.urbano = new Urbano(this); this.intl = new Internacional(this); this.mapa = new Mapa(this); this.muestras = new Muestras(this.audio); this.corte = new Corte(this); this.museo = new Museo(this); this.escuela = new Escuela(this); Settings.onFest = k => this.fiestas.set(k); this.fiestas.set(Settings.fest);
+    this.campo = new Campo(this); this.viajes = new Viajes(this);
     this.mg.onStart = t => this.stats.mgStart(t); this.mg.onEnd = ok => this.stats.mgEnd(ok);
     this.mode = 'title'; this.panel = false; this.help = false; this.keys = {}; this.jump = false; this.eUsed = false; this.cand = null; this.time = 0;
     this.cam = { yaw: 0.5, yawT: 0.5, dist: 150, distT: 150, target: new THREE.Vector3(-14, 3, 14), inspect: null, inspectT: 0 };
@@ -140,6 +146,7 @@ class Game {
     $('bCont').onclick = () => { if (this.saved) this.play(this.saved.mode, this.saved.phase, this.saved); };
     $('bSchool').onclick = () => this.escuela.open();
     $('bQuick').onclick = () => this.play('rapida', 0, null, 'explorador');
+    $('bGira').onclick = () => this.play('gira', 0, null, 'explorador');
     $('bCred').onclick = () => this.showCredits(null);
     document.querySelectorAll('.bigToggle').forEach(b => { b.onclick = () => Settings.setBig(!Settings.big); });
     w.updateRain(0, {});   // la lluvia se arma ahora (escondida) para que la placa de video la conozca antes de jugar
@@ -213,7 +220,7 @@ class Game {
 
   refreshTitle() {
     const sv = this.saved = this.missions.load(), c = $('bCont');
-    $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false; $('bQuick').disabled = false;
+    $('bShort').disabled = false; $('bLong').disabled = false; $('bSchool').disabled = false; $('bQuick').disabled = false; $('bGira').disabled = false;
     c.classList.toggle('hidden', !sv || (sv.phase === 0));
     if (sv) { const n = (SEQ[sv.mode] || SEQ.larga).length; c.innerHTML = 'Continuar<small>' + (sv.phase >= n ? 'modo libre' : `historia ${sv.mode} · misión ${sv.phase + 1} de ${n}`) + '</small>'; }
     $('load').textContent = 'Teclado y mouse · también funciona con pantalla táctil';
@@ -222,14 +229,20 @@ class Game {
     this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
     this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
+    if (this.kioskCfg) { this.campo.reset(); this.viajes.reset(); }
+    this.viajes.leave();
     this.audio.start(); this.fiestas.seen = {}; this.mode = 'play'; $('title').classList.add('hidden'); this.ui.show(); this.ui.keysFor(45); this.ui.cardWake(12);
     this.cam.distT = 56; this.cam.yawT = 0.35;
     this.capi.teleport(POS.startCapi[0], POS.startCapi[1]); this.capi.heading = Math.PI;
     this.missions.school = opt.school || null; this.escuela.cur = opt.school || null; ['escuela', 'eWin'].forEach(id => $(id).classList.add('hidden')); this.escuela.winOpen = false; if (this.extras.open === 'escuela' || this.extras.open === 'eWin') this.extras.open = null;
-    const tut = !opt.school && mode !== 'rapida' && (!!opt.tutorial || (!saved && phase === 0 && !opt.guide));
+    const tut = !opt.school && mode !== 'rapida' && mode !== 'gira' && (!!opt.tutorial || (!saved && phase === 0 && !opt.guide));
     if (!opt.guide) this.stats.startGame(opt.school ? 'escuela' : mode, this.missions.level, !saved);
     this.missions.start(mode, phase, true, tut);
     if (tut) this.tut.start();
+    if (mode === 'gira') {   // la Gira arranca en el andén de la estación, frente a la jefa
+      const [sx, sz] = ESTACION, x = sx, z = sz + 4.2; this.capi.teleport(x, z); this.capi.heading = -Math.PI / 2;
+      this.cam.target.set(x, this.world.groundAt(x, z) + 1.5, z); this.cam.yawT = this.cam.yaw = 0.6; this.cam.distT = this.cam.dist = 34;
+    }
     if (mode === 'rapida') {   // la visita rápida arranca al lado del molino frenado, mirándolo
       const it = this.world.inter['wind:1'], x = it.x - 5, z = it.z + 6; this.capi.teleport(x, z); this.capi.heading = Math.atan2(it.x - x, it.z - z);
       this.cam.target.set(x, it.y + 1.5, z); this.cam.yawT = this.cam.yaw = Math.atan2(x - it.x, z - it.z); this.cam.distT = this.cam.dist = 30;
@@ -381,7 +394,7 @@ class Game {
       if (c === 'Escape' && this.tut.on && !this.extras.open && !this.mg.active && !this.ui.dlg) { this.tut.skip(); return; }
       if (c === 'Escape') { if (this.extras.open) this.extras.close(); else if (this.mg.active) this.mg.cancel(); else if (this.panel) this.togglePanel(false); else if (this.help) this.toggleHelp(false); return; }
       if (c === 'KeyM' && !e.repeat) this.toggleMute();
-      if (c === 'KeyN' && !e.repeat && this.mode === 'play' && (this.extras.open === 'bigmap' || !this.locked)) { this.mapa.toggle(); return; }
+      if (c === 'KeyN' && !e.repeat && this.mode === 'play' && (this.extras.open === 'bigmap' || !this.locked)) { if (this.viajes.cur) { this.ui.note('En la Gira no hay mapa grande: seguí las flechas amarillas.', 3); return; } this.mapa.toggle(); return; }
       if (this.extras.open) { if (!e.repeat) { if (c === 'KeyV' || c === 'KeyB') this.extras.close(); else this.extras.key(c); } return; }
       if (c === 'KeyB' && !e.repeat && !this.locked) { this.social.openAlbum(); return; }
       if (c === 'KeyV' && !e.repeat && !this.locked) { this.extras.toggleWardrobe(); return; }
@@ -390,7 +403,7 @@ class Game {
       if (this.ui.dlg) { if (!e.repeat && (c === 'KeyE' || c === 'Space' || c === 'Enter' || c === 'KeyF')) this.ui.advance(); return; }
       if (this.panel || this.help) return;
       if (e.repeat) return;
-      if (c === 'KeyT' && this.extras.rideTo) { this.extras.ride(); return; }
+      if (c === 'KeyT' && this.extras.rideTo && !this.viajes.cur) { this.extras.ride(); return; }
       this.keys[c] = true;
       if (c === 'Space') this.jump = true;
       if (c === 'KeyE' || c === 'KeyF' || c === 'Enter') { if (this.cand) this.interact(this.cand.id); }   // E solo usa: la cámara gira con Q y R
@@ -438,7 +451,7 @@ class Game {
     let t0 = 2, hit = null;
     for (let t = 2; t < 700; t += 1.2) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
-      if (x < B.minX || x > B.maxX || z < B.minZ || z > B.maxZ) { t0 = t; if (y < -4) break; continue; }
+      if (x < BND.minX || x > BND.maxX || z < BND.minZ || z > BND.maxZ) { t0 = t; if (y < -4) break; continue; }
       const g = Math.max(w.groundAt(x, z, y + 1.3), w.waterAt(x, z) - 0.3);
       if (y <= g) { let a = t0, b = t; for (let i = 0; i < 7; i++) { const m = (a + b) / 2, mx = o.x + d.x * m, my = o.y + d.y * m, mz = o.z + d.z * m; if (my <= Math.max(w.groundAt(mx, mz, my + 1.3), w.waterAt(mx, mz) - 0.3)) b = m; else a = m; } hit = { x: o.x + d.x * b, z: o.z + d.z * b }; break; }
       t0 = t;
@@ -517,7 +530,7 @@ class Game {
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 3.4, c.pos.z + 2.6); this.capiLight.intensity = night * 40; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 4.6, c.pos.z); this.capiLight.intensity = night * 16; }
     if (c.rimU) c.rimU.uRim.value = lerp(0.14, 0.3, night); this.fx.setLight(lerp(1, 0.4, night) * (1 - 0.25 * (w.storm || 0)));   // halo suave: con la noche oscura y el resplandor, más quemaba
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.corte.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.campo.update(dt, st); this.viajes.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.corte.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
@@ -575,6 +588,7 @@ const STEPS = [
   { id: 'luces', label: 'Ventanas, sombras y charcos…', ms: 160 },
   { id: 'capi', label: 'Despertando a Capi y a los vecinos…', ms: 140 },
   { id: 'caminos', label: 'Calculando caminos para caminar…', ms: 150 },
+  { id: 'viajes', label: 'Armando los destinos de la Gira por el Uruguay…', ms: 300 },
   { id: 'sistemas', label: 'Misiones, minijuegos y menús…', ms: 220 },
   { id: 'fiestas', label: 'Colgando las guirnaldas de las fiestas…', ms: 260 },
   { id: 'mapa', label: 'Dibujando el mapa grande…', ms: 330 },

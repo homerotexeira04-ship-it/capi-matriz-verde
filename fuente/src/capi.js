@@ -1,7 +1,7 @@
 // CapiController: modelo 3D de Capi, física, colisiones suaves, detección agua/tierra y máquina de estados de animación.
 import * as THREE from 'three';
 import { clamp, lerp, damp, smooth, angDiff, rng } from './util.js';
-import { B, POS, CITY_Y } from './terrain.js';
+import { B, BND, POS, CITY_Y } from './terrain.js';
 import { canvasTex, Batch } from './world.js';
 
 const S = { IDLE: 'idle', RUN: 'run', JUMP: 'jump', SWIM: 'swim', INTERACT: 'interact', CELEBRATE: 'celebrate' };
@@ -318,7 +318,7 @@ export class Capi {
   work(t = 1.2) { this.busy = t; }
   // Navegación automática hacia un punto: usa la grilla A* si está disponible
   navigate(x, z, r = 0.6, done = null) {
-    const path = this.nav ? this.nav.find(this.pos.x, this.pos.z, x, z) : null;
+    const path = this.nav && x < 1000 && this.pos.x < 1000 ? this.nav.find(this.pos.x, this.pos.z, x, z) : null;   // en los destinos de la Gira se camina derecho
     this.goto = { x, z, r, done, path, pi: 0 };
   }
   teleport(x, z) { this.pos.set(x, this.world.groundAt(x, z), z); this.vel.set(0, 0, 0); this.vy = 0; this.goto = null; this.swimming = false; this.grounded = true; }
@@ -357,7 +357,7 @@ export class Capi {
     }
     // Movimiento horizontal con prueba de pendiente/escalón
     const tryMove = (dx, dz) => {
-      const nx = clamp(p.x + dx, B.minX + 1, B.maxX - 1), nz = clamp(p.z + dz, B.minZ + 1, B.maxZ - 1), dist = Math.hypot(nx - p.x, nz - p.z);
+      const nx = clamp(p.x + dx, BND.minX + 1, BND.maxX - 1), nz = clamp(p.z + dz, BND.minZ + 1, BND.maxZ - 1), dist = Math.hypot(nx - p.x, nz - p.z);
       if (dist < 1e-6) return false;
       const g = w.groundAt(nx, nz, p.y), rise = g - p.y;
       if ((this.grounded || this.swimming) && rise > 0.7 && rise / dist > 2.4) return false;

@@ -181,6 +181,7 @@ export class Extras {
     this.pick = { n: options.length, go: pick }; $('choice').classList.remove('hidden');
   }
   key(code) {
+    if (this.open === 'gira' && this.g.viajes && this.g.viajes.key(code)) return;
     if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
     if (this.open === 'escuela' && this.g.escuela) return this.g.escuela.key(code);
     if (this.open === 'bigmap' && this.g.mapa) return this.g.mapa.key(code);

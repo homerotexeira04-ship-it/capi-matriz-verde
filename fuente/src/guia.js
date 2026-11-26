@@ -22,8 +22,8 @@ const PIN = '2025', HOLD = 3000;   // pantallas táctiles: mantener apretado el 
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
 const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(r).padStart(2, '0')} s`; };
-export const MG_NAMES = { sync: 'Sincronización de fase', crank: 'Freno del aerogenerador', gates: 'Compuerta del embalse', helio: 'Matriz solar', route: 'Subestación', seq: 'Caldera de biomasa', rhythm: 'Compás de carga', led: 'Cambio a LED', solar: 'Carga con sol', cometa: 'Cometa en la rambla', bici: 'Bicicleta generadora', cinta: 'Cinta de chips', despacho: 'Centro de Control', torre: 'Torre del aerogenerador', casa: 'La casa eficiente', carga: 'Carga programada', h2: 'Electrolizador' };
-const MIS = { rapida: 'Visita rápida', viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', transicion: 'La Segunda Transición', pico: 'Desafío 100% Renovable' };
+export const MG_NAMES = { cascada: 'Represas en cadena', polonio: 'Una noche sin cables', sync: 'Sincronización de fase', crank: 'Freno del aerogenerador', gates: 'Compuerta del embalse', helio: 'Matriz solar', route: 'Subestación', seq: 'Caldera de biomasa', rhythm: 'Compás de carga', led: 'Cambio a LED', solar: 'Carga con sol', cometa: 'Cometa en la rambla', bici: 'Bicicleta generadora', cinta: 'Cinta de chips', despacho: 'Centro de Control', torre: 'Torre del aerogenerador', casa: 'La casa eficiente', carga: 'Carga programada', h2: 'Electrolizador' };
+const MIS = { rapida: 'Visita rápida', gira: 'Gira por el Uruguay', viento: 'Vientos en la Cuchilla', rio: 'La Fuerza del Río', sol: 'Cosecha de Sol', urbano: 'Circuito Verde Urbano', ahorro: 'Ciudad que Ahorra', tormenta: 'Sudestada sobre la Red', transicion: 'La Segunda Transición', pico: 'Desafío 100% Renovable' };
 const BUCKETS = ['menos de 2 min', '2 a 5 min', '5 a 10 min', '10 a 20 min', 'más de 20 min'];
 
 // ---------- Ajustes que valen para todos los visitantes (letra grande) ----------
@@ -187,7 +187,7 @@ export class Guide {
       this.btn('Tormenta', () => { G.cloudTarget = 0.95; G.cloud = 0.95; G.windTarget = 1; }), this.btn('Despejar', () => { G.cloudTarget = 0; G.cloud = Math.min(G.cloud, 0.3); }),
       this.btn('', () => { if (g.clockStopped != null) { G.clockRate = g.clockStopped; g.clockStopped = null; } else { g.clockStopped = G.clockRate; G.clockRate = 0; } }, 'gClock'));
     sec('Red eléctrica', this.btn('Provocar una avería', () => { if (g.mode === 'play') M.randomFault(); }), this.btn('Reparar todo', () => M.clearFaults()), this.btn('', () => g.setPaused(!g.paused), 'gPause'));
-    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}), this.btn('', () => g.medidor.toggle(), 'gFps'));
+    sec('Pantalla', Object.assign(this.btn('', () => window.__capiSettings.setBig(!window.__capiSettings.big), 'bigToggle'), {}), this.btn('', () => g.medidor.toggle(), 'gFps'), this.btn('', () => { g.campo.cycleSeason(); this.render(); }, 'gSeason'));
     const S = window.__capiSettings, mark = () => { box.querySelectorAll('.gFest').forEach(b => { const on = (S.fest || '') === b.dataset.fest; b.classList.toggle('gSel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); const kb = box.querySelector('.gKick'); if (kb) { kb.disabled = !S.fest; kb.title = { carnaval: 'Pone el atardecer y trae las llamadas a la rambla', patrimonio: 'Pone la mañana y arranca la visita guiada en la plaza', fiestas: 'Cuenta regresiva y fuegos de Año Nuevo', criolla: 'Pone la tarde y arranca el desfile de tropillas en el ruedo', museos: 'Pone la noche y arranca la proyección en la torre' }[S.fest] || 'Primero elegí una fiesta'; } };
     const kick = this.btn('¡Empezar la fiesta ahora!', () => { this.close(); g.fiestas.kick(); }, 'gKick');
     sec('Fiestas (decoración de temporada)', ...[['', 'Sin fiesta'], ['carnaval', 'Carnaval'], ['criolla', 'Semana Criolla'], ['patrimonio', 'Día del Patrimonio'], ['museos', 'Museos en la Noche'], ['fiestas', 'Fin de año']].map(([k, label]) => { const b = this.btn(label, () => { S.setFest(k); mark(); }, 'gFest'); b.dataset.fest = k; return b; }), kick);
@@ -199,6 +199,7 @@ export class Guide {
     $('gHour').value = G.hour; $('gHourV').textContent = `${String(Math.floor(G.hour) % 24).padStart(2, '0')}:${String(Math.floor((G.hour % 1) * 60)).padStart(2, '0')}`;
     document.querySelectorAll('.gClock').forEach(b => { b.textContent = g.clockStopped != null ? 'Reanudar el reloj' : 'Detener el reloj'; });
     document.querySelectorAll('.gPause').forEach(b => { b.textContent = g.paused ? 'Reanudar el juego' : 'Pausar el juego'; });
+    document.querySelectorAll('.gSeason').forEach(b => { b.textContent = 'Estación del año: ' + g.campo.seasonLabel(); });
     document.querySelectorAll('.gFps').forEach(b => { b.textContent = g.medidor.on ? 'Ocultar el medidor de cuadros' : 'Mostrar el medidor de cuadros'; });
     $('gSince').textContent = fmtDate(d.since);
     const avg = d.sessions ? d.sessionSec / d.sessions : 0, tiles = [

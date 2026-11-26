@@ -55,7 +55,10 @@ export function drawFace(g, who, t, talking, col) {
     papanoel: { bg: '#1f7a3a', skin: '#f1c9a5', hair: '#f4f4f4', body: '#d42a2a', hat: '#d42a2a' },
     payador: { bg: '#8a5a2b', skin: '#c58b62', hair: '#1a1412', body: '#f2efe8', hat: '#1c1c1e' },
     nico: { bg: '#3a1f6b', skin: '#e0ac86', hair: '#3b2a1e', body: '#ffc420', hat: '#3b2a1e' },
-    graciela: { bg: '#4a8fc8', skin: '#f1c9a5', hair: '#6b4a2a', body: '#f8f8f8', hat: '#6b4a2a' }
+    graciela: { bg: '#4a8fc8', skin: '#f1c9a5', hair: '#6b4a2a', body: '#f8f8f8', hat: '#6b4a2a' },
+    biologa: { bg: '#4a6b3a', skin: '#e0ac86', hair: '#3b2314', body: '#6b8f4e', hat: '#2f5a3a' },
+    estanciero: { bg: '#8a5a2b', skin: '#c58b62', hair: '#9a9a9a', body: '#f2efe8', hat: '#1c1c1e' },
+    jefa: { bg: '#7a2e1d', skin: '#d9a17a', hair: '#2a1c12', body: '#1d4f8a', hat: '#1d4f8a' }
   }[who] || { bg: '#23395d', skin: '#d9a17a', hair: '#2a1c12', body: '#4aa3d8', hat: '#4aa3d8' };
   R(0, 0, 24, 24, P.bg); R(3, 18, 18, 6, P.body); R(10, 16, 4, 3, P.skin);
   R(6, 6, 12, 11, P.skin); R(5, 7, 2, 8, P.hair); R(17, 7, 2, 8, P.hair);
@@ -63,6 +66,9 @@ export function drawFace(g, who, t, talking, col) {
   if (who === 'mateo') { R(4, 3, 16, 4, P.hat); R(3, 5, 6, 2, P.hat); R(8, 13, 8, 2, '#d8d8d8'); R(3, 19, 18, 1, '#e9dcc0'); }
   if (who === 'rosa' || who === 'beto') { R(5, 3, 14, 4, P.hat); if (who === 'beto') R(8, 13, 8, 2, '#666'); }
   if (who === 'lucia') { R(5, 2, 14, 5, P.hat); R(5, 6, 16, 1, P.hat); R(19, 8, 2, 9, P.hair); R(9, 19, 6, 1, '#fff'); }
+  if (who === 'biologa') { R(5, 3, 14, 4, P.hat); R(12, 6, 8, 1, P.hat); R(19, 8, 2, 8, P.hair); }
+  if (who === 'estanciero') { R(3, 3, 18, 4, P.hat); R(9, 2, 6, 1, P.hat); R(8, 13, 8, 2, '#d8d8d8'); }
+  if (who === 'jefa') { R(5, 3, 14, 4, P.hat); R(4, 6, 16, 1, '#ffd23f'); R(11, 4, 2, 2, '#ffd23f'); }
   if (who === 'guia') { R(5, 3, 14, 4, '#ffc420'); R(12, 6, 8, 1, '#ffc420'); }
   if (who === 'mamavieja') { R(4, 2, 16, 6, P.hat); R(7, 4, 1, 1, '#e6007e'); R(12, 3, 1, 1, '#e6007e'); R(16, 5, 1, 1, '#e6007e'); R(5, 13, 1, 2, '#ffd23f'); R(18, 13, 1, 2, '#ffd23f'); }
   if (who === 'marta') { R(5, 3, 14, 4, P.hat); R(12, 6, 9, 1, P.hat); }

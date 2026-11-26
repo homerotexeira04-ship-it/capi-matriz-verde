@@ -374,7 +374,88 @@ class SunCharge {
   }
 }
 
-export const GAMES = { sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge, bici: Bici };
+
+// Represas en cadena del río Negro: el agua que turbina Bonete llega a Baygorria y después a Palmar
+class Cascada {
+  constructor(m, o) {
+    this.m = m; this.title = o.title || 'Represas en cadena'; this.t = 0; this.prog = 0; this.sel = 0;
+    this.hint = 'Elegí una represa (1, 2, 3 o tocándola) y subí o bajá sus turbinas con ↑/↓. El agua que suelta una llega a la siguiente: mantené los tres lagos en la franja verde mientras generás.';
+    this.D = [{ n: 'Bonete', L: 0.62, q: 1, cap: 152 }, { n: 'Baygorria', L: 0.4, q: 1, cap: 108 }, { n: 'Palmar', L: 0.5, q: 1, cap: 333 }];
+    this.rain = 1; this.mw = 0; this.ok = false;
+  }
+  key(c, d) { if (!d) return; const m = /^(?:Digit|Numpad)([1-3])$/.exec(c); if (m) this.sel = +m[1] - 1; if (c === 'ArrowLeft') this.sel = (this.sel + 2) % 3; if (c === 'ArrowRight') this.sel = (this.sel + 1) % 3;
+    const D = this.D[this.sel]; if (c === 'ArrowUp' || c === 'KeyW') { D.q = Math.min(3, D.q + 1); this.m.audio.click(); } if (c === 'ArrowDown' || c === 'KeyS') { D.q = Math.max(0, D.q - 1); this.m.audio.click(); } }
+  down(x, y) { const i = Math.max(0, Math.min(2, Math.floor((x - 20) / 175))); this.sel = i; const D = this.D[i]; if (y < 150) D.q = Math.min(3, D.q + 1); else D.q = Math.max(0, D.q - 1); this.m.audio.click(); }
+  update(dt) {
+    this.t += dt; this.rain = 1.05 + 0.55 * Math.sin(this.t * 0.45) + 0.25 * Math.sin(this.t * 1.3 + 2);
+    let inflow = this.rain, mw = 0, ok = true;
+    for (const D of this.D) {
+      const out = D.L > 0.08 ? D.q * 0.55 : 0, spill = D.L > 0.96 ? 0.8 : 0;
+      D.L = clamp(D.L + (inflow - out - spill) * 0.11 * dt, 0, 1); D.spill = spill > 0;
+      mw += D.cap * out / 1.65; inflow = out + spill;
+      if (D.L < 0.3 || D.L > 0.85) ok = false;
+    }
+    this.mw = mw; this.ok = ok && mw > 280;
+    this.prog = clamp(this.prog + (this.ok ? dt / 22 : -dt / 40), 0, 1);
+    if (this.prog >= 1 && !this.done) this.m.finish(true, '¡LAS TRES REPRESAS EN CADENA!');
+  }
+  draw(g) {
+    g.fillStyle = '#7fc4e8'; g.fillRect(0, 0, W, 40); txt(g, 'Lluvia en la cuenca: ' + (this.rain > 1.3 ? 'mucha' : this.rain > 0.8 ? 'normal' : 'poca'), 14, 26, 15, '#0f2140', 'left', 'Nunito,sans-serif');
+    this.D.forEach((D, i) => {
+      const x = 30 + i * 175, y0 = 60 + i * 24, h = 140, sel = i === this.sel;
+      rr(g, x - 8, y0 - 8, 150, h + 52, 12); g.fillStyle = sel ? '#1e3a66' : '#13284a'; g.fill(); g.strokeStyle = sel ? '#ffd23f' : '#2a4374'; g.lineWidth = 3; g.stroke();
+      g.fillStyle = '#0f2140'; g.fillRect(x, y0, 100, h);
+      g.fillStyle = 'rgba(87,227,137,.25)'; g.fillRect(x, y0 + h * (1 - 0.85), 100, h * 0.55);
+      g.fillStyle = D.L > 0.85 || D.L < 0.3 ? '#ff6b4a' : '#4cc9f0'; g.fillRect(x, y0 + h * (1 - D.L), 100, h * D.L);
+      g.fillStyle = '#c9c2b4'; g.fillRect(x + 100, y0 - 6, 14, h + 6);
+      if (D.spill) { g.fillStyle = '#ffffff'; g.fillRect(x + 114, y0 + 4, 8, h - 4); }
+      for (let k = 0; k < 3; k++) { g.fillStyle = k < D.q ? '#57e389' : '#2a4374'; g.fillRect(x + 104, y0 + h - 18 - k * 16, 8, 12); }
+      txt(g, (i + 1) + '. ' + D.n, x + 50, y0 + h + 22, 16, sel ? '#ffd23f' : '#fff7e6');
+      txt(g, '▲', x + 128, y0 + 26, 18, '#a9bbd6'); txt(g, '▼', x + 128, y0 + h - 4, 18, '#a9bbd6');
+    });
+    rr(g, 60, 272, 440, 18, 9); g.fillStyle = '#0f2140'; g.fill(); g.fillStyle = this.ok ? '#57e389' : '#ffc93c'; rr(g, 62, 274, Math.max(6, 436 * this.prog), 14, 7); g.fill();
+    txt(g, Math.round(this.mw) + ' MW', W - 12, 26, 18, this.mw > 280 ? '#1b7f5a' : '#0f2140', 'right');
+  }
+}
+
+// Cabo Polonio: una casa sin red eléctrica pasa la noche con lo que juntó la batería durante el día
+class Polonio {
+  constructor(m, o) {
+    this.m = m; this.title = o.title || 'Una noche sin cables'; this.t = 0; this.bat = 0.72; this.gust = 0;
+    this.hint = 'La batería se cargó de día con el sol. Apagá lo que gasta mucho (tocá o usá las teclas 1 a 6) para llegar al amanecer con la heladera y las luces prendidas.';
+    this.A = [{ n: 'Luces LED', w: 0.6, on: true, need: true }, { n: 'Heladera', w: 1.4, on: true, need: true }, { n: 'Radio', w: 0.3, on: true },
+      { n: 'Estufa eléctrica', w: 9, on: true }, { n: 'Termo eléctrico', w: 7, on: true }, { n: 'Cargador de celular', w: 0.3, on: true }];
+    this.night = 0;
+  }
+  toggle(i) { const a = this.A[i]; if (!a) return; a.on = !a.on; this.m.audio.click(); }
+  key(c, d) { if (!d) return; const m = /^(?:Digit|Numpad)([1-6])$/.exec(c); if (m) this.toggle(+m[1] - 1); }
+  down(x, y) { const i = Math.floor((y - 52) / 36); if (x > 270 && i >= 0 && i < 6) this.toggle(i); }
+  update(dt) {
+    this.t += dt; this.night = Math.min(1, this.t / 28);
+    this.gust = Math.max(0, Math.sin(this.t * 0.7) * Math.sin(this.t * 1.9 + 1)) * 1.6;   // el molinito aporta cuando sopla
+    const use = this.A.reduce((s, a) => s + (a.on ? a.w : 0), 0);
+    this.bat = clamp(this.bat - (use - this.gust) * 0.0022 * dt * 10, 0, 1);
+    if (this.bat <= 0 && !this.done) { this.A.forEach(a => a.on = false); this.m.finish(false, 'Se terminó la batería: la heladera quedó sin energía'); }
+    if (this.night >= 1 && !this.done) { const ok = this.A[0].on && this.A[1].on; this.m.finish(ok, ok ? '¡AMANECIÓ CON LA HELADERA ANDANDO!' : 'Amaneció, pero apagaste la heladera o las luces'); }
+  }
+  draw(g) {
+    const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, this.night < 0.9 ? '#0d1b38' : '#ff9f6a'); sky.addColorStop(1, '#23395d'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#e2cf9c'; g.fillRect(0, 230, 250, 70);
+    g.fillStyle = '#5ad1ff'; g.fillRect(60, 150, 120, 80); g.fillStyle = '#6a6e75'; g.beginPath(); g.moveTo(50, 152); g.lineTo(120, 110); g.lineTo(190, 152); g.fill();
+    g.fillStyle = '#1f3c88'; g.save(); g.translate(98, 128); g.rotate(-0.5); g.fillRect(-26, -8, 52, 16); g.restore();
+    const lit = this.A[0].on; g.fillStyle = lit ? '#ffe59a' : '#1c2a38'; g.fillRect(80, 175, 26, 24); g.fillRect(134, 175, 26, 24);
+    g.strokeStyle = '#d8dde2'; g.lineWidth = 3; g.beginPath(); g.moveTo(215, 232); g.lineTo(215, 120); g.stroke();
+    for (let k = 0; k < 3; k++) { const a = this.t * (1 + this.gust * 4) + k * 2.094; g.beginPath(); g.moveTo(215, 120); g.lineTo(215 + Math.cos(a) * 26, 120 + Math.sin(a) * 26); g.stroke(); }
+    txt(g, 'Batería', 30, 30, 16, '#fff7e6', 'left'); rr(g, 30, 40, 200, 22, 8); g.fillStyle = '#0f2140'; g.fill(); g.fillStyle = this.bat < 0.2 ? '#ff6b4a' : '#57e389'; rr(g, 33, 43, Math.max(6, 194 * this.bat), 16, 6); g.fill();
+    txt(g, Math.round(this.bat * 100) + '%', 236, 57, 15, '#fff7e6', 'left');
+    const hh = Math.floor(this.night * 7), mm = Math.floor((this.night * 7 % 1) * 60); txt(g, `0${hh}:${String(mm).padStart(2, '0')}`, 30, 90, 22, '#ffd23f', 'left');
+    txt(g, this.gust > 0.4 ? 'Sopla el viento: el molinito carga' : 'Noche en Cabo Polonio', 30, 112, 13, '#a9bbd6', 'left', 'Nunito,sans-serif');
+    this.A.forEach((a, i) => { const y = 52 + i * 36; rr(g, 276, y, 268, 30, 9); g.fillStyle = a.on ? '#1e3a66' : '#13284a'; g.fill(); g.strokeStyle = a.on ? (a.w > 5 ? '#ff6b4a' : '#57e389') : '#2a4374'; g.lineWidth = 2; g.stroke();
+      txt(g, `${i + 1}. ${a.n}`, 290, y + 21, 15, a.on ? '#fff7e6' : '#6f84a8', 'left'); txt(g, a.on ? 'PRENDIDO' : 'apagado', 532, y + 21, 13, a.on ? (a.w > 5 ? '#ff6b4a' : '#57e389') : '#6f84a8', 'right'); });
+  }
+}
+
+export const GAMES = { cascada: Cascada, polonio: Polonio, sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge, bici: Bici };
 
 export class Minigames {
   constructor(audio) {

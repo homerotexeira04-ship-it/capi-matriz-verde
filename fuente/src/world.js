@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, damp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
-import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank } from './terrain.js';
+import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank, newMask, RAIL } from './terrain.js';
 
 export const C = {
   cream: 0xf2e4c4, terra: 0xc8674a, ochre: 0xe2b25c, rose: 0xe9bba6, white: 0xf5f1e8, celeste: 0x8fcdea, concrete: 0xbdb5a8, concreteD: 0x9c958a,
@@ -160,7 +160,7 @@ export class World {
     this.lines = {}; this.time = 0; this.night = 0; this.power = [0, 0, 0]; this.flicker = 0;
     this.winU = { uLit: { value: 0.92 }, uTime: { value: 0 } };
     this.windU = { uWind: { value: 0.5 }, uWindDir: { value: new THREE.Vector2(1, 0) }, uTime: { value: 0 } };
-    this.cloudU = { uCS: { value: Array.from({ length: 9 }, () => new THREE.Vector4(0, 0, 1, 1)) }, uCSk: { value: 0 }, uWet: { value: 0 } }; this.wet = 0;
+    this.cloudU = { uCS: { value: Array.from({ length: 9 }, () => new THREE.Vector4(0, 0, 1, 1)) }, uCSk: { value: 0 }, uWet: { value: 0 }, uFrost: { value: 0 } }; this.wet = 0;
     this.sunDir = new THREE.Vector3(0.5, 0.8, -0.3);
     this.makeMaterials();
     this.buildTerrain();
@@ -247,7 +247,7 @@ export class World {
   // ventanas vivas: qué parte de las casas tiene la luz prendida a cada hora
   litAt(h) { return h < 5 ? lerp(0.5, 0.18, h / 5) : h < 7 ? lerp(0.18, 0.55, (h - 5) / 2) : h < 21.5 ? 0.92 : lerp(0.92, 0.5, (h - 21.5) / 2.5); }
   buildTerrain() {
-    const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.5);   // celdas de 1,5 (el diorama es cuadrado)
+    const W = B.maxX - B.minX, D = B.maxZ - B.minZ, N = Math.round(W / 1.8);   // celdas de 1,8 (el diorama es cuadrado)
     this.N = N; this.cell = W / N;
     const g = new THREE.PlaneGeometry(W, D, N, N);
     g.rotateX(-Math.PI / 2); g.translate((B.minX + B.maxX) / 2, 0, (B.minZ + B.maxZ) / 2);
@@ -281,7 +281,7 @@ export class World {
     edge(B.maxX, B.minZ, B.minX, B.minZ, N); edge(B.minX, B.minZ, B.minX, B.maxZ, N);
     const sg = new THREE.BufferGeometry();
     sg.setAttribute('position', new THREE.Float32BufferAttribute(sk, 3)); sg.setAttribute('color', new THREE.Float32BufferAttribute(skc, 3)); sg.computeVertexNormals();
-    this.scene.add(new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })));
+    this.skirtMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide }); this.scene.add(new THREE.Mesh(sg, this.skirtMat));
     const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(ws, 3));
     this.waterSide = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ color: 0x2f86c8, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false }));
     this.scene.add(this.waterSide);
@@ -295,7 +295,7 @@ export class World {
     return lerp(lerp(a, b, u), lerp(c, d, u), v);
   }
   groundAt(x, z, y = 1e9) {
-    let g = this.terrainAt(x, z);
+    let g = x > 1000 && this.destH ? this.destH(x, z) : this.terrainAt(x, z);   // los destinos de la Gira quedan lejos, hacia el este
     for (const p of this.platforms) {
       if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) {
         const t = typeof p.top === 'function' ? p.top(x, z) : p.top;
@@ -360,9 +360,15 @@ export class World {
     const W = B.maxX - B.minX, D = B.maxZ - B.minZ;
     // río aguas abajo de la represa (cota 0); el lago de arriba lleva su propio espejo
     const depth = (g, ox, oz, level) => { const p = g.attributes.position, a = new Float32Array(p.count); for (let i = 0; i < p.count; i++) a[i] = clamp(level - terrainH(p.getX(i) + ox, p.getZ(i) + oz), -2, 12); g.setAttribute('aDepth', new THREE.BufferAttribute(a, 1)); };
-    const rz0 = DAM_Z - 4, g = new THREE.PlaneGeometry(W, B.maxZ - rz0, 200, 175); g.rotateX(-Math.PI / 2);
-    const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + B.maxX) / 2, 0, (rz0 + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
+    const rz0 = DAM_Z - 4, rx1 = -30, g = new THREE.PlaneGeometry(rx1 - B.minX, B.maxZ - rz0, 110, 250); g.rotateX(-Math.PI / 2);
+    const river = new THREE.Mesh(g, this.waterMat); river.position.set((B.minX + rx1) / 2, 0, (rz0 + B.maxZ) / 2); river.renderOrder = 5; this.scene.add(river);
     depth(g, river.position.x, river.position.z, 0);
+    // ampliación: arroyo de la quebrada, tajamar y río Daymán (mismo material, sin sombreadores nuevos)
+    for (const [x0, x1, z0, z1, nx, nz] of [[124, B.maxX, B.minZ, B.maxZ, 50, 170], [rx1, 124, 286, B.maxZ, 80, 30]]) {
+      const ng = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz); ng.rotateX(-Math.PI / 2);
+      const nmh = new THREE.Mesh(ng, this.waterMat); nmh.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); nmh.renderOrder = 5; this.scene.add(nmh);
+      depth(ng, nmh.position.x, nmh.position.z, 0);
+    }
     // Lago de Salto Grande: espejo elevado aguas arriba de la represa
     const lx0 = B.minX, lx1 = eastBank(DAM_Z - 3) + 8, lz0 = B.minZ, lz1 = DAM_Z - 3;
     const rg = new THREE.PlaneGeometry(lx1 - lx0, lz1 - lz0, 110, 36); rg.rotateX(-Math.PI / 2);
@@ -510,26 +516,22 @@ export class World {
     });
     M.glass.clippingPlanes = this.clip; M.glass.clipIntersection = true;
     const main = this.batch.mesh(M.solid); main.castShadow = true; main.receiveShadow = true; s.add(main);
+    if (this.pBatch) {   // la ampliación, en trozos de 90 m: lo que queda fuera de cuadro (o de la sombra) no se dibuja
+      const cells = new Map();
+      for (const g of this.pBatch.list) { if (!g.boundingBox) g.computeBoundingBox(); const c = g.boundingBox.getCenter(_p), k = Math.floor(c.x / 90) + ',' + Math.floor(c.z / 90); if (!cells.has(k)) cells.set(k, new Batch()); cells.get(k).list.push(g); }
+      for (const cb of cells.values()) { const pm = cb.mesh(M.solid); pm.castShadow = true; pm.receiveShadow = true; s.add(pm); }
+      this.pBatch.list = [];
+    }
     const city = this.cityBatch.mesh(M.city); if (city) { city.castShadow = true; city.receiveShadow = true; s.add(city); }
     this.winBatch.forEach((b, i) => { const m = b.mesh(M.win[i]); if (m) s.add(m); });
     const gl = this.glassBatch.mesh(M.glass); if (gl) { gl.renderOrder = 6; s.add(gl); }
     const sc = this.screenBatch.mesh(M.screen); if (sc) s.add(sc);
 
     // Árboles (InstancedMesh): troncos, copas y penachos de palmera
-    const trunk = [], crown = [], frond = [];
-    for (const t of this.trees) {
-      const d = TREE[t.type], sc2 = t.s;
-      if (d.th) trunk.push({ x: t.x, y: t.y + d.th * sc2 / 2, z: t.z, sx: d.tr * sc2, sy: d.th * sc2, sz: d.tr * sc2, c: d.tc, ry: 0 });
-      if (d.crowns) for (const cr of d.crowns) crown.push({ x: t.x + (this.rand() - 0.5) * 0.3, y: t.y + d.th * sc2 * cr[0] + (d.th ? 0 : 0.4), z: t.z + (this.rand() - 0.5) * 0.3, sx: cr[1] * sc2, sy: cr[2] * sc2, sz: cr[1] * sc2, c: cr[3], ry: this.rand() * 6 });
-      if (d.frond) frond.push({ x: t.x, y: t.y + d.th * sc2, z: t.z, sx: d.frond * sc2, sy: d.frond * sc2, sz: d.frond * sc2, c: d.fc, ry: this.rand() * 6 });
-    }
-    const fl = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 });
-    const flC = windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.55, false), flF = windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.38, true);
-    this.instanced(new THREE.CylinderGeometry(0.75, 1, 1, 5), fl, trunk);
-    this.instanced(new THREE.IcosahedronGeometry(1, 1), flC, crown, 0.08);
-    const fg = [];
-    for (let k = 0; k < 8; k++) { const g = new THREE.BoxGeometry(0.26, 0.05, 1); g.translate(0, 0, 0.5); g.rotateX(0.42 + (k % 2) * 0.3); g.rotateY(k * Math.PI / 4); fg.push(g); }
-    this.instanced(mergeGeometries(fg), flF, frond, 0.05);
+    this.plantTrees(this.trees);
+    if (this.treesNew) { const cells = new Map(); for (const t of this.treesNew) { const k = Math.floor(t.x / 90) + ',' + Math.floor(t.z / 90); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(t); }
+      for (const list of cells.values()) for (const m of this.plantTrees(list)) { m.frustumCulled = true; m.computeBoundingSphere(); } }
+    const fl = this.treeMats.fl;
 
     // Farolas LED
     const poles = [], heads = [], bulbs = [], pools = [];
@@ -554,6 +556,34 @@ export class World {
     }
     this.instanced(new THREE.BoxGeometry(1, 1, 1), fl, body);
     this.instanced(new THREE.CylinderGeometry(0.02, 1, 1, 4), fl, roof);
+  }
+  // Árboles con instancias (troncos, copas y penachos); también lo usan los destinos de la Gira, con los mismos materiales
+  plantTrees(trees) {
+    if (!this.treeMats) this.treeMats = {
+      fl: new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }),
+      flC: windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.55, false),
+      flF: windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.38, true) };
+    const out = [], trunk = [], crown = [], frond = [];
+    for (const t of trees) {
+      const d = TREE[t.type], sc2 = t.s;
+      if (d.th) trunk.push({ x: t.x, y: t.y + d.th * sc2 / 2, z: t.z, sx: d.tr * sc2, sy: d.th * sc2, sz: d.tr * sc2, c: d.tc, ry: 0 });
+      if (d.crowns) for (const cr of d.crowns) crown.push({ x: t.x + (this.rand() - 0.5) * 0.3, y: t.y + d.th * sc2 * cr[0] + (d.th ? 0 : 0.4), z: t.z + (this.rand() - 0.5) * 0.3, sx: cr[1] * sc2, sy: cr[2] * sc2, sz: cr[1] * sc2, c: cr[3], ry: this.rand() * 6 });
+      if (d.frond) frond.push({ x: t.x, y: t.y + d.th * sc2, z: t.z, sx: d.frond * sc2, sy: d.frond * sc2, sz: d.frond * sc2, c: d.fc, ry: this.rand() * 6 });
+    }
+    const { fl, flC, flF } = this.treeMats;
+    out.push(this.instanced(new THREE.CylinderGeometry(0.75, 1, 1, 5), fl, trunk));
+    const cm = this.instanced(new THREE.IcosahedronGeometry(1, 1), flC, crown, 0.08); out.push(cm);
+    if (cm) { this.bloom = this.bloom || []; crown.forEach((o, i) => { if (o.c === 0xe2383f || o.c === 0x8f7fd6) { const c0 = new THREE.Color(); cm.getColorAt(i, c0); this.bloom.push({ m: cm, i, c0, jaca: o.c === 0x8f7fd6 }); } }); }
+    const fg = [];
+    for (let k = 0; k < 8; k++) { const g = new THREE.BoxGeometry(0.26, 0.05, 1); g.translate(0, 0, 0.5); g.rotateX(0.42 + (k % 2) * 0.3); g.rotateY(k * Math.PI / 4); fg.push(g); }
+    out.push(this.instanced(mergeGeometries(fg), flF, frond, 0.05));
+    return out.filter(Boolean);
+  }
+  // Estaciones del año: los ceibos florecen de octubre a febrero y los jacarandás de octubre a diciembre; fuera de esa época, hojas verdes
+  setBloom(ceibo, jaca) {
+    const key = ceibo + '' + jaca; if (key === this._bloom || !this.bloom) return; this._bloom = key; const g = new THREE.Color(0x4c9442), set = new Set();
+    for (const b of this.bloom) { const on = b.jaca ? jaca : ceibo; b.m.setColorAt(b.i, on ? b.c0 : g); set.add(b.m); }
+    set.forEach(m => { m.instanceColor.needsUpdate = true; });
   }
   instanced(geo, mat, list, jitter = 0, shadow = true) {
     if (!list.length) return null;
@@ -675,10 +705,11 @@ function windSway(m, U, amp, radial) {
 // Sombras de nubes: cada nube oscurece un óvalo suave del suelo, proyectado según la posición del sol
 function cloudShade(m, U, key) {
   m.onBeforeCompile = sh => {
-    sh.uniforms.uCS = U.uCS; sh.uniforms.uCSk = U.uCSk; sh.uniforms.uWet = U.uWet; const wetOn = key !== 'terrain';
+    sh.uniforms.uCS = U.uCS; sh.uniforms.uCSk = U.uCSk; sh.uniforms.uWet = U.uWet; sh.uniforms.uFrost = U.uFrost; const wetOn = key !== 'terrain';
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vCsW; varying float vUpN;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCsW = (modelMatrix * vec4(transformed, 1.0)).xz; vUpN = normalize(mat3(modelMatrix) * objectNormal).y;');
-    let fs = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uCS[9]; uniform float uCSk; uniform float uWet; varying vec2 vCsW; varying float vUpN;').replace('#include <color_fragment>', `#include <color_fragment>
+    let fs = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uCS[9]; uniform float uCSk; uniform float uWet; uniform float uFrost; varying vec2 vCsW; varying float vUpN;').replace('#include <color_fragment>', `#include <color_fragment>
       if (uCSk > 0.001) { float cs = 0.0; for (int i = 0; i < 9; i++) { vec2 d = (vCsW - uCS[i].xy) / uCS[i].zw; cs = max(cs, 1.0 - smoothstep(0.5, 1.0, length(d))); } diffuseColor.rgb *= 1.0 - uCSk * cs; }
+      ${!wetOn ? 'if (uFrost > 0.001) { float fr = uFrost * smoothstep(0.8, 0.95, vUpN) * (0.7 + 0.3 * fract(sin(dot(floor(vCsW * 2.3), vec2(12.9898, 78.233))) * 43758.5453)); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.95), fr * 0.72); }' : ''}
       ${wetOn ? 'float wetK = uWet * smoothstep(0.82, 0.97, vUpN); diffuseColor.rgb *= 1.0 - 0.32 * wetK;' : ''}`);
     if (wetOn) fs = fs.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.18, wetK);');   // piso mojado: brilla
     sh.fragmentShader = fs;
@@ -723,5 +754,13 @@ function groundColor(c, x, z, h, ny) {
   if (fr > 0) { const k = ((Math.floor((x + 300) / 6.5) % 3) + 3) % 3; c.lerp(cA.set(k === 0 ? 0xa48a5c : k === 1 ? 0x9cc65a : 0x79ad48), fr * 0.7); }
   if (ar > 0) c.lerp(cA.set(0x79b04f), 0.35);                     // Argentina, la otra orilla
   c.lerp(cA.set(0xcabd9a), inR(41, 57, 2, 15) * 0.9);
+  const nm = newMask(x, z);
+  if (nm > 0) {   // ampliación: pastizal natural (verdes oliva y pajizos), cimas de piedra y basalto en las laderas
+    const p = noise2(x * 0.05 + 31, z * 0.05 - 12);
+    c.lerp(cA.set(p < 0.5 ? 0x93b057 : 0xb9b163), nm * 0.5 * smooth(0.15, 0.85, p));
+    if (h > 9) c.lerp(cA.set(0xa79d6c), smooth(9, 12.5, h) * 0.55 * nm);
+    if (ny < 0.8) c.lerp(cA.set(0x6b5444), smooth(0.8, 0.5, ny) * nm);
+    if (Math.abs(z - RAIL.z) < 2.6 && x > RAIL.x0 - 4) c.lerp(cA.set(0x8a8076), smooth(2.6, 1.8, Math.abs(z - RAIL.z)));   // balasto de la vía
+  }
   if (ny < 0.82) c.lerp(cA.set(0x9c8a66), smooth(0.82, 0.6, ny));
 }

@@ -3,7 +3,18 @@ import { clamp, lerp, smooth, fbm, distPoly } from './util.js';
 
 // Diorama "como en la realidad": el río Uruguay corre de norte a sur por el oeste; la represa de Salto Grande lo cruza
 // al norte (lago arriba), Salto queda en la orilla oriental y Concordia (Argentina) enfrente, en la occidental.
-export const B = { minX: -230, maxX: 130, minZ: -150, maxZ: 210 };
+export const B = { minX: -230, maxX: 290, minZ: -150, maxZ: 370 };
+// Ampliación de la maqueta (todo lo nuevo queda al este de x 130 o al sur de z 210, así lo de antes no se mueve):
+// la Cuchilla de Haedo con sus cerros chatos de basalto (noreste), los Potreros de Arerunguá con su arroyo y su monte de
+// quebrada (este), la estación del ferrocarril y el río Daymán, que desemboca en el río Uruguay (sur)
+export const B1 = { maxX: 130, maxZ: 210 };
+export const MESAS = [[198, -106, 22, 11], [254, -56, 18, 9], [240, -128, 13, 7], [170, -44, 11, 5.5], [262, 10, 12, 6]];   // x, z, radio, altura
+export const ARROYO = [[288, -86], [262, -40], [226, -14], [196, 22], [186, 62], [198, 106], [218, 148], [210, 196], [184, 236], [166, 272], [150, 300]];
+export const DAYMAN = [[300, 324], [262, 312], [220, 318], [176, 304], [130, 314], [84, 326], [36, 318], [-10, 330], [-52, 326], [-100, 334]];
+export const TAJAMAR = [160, 122, 9];
+export const RAIL = { z: 247, x0: -44, x1: 300 };
+export const ESTACION = [-24, 238];
+export const newMask = (x, z) => Math.max(smooth(124, 140, x), smooth(204, 218, z));
 // Área original: se usa para sembrar la flora de siempre en los mismos lugares
 export const B0 = { minX: -125, maxX: 110, minZ: -110, maxZ: 125 };
 export const LAND = 2, PLATEAU = 6, RES = 5, CITY_Y = 2.15;
@@ -75,15 +86,43 @@ export function terrainH(x, z) {
     h = Math.max(h, lerp(-3.2, ar, smooth(-5, 2.5, fd)));
   }
   if (z < DAM_Z - 2 && d < 3 && fd < 3) h = Math.max(h, 1.0);   // fondo del lago (arriba de la represa)
+  const nm = newMask(x, z); if (nm > 0 && d > -6) h = ampliacion(x, z, h, nm);
   const dc = channelD(x, z), hw = lerp(3.5, 7.5, smooth(12, -12, x)) + 1.5 * smooth(-50, -100, x);   // angosto en la naciente, ancho en la desembocadura
   if (dc < hw + 4.5 && z > -60) h = Math.min(h, lerp(-2.6, h, smooth(hw, hw + 4.5, dc)));
   return h;
 }
+// Relieve de la ampliación: cerros chatos de basalto, pradera ondulada, quebrada del arroyo, tajamar y río Daymán
+export function ampliacion(x, z, h, nm) {
+  if (h > 0.5) {
+    let add = (fbm(x * 0.025 + 3, z * 0.025 - 7) - 0.5) * 3 * smooth(140, 190, x);   // cuchillas suaves hacia el este
+    for (const [mx, mz, r, a] of MESAS) {   // cerro chato: cima plana y ladera de piedra empinada (la cuesta basáltica)
+      const d = Math.hypot(x - mx, z - mz) - r * 0.28 * (fbm(x * 0.045 + mx, z * 0.045) - 0.5) * 2;
+      add += a * smooth(r + 8, r, d) + 0.6 * smooth(r, r - 6, d) * (fbm(x * 0.2, z * 0.2) - 0.5);
+    }
+    h += add * nm;
+    if (Math.abs(z - RAIL.z) < 4 && x > RAIL.x0 - 6) h = lerp(h, 2.6 + smooth(-40, 140, x) * 1.2, smooth(4, 1.6, Math.abs(z - RAIL.z)) * nm);   // terraplén de la vía
+  }
+  // arroyo: angosto, encajonado entre piedras arriba (quebrada) y más abierto en la pradera
+  const da = distPoly(x, z, ARROYO), q = smooth(40, -60, z), aw = 2.2 + 1.3 * smooth(-40, 300, z);
+  if (da < aw + 9) h = Math.min(h, lerp(-1.1, h, smooth(aw, aw + 3 + 6 * (1 - q), da)));
+  const [tx, tz, tr] = TAJAMAR, dt = Math.hypot(x - tx, (z - tz) * 1.3);
+  if (dt < tr + 3) h = Math.min(h, lerp(-0.9, h, smooth(tr - 3, tr + 2, dt)));
+  // río Daymán: se ensancha hacia la desembocadura
+  const dd = distPoly(x, z, DAYMAN), hw = lerp(5, 11, smooth(300, -100, x));
+  if (dd < hw + 8) h = Math.min(h, lerp(-3, h, smooth(hw, hw + 7, dd)));
+  return h;
+}
 // Nivel del agua: el lago de Salto Grande, elevado, al norte de la represa; río abajo, cota 0.
-export function waterAt(x, z) { return z < DAM_Z - 3 && x < eastBank(z) + 30 ? RES : 0; }
+export const DEST = { water: null };   // los destinos de la Gira (lejos, al este) tienen sus propios niveles de agua
+export const BND = { minX: B.minX, maxX: B.maxX, minZ: B.minZ, maxZ: B.maxZ };   // por dónde puede andar Capi (cambia en los viajes)
+export function waterAt(x, z) { if (x > 1000 && DEST.water) return DEST.water(x, z); return z < DAM_Z - 3 && x < eastBank(z) + 30 ? RES : 0; }
 
 export const ZONES = [
-  { id: 'rio', area: true, name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 210] },
+  { id: 'haedo', area: true, name: 'Cuchilla de Haedo · cerros chatos', x: 210, z: -80, color: '#c9a27a', rect: [132, 290, -150, 0] },
+  { id: 'arerungua', area: true, name: 'Potreros de Arerunguá', x: 220, z: 120, color: '#d4c36a', rect: [132, 290, 0, 236] },
+  { id: 'estacion', name: 'Estación del ferrocarril', x: -24, z: 234, color: '#ff8f5a', rect: [-46, 0, 222, 256] },
+  { id: 'dayman', area: true, name: 'Río Daymán', x: 90, z: 330, color: '#4cc9f0', rect: [-90, 290, 290, 370] },
+  { id: 'rio', area: true, name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 370] },
   { id: 'campo', area: true, name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
   { id: 'ciudad', name: 'Ciudad de Salto', x: -36, z: 50, color: '#ffd166', rect: [-86, 22, 12, 102] },
   { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-166, -56, -112, -84] },
@@ -96,6 +135,6 @@ export const ZONES = [
   { id: 'puerto', name: 'Puerto de Salto', x: -96, z: 50, color: '#5ad1ff', rect: [-120, -84, 30, 70] },
   { id: 'sur', name: 'Barrio Sur', x: -28, z: 118, color: '#f4a261', rect: [-42, -8, 97, 136] },
   { id: 'jardin', name: 'Barrio Jardín', x: 24, z: -10, color: '#b5e48c', rect: [4, 46, -34, 10] },
-  { id: 'orilla', name: 'Concordia (Argentina)', x: -190, z: 40, color: '#9be7ff', rect: [-230, -152, -92, 210] },
+  { id: 'orilla', name: 'Concordia (Argentina)', x: -190, z: 40, color: '#9be7ff', rect: [-230, -152, -92, 370] },
   { id: 'museo', name: 'Energimundo', x: -67, z: -70, color: '#e6007e', rect: [-86, -48, -98, -49] }
 ];

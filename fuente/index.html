@@ -10,7 +10,7 @@
 <style>
 :root{
   /* Diorama de consola de 64 bits: paneles azul noche de borde grueso sobre el mundo 3D; el amarillo del casco de Capi marca lo accionable */
-  --navy:#0f2140; --navy-2:#182f58; --ink:#fff7e6; --dim:#a9bbd6;
+  --navy:#0f2140; --navy-2:#182f58; --ink:#fff7e6; --cream:var(--ink); --dim:#a9bbd6;
   --sun:#ffc93c; --sky:#5ad1ff; --leaf:#57e389; --ember:#ff6b4a; --amber:#ffb020;
   --display:"Lilita One","Arial Black",Impact,sans-serif; --body:"Nunito","Trebuchet MS",Verdana,sans-serif;
   color-scheme:dark;
@@ -152,6 +152,11 @@ body.arc #title{display:none} #mg{z-index:7} #mg.big .mgBox{width:min(1040px,97v
 #ride{display:flex;align-items:center;gap:7px;width:100%;margin-top:7px;padding:5px 9px;border-radius:10px;border:2px solid var(--sun);background:linear-gradient(90deg,#123a66,#0f2140);color:var(--cream);font-size:12.5px;font-weight:900;text-align:left;cursor:pointer;animation:ridePulse 1.8s ease-in-out infinite} #ride.hidden{display:none} @media (hover:none) and (pointer:coarse){#ride kbd{display:none}} #ride span{flex:1} #ride:hover,#ride:focus-visible{background:#1d4f86} @keyframes ridePulse{50%{box-shadow:0 0 0 3px rgba(255,210,63,.35)}} @media (prefers-reduced-motion:reduce){#ride{animation:none}}
 #favLine{margin-top:5px;font-size:12.5px;color:#9be7ff;font-weight:900} #bAlb{white-space:nowrap;flex:none;border:2px solid #2a4374;background:var(--navy-2);border-radius:9px;padding:2px 8px;font-size:12px;font-weight:900} #bAlb:hover{border-color:var(--sun)}
 #album .oBox,#arcade .oBox{width:min(620px,96vw)}
+#logoIso,#logoLargo{-webkit-touch-callout:none;-webkit-user-drag:none}
+#lpRing{position:fixed;z-index:70;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;pointer-events:none;background:conic-gradient(#ffd23f var(--k,0deg),rgba(255,255,255,.18) 0);-webkit-mask:radial-gradient(circle,transparent 39px,#000 40px);mask:radial-gradient(circle,transparent 39px,#000 40px)} #lpRing.hidden{display:none}
+#pinPad .oBox{width:min(340px,92vw)} #pinDots{font-size:30px;letter-spacing:10px;color:var(--sun);margin:4px 0} #pinMsg{margin:0;color:var(--dim)}
+#pinKeys{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%} #pinKeys .btn{font-size:28px;padding:14px 0;min-height:64px}
+#pinPad.bad .oBox{animation:pinShake .35s} @keyframes pinShake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
 #fpsBox{position:fixed;top:74px;right:12px;z-index:60;background:rgba(6,18,38,.88);color:#d6ffe7;font:700 12px/1.4 ui-monospace,Consolas,Menlo,monospace;padding:6px 10px;border-radius:9px;border:2px solid #2a4374;pointer-events:none;white-space:pre} #fpsBox.hidden{display:none}
 @media (min-width:900px){#arcade .oBox{width:min(900px,96vw)} #arList{grid-template-columns:repeat(3,1fr)}}
 #escuela .eBox{width:min(860px,97vw)} .eLevel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap} .eLevel .btn{min-width:180px;display:grid;justify-items:center;line-height:1.15;padding:6px 14px} .eLevel .btn small{font-size:12px;font-weight:800;opacity:.85} .eLevel .btn.on{background:var(--sun);color:#2a1a00;border-color:#fff3b0}
@@ -408,7 +413,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
     <div>
       <div id="mTitle"></div><div id="mSub"></div>
       <ul id="mList"></ul>
-      <div id="mExtra"><span id="sparkCount">Chispas de saber: 0/10</span><span style="display:flex;gap:5px"><button id="bAlb" type="button">Álbum <kbd>B</kbd></button><button id="bWard" type="button">Vestuario <kbd>V</kbd></button></span></div>
+      <div id="mExtra"><span id="sparkCount">Chispas de saber: 0/26</span><span style="display:flex;gap:5px"><button id="bAlb" type="button">Álbum <kbd>B</kbd></button><button id="bWard" type="button">Vestuario <kbd>V</kbd></button></span></div>
       <div id="favLine" class="hidden"></div>
       <button id="ride" class="hidden" type="button"><svg viewBox="0 0 40 22" width="34" height="19" aria-hidden="true"><path d="M3 15V6.5Q3 4 5.5 4H25l7 5.5h3.5Q38 9.5 38 12v3z" fill="#f4f1ea"/><path d="M5 6h8v4H5zM15 6h8v4h-8zM25 6l5 4h-5z" fill="#4fc3f7"/><rect x="3" y="11" width="35" height="2" fill="#2ed3c6"/><circle cx="10" cy="16.5" r="3.3" fill="#1c1e22"/><circle cx="31" cy="16.5" r="3.3" fill="#1c1e22"/><path d="M19 13.5l2.5-4h-2l1-3-3.5 4.5h2z" fill="#ffd23f"/></svg><span>Queda lejos: ir en la camioneta eléctrica</span><kbd>T</kbd></button>
     </div>
@@ -434,7 +439,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   <div id="fact" class="pane"><b id="factT"></b><span id="factX"></span></div>
   <div id="prompt" class="pane hidden"></div>
   <div id="toast"><h2></h2><p></p></div>
-  <div id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> mover · <kbd>Espacio</kbd> saltar · <kbd>E</kbd> interactuar · <kbd>Q</kbd>/<kbd>E</kbd> girar cámara · rueda: zoom</div>
+  <div id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> mover · <kbd>Espacio</kbd> saltar · <kbd>E</kbd> interactuar · <kbd>Q</kbd>/<kbd>R</kbd> girar cámara · rueda: zoom</div>
   <div id="cam">
     <button class="btn ghost" id="cL" type="button" aria-label="Girar cámara a la izquierda">⟲</button>
     <button class="btn ghost" id="cR" type="button" aria-label="Girar cámara a la derecha">⟳</button>
@@ -484,7 +489,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
     <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / flechas</dt><dd>Mover a Capi. También podés hacer clic en el terreno y va solo.</dd>
     <dt><kbd>Espacio</kbd></dt><dd>Saltar. En el agua, impulso de nado rápido.</dd>
     <dt><kbd>E</kbd> / <kbd>F</kbd> / clic</dt><dd>Hablar, reparar o usar la consola resaltada.</dd>
-    <dt><kbd>Q</kbd> <kbd>E</kbd> / clic derecho</dt><dd>Girar la cámara. Con <kbd>Mayús</kbd> gira de a 45°.</dd>
+    <dt><kbd>Q</kbd> <kbd>R</kbd> / clic derecho</dt><dd>Girar la cámara. Con <kbd>Mayús</kbd> gira de a 45°.</dd>
     <dt>Rueda del mouse</dt><dd>Zoom, del plano detalle a la vista panorámica.</dd>
     <dt><kbd>Tab</kbd></dt><dd>Panel de la red: despacho de baterías e inspección de centrales.</dd>
     <dt><kbd>V</kbd></dt><dd>Vestuario de Capi: atuendos que se ganan juntando chispas de saber.</dd>
@@ -598,6 +603,11 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   <p id="scMsg">Encendiendo circuitos…</p>
   <div class="scTrack"><i id="scBar"></i></div><b id="scPct">0 %</b>
 </div></div>
+<div id="lpRing" class="hidden" aria-hidden="true"></div>
+<div id="pinPad" class="ov hidden"><div class="oBox pane">
+  <h2>SuperCapi</h2><p id="pinMsg">PIN del personal</p><div id="pinDots" aria-live="polite">○○○○</div>
+  <div id="pinKeys"><button class="btn ghost" type="button" data-k="1">1</button><button class="btn ghost" type="button" data-k="2">2</button><button class="btn ghost" type="button" data-k="3">3</button><button class="btn ghost" type="button" data-k="4">4</button><button class="btn ghost" type="button" data-k="5">5</button><button class="btn ghost" type="button" data-k="6">6</button><button class="btn ghost" type="button" data-k="7">7</button><button class="btn ghost" type="button" data-k="8">8</button><button class="btn ghost" type="button" data-k="9">9</button><button class="btn ghost" type="button" data-k="x" aria-label="Borrar">⌫</button><button class="btn ghost" type="button" data-k="0">0</button><button class="btn" type="button" id="pinClose">Salir</button></div>
+</div></div>
 <div id="guide" class="ov hidden"><div class="oBox pane gBox">
   <h2 class="gTitle"><canvas id="gFace" width="24" height="24" aria-hidden="true"></canvas>Modo SuperCapi</h2>
   <p class="gSub">Solo para el personal del museo. Se cierra con <kbd>Esc</kbd> o escribiendo la palabra de nuevo.</p>
@@ -618,7 +628,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
   </div>
   <button class="btn" id="gClose" type="button">Cerrar <kbd>Esc</kbd></button>
 </div></div>
-<div id="photoHint">Modo foto · Q E: girar · W S: inclinar · A D: acercar y alejar · C: marco de postal · P: salir</div>
+<div id="photoHint">Modo foto · Q R: girar · W S: inclinar · A D: acercar y alejar · C: marco de postal · P: salir</div>
 <div id="rideCap" class="hidden" role="status" aria-live="polite"><div class="rcBox"><b id="rcTitle"></b><p id="rcText"></p></div><button class="btn ghost" id="rcSkip" type="button">Bajar ahora <kbd>E</kbd></button></div>
 <div id="fade"><canvas id="fadeFace" width="24" height="24"></canvas><span id="fadeTxt"></span></div>
 <div id="postal" aria-hidden="true"><div class="pcStamp"><canvas id="pcFace" width="24" height="24"></canvas><span>URUGUAY</span></div><div class="pcTitle">Saludos desde <b>Salto</b></div><div class="pcFoot"><span id="pcDate"></span> · Capi, Guardián de la Matriz Verde · Energimundo</div></div>

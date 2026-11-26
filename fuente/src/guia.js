@@ -18,6 +18,7 @@ export function drawSuperFace(g, t, col, scan) {
   if (scan != null) { const y = Math.floor(scan * 24) % 24; R(12, y, 12, 1, 'rgba(46,230,255,.55)'); }
 }
 const SKEY = 'capi-estadisticas', AKEY = 'capi-ajustes', WORD = 'energimundo';
+const PIN = '1979', HOLD = 3000;   // pantallas táctiles: mantener apretado el logo de Energimundo y escribir el PIN (año en que Salto Grande empezó a generar)
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fmtDate = k => { const [y, m, d] = k.split('-'); return `${+d}/${+m}/${y}`; };
 const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(r).padStart(2, '0')} s`; };
@@ -92,7 +93,53 @@ export class Guide {
     $('gReset').onclick = () => { if (Date.now() - this.confirm < 4000) { game.stats.reset(); this.confirm = 0; $('gReset').textContent = 'Reiniciar estadísticas'; this.render(); } else { this.confirm = Date.now(); $('gReset').textContent = '¿Seguro? Tocá de nuevo para borrar'; } };
     $('gCopy').onclick = () => { const t = $('gText'); t.value = game.stats.text(); t.classList.remove('hidden'); t.focus(); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } $('gCopy').textContent = ok ? 'Resumen copiado' : 'Seleccionalo y copialo con Ctrl+C'; };
     $('gHour').addEventListener('input', e => { this.g.grid.hour = +e.target.value; this.render(); });
+    this.touchAccess();
   }
+  // ---------- Acceso sin teclado: mantener apretado el logo 3 segundos y escribir el PIN ----------
+  touchAccess() {
+    const ring = $('lpRing'); let hold = null;
+    const stop = () => { if (!hold) return; cancelAnimationFrame(hold.raf); hold = null; ring.classList.add('hidden'); };
+    for (const id of ['logoIso', 'logoLargo']) {
+      const el = $(id); if (!el) continue;
+      el.addEventListener('contextmenu', e => e.preventDefault()); el.draggable = false;
+      el.addEventListener('pointerdown', e => {
+        if (this.g.extras.open === 'guide' || this.g.extras.open === 'pinPad' || this.g.extras.open === 'scLoad') return;
+        const r = el.getBoundingClientRect(), t0 = performance.now();
+        Object.assign(ring.style, { left: (r.left + r.width / 2) + 'px', top: (r.top + r.height / 2) + 'px' }); stop();
+        hold = { id: e.pointerId };
+        const tick = now => {
+          if (!hold) return; const k = Math.min(1, (now - t0) / HOLD);
+          if (k > 0.15) ring.classList.remove('hidden'); ring.style.setProperty('--k', (k * 360).toFixed(0) + 'deg');   // el aro aparece recién si se sigue apretando
+          if (k >= 1) { stop(); this.openPin(); return; }
+          hold.raf = requestAnimationFrame(tick);
+        };
+        hold.raf = requestAnimationFrame(tick);
+      });
+      for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, stop);
+    }
+    const pad = $('pinPad'), dots = $('pinDots');
+    const show = () => { dots.textContent = '●'.repeat(this.pin.length) + '○'.repeat(4 - this.pin.length); };
+    const press = k => {
+      if (this.pinLock && performance.now() < this.pinLock) return;
+      if (k === 'x') { this.pin = this.pin.slice(0, -1); show(); return; }
+      if (this.pin.length >= 4) return; this.pin += k; show(); this.g.audio.click();
+      if (this.pin.length < 4) return;
+      if (this.pin === PIN) { this.closePin(); this.pinBad = 0; this.secret(performance.now() + 1e9); return; }
+      this.pinBad = (this.pinBad || 0) + 1; pad.classList.remove('bad'); void pad.offsetWidth; pad.classList.add('bad'); this.g.audio.bad();
+      if (this.pinBad >= 3) { this.pinBad = 0; this.pinLock = performance.now() + 30000; $('pinMsg').textContent = 'Demasiados intentos: esperá 30 segundos.'; setTimeout(() => { $('pinMsg').textContent = 'PIN del personal'; }, 30000); }
+      setTimeout(() => { this.pin = ''; show(); }, 350);
+    };
+    pad.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => press(b.dataset.k); });
+    $('pinClose').onclick = () => this.closePin();
+    window.addEventListener('keydown', e => { if (this.g.extras.open !== 'pinPad') return; const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code); if (m) press(m[1]); else if (e.code === 'Backspace') press('x'); else if (e.code === 'Escape') this.closePin(); e.preventDefault(); e.stopImmediatePropagation(); }, { capture: true });
+    this.pin = ''; show();
+  }
+  openPin() {
+    const g = this.g; if (g.attract) g.stopAttract();
+    if (g.extras.open) { $(g.extras.open).classList.add('hidden'); g.extras.open = null; }
+    this.pin = ''; $('pinDots').textContent = '○○○○'; g.extras.open = 'pinPad'; $('pinPad').classList.remove('hidden'); g.audio.click();
+  }
+  closePin() { if (this.g.extras.open === 'pinPad') this.g.extras.open = null; $('pinPad').classList.add('hidden'); this.pin = ''; }
   // la palabra se escribió: deshacer lo que esas teclas pudieron haber hecho y abrir el panel
   secret(t0) {
     const g = this.g;

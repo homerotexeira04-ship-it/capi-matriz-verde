@@ -379,10 +379,10 @@ class Game {
       if (c === 'KeyT' && this.extras.rideTo) { this.extras.ride(); return; }
       this.keys[c] = true;
       if (c === 'Space') this.jump = true;
-      if (c === 'KeyE' || c === 'KeyF' || c === 'Enter') { if (this.cand) { if (c === 'KeyE') this.eUsed = true; this.interact(this.cand.id); } }
-      if (e.shiftKey && (c === 'KeyQ' || (c === 'KeyE' && !this.eUsed))) { const s = Math.PI / 4; this.cam.yawT = (c === 'KeyQ' ? Math.floor(this.cam.yawT / s + 1e-3) + 1 : Math.ceil(this.cam.yawT / s - 1e-3) - 1) * s; }
+      if (c === 'KeyE' || c === 'KeyF' || c === 'Enter') { if (this.cand) this.interact(this.cand.id); }   // E solo usa: la cámara gira con Q y R
+      if (e.shiftKey && (c === 'KeyQ' || c === 'KeyR')) { const s = Math.PI / 4; this.cam.yawT = (c === 'KeyQ' ? Math.floor(this.cam.yawT / s + 1e-3) + 1 : Math.ceil(this.cam.yawT / s - 1e-3) - 1) * s; }
     });
-    window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyE') this.eUsed = false; if (this.mg.active) this.mg.key(e.code, false); });
+    window.addEventListener('keyup', e => { this.keys[e.code] = false; if (this.mg.active) this.mg.key(e.code, false); });
     window.addEventListener('blur', () => { this.keys = {}; });
     cv.addEventListener('contextmenu', e => e.preventDefault());
     cv.addEventListener('pointerdown', e => {
@@ -458,14 +458,14 @@ class Game {
     const k = this.keys, cam = this.cam, c = this.capi, G = this.grid, w = this.world, play = this.mode === 'play';
     // --- Entrada ---
     const mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
-    if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * cdt; if (k.KeyE && !this.eUsed && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * cdt; }
+    if (play && !this.locked) { if (k.KeyQ && !k.ShiftLeft && !k.ShiftRight) cam.yawT += 1.9 * cdt; if (k.KeyR && !k.ShiftLeft && !k.ShiftRight) cam.yawT -= 1.9 * cdt; }
     if ((mx || mz) && !this.riding) { cam.inspect = null; this.face = null; cam.lowT = 0; }
     if (cam.lowT > 0) cam.lowT -= cdt;   // plano bajo por un rato (por ejemplo, para mirar una fiesta)
     const inp = { mx: this.locked ? 0 : mx, mz: this.locked ? 0 : mz, yaw: cam.yaw, jump: this.jump && !this.locked, locked: this.locked, working: !!this.mg.active, talking: this.cine && this.ui.talking === 'capi', face: this.cine ? 0 : (this.mg.active || this.ui.dlg || c.busy > 0) ? this.face : null };
     this.jump = false;
     this.attractStep(dt, Math.min(real, 1)); this.pad(dt);
     if (this.mode === 'title' && !this.attract) { const fc = this.tFaceCtx || (this.tFaceCtx = $('tFace') && $('tFace').getContext('2d')); if (fc) drawFace(fc, 'capi', now / 1000, (now / 1000) % 7 > 6.4, this.extras.colors()); }
-    if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * cdt; if (k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * cdt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + cdt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - cdt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * cdt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * cdt, 8, 195); }
+    if (this.photo) { if (k.KeyQ || k.ArrowLeft) cam.yawT += 1.6 * cdt; if (k.KeyR || k.KeyE || k.ArrowRight) cam.yawT -= 1.6 * cdt; if (k.KeyW || k.ArrowUp) cam.lowP = clamp((cam.lowP || 0) + cdt * 0.7, 0, 0.92); if (k.KeyS || k.ArrowDown) cam.lowP = clamp((cam.lowP || 0) - cdt * 0.7, 0, 0.92); if (k.KeyA) cam.distT = clamp(cam.distT - 40 * cdt, 8, 195); if (k.KeyD) cam.distT = clamp(cam.distT + 40 * cdt, 8, 195); }
     if (play) c.update(dt, inp); else c.update(dt, { mx: 0, mz: 0, yaw: 0, jump: false, locked: !this.attract });
     // --- Simulación ---
     G.step(dt);

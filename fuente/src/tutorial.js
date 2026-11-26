@@ -12,7 +12,7 @@ const STEPS = [
     caps: { keys: K('W A S D') + ' o ' + K('↑ ← ↓ →'), touch: '<kbd>Tocá el piso</kbd>', pad: '<kbd>Palanca</kbd>' },
     help: 'Mirá el círculo amarillo: está un poco más arriba en la pantalla.' },
   { id: 'look', title: 'Mirá alrededor',
-    txt: { keys: 'Girá la cámara con Q y E. Con la rueda del mouse acercás y alejás la vista.', touch: 'Girá la cámara con los botones ⟲ y ⟳ de abajo a la izquierda. Con ＋ y − acercás y alejás.', pad: 'Girá la cámara con los botones LB y RB.' },
+    txt: { keys: 'Girá la cámara con Q y R. Con la rueda del mouse acercás y alejás la vista.', touch: 'Girá la cámara con los botones ⟲ y ⟳ de abajo a la izquierda. Con ＋ y − acercás y alejás.', pad: 'Girá la cámara con los botones LB y RB.' },
     caps: { keys: K('Q E') + ' <kbd>Rueda</kbd>', touch: K('⟲ ⟳ ＋ −'), pad: K('LB RB') },
     help: 'También sirven los botones redondos de abajo a la izquierda.' },
   { id: 'jump', title: 'Saltá',

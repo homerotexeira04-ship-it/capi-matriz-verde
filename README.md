@@ -23,7 +23,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
 - **Tutorial jugable** de cuatro pasos antes de la primera misión (caminar, mirar, saltar y hablar con la Ing. Valeria), con instrucciones para teclado, pantalla táctil o joystick. Si alguien se traba, aparece una ayuda extra y el tutorial sigue solo.
 - **Letra grande:** opción en la pantalla de inicio y en la ayuda, que queda guardada.
 - **Neblina sobre el río al amanecer**, que se levanta a media mañana.
-- **Modo SuperCapi** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Antes del menú aparece una pantalla de carga de 2,5 segundos con la cara de Capi partida al medio: mitad Capi de siempre y mitad Capi robot. Cómo abrirlo está en las instrucciones de la carpeta del kiosco. También tiene un **medidor de cuadros** (cuadros por segundo, tiempo por cuadro y tirones, con la hora y el lugar del último) para revisar cómo anda el juego en cada PC.
+- **Modo SuperCapi** para el personal del museo, con un contador de visitas que queda guardado en la propia PC (sin datos personales). Antes del menú aparece una pantalla de carga de 2,5 segundos con la cara de Capi partida al medio: mitad Capi de siempre y mitad Capi robot. Se abre con el teclado o, en pantallas táctiles, manteniendo apretado el logo de Energimundo e ingresando un PIN; cómo hacerlo está en las instrucciones de la carpeta del kiosco. También tiene un **medidor de cuadros** (cuadros por segundo, tiempo por cuadro y tirones, con la hora y el lugar del último) para revisar cómo anda el juego en cada PC.
 - **Modo festivo** (se elige desde el modo SuperCapi y queda guardado en la PC), con cinco fiestas:
   - **Carnaval:** banderines, estandartes de comparsa y llamadas por el bulevar al caer la tarde: el estandarte, dos bailarinas y la cuerda de tambores dan vueltas por el tramo abierto del bulevar, y el minimapa marca dónde están. Los tambores son grabaciones reales y la cuerda va cambiando el ritmo: arranca con la madera, se asienta en la base, el repique se suelta, el tempo se acelera de a poco y de vez en cuando hacen un corte todos juntos. Cerca se oye fuerte y brillante; a medida que Capi se aleja se va apagando. La Mama Vieja, el Gramillero y el Escobero bailan en la plaza.
   - **Semana Criolla:** en la cuchilla, junto al rancho de Don Mateo: ruedo con desfile de tropillas, fogón con parrilla, caballos en el palenque (con relinchos y resoplidos grabados, que se oyen según lo cerca que esté Capi), puestos de artesanías y un payador que canta una décima sobre la energía.
@@ -91,7 +91,7 @@ En el mirador de Energimundo, frente a la central uruguaya, hay una maqueta gran
 | Mover a Capi | W A S D o flechas, o clic en el lugar de destino |
 | Saltar | Espacio |
 | Interactuar / seguir un diálogo | E |
-| Girar la cámara | Q y E, o arrastrar con el botón derecho |
+| Girar la cámara | Q y R, o arrastrar con el botón derecho |
 | Acercar y alejar | Rueda del mouse |
 | Panel de la red eléctrica | Tab |
 | Mapa grande | N (o tocar el minimapa) |

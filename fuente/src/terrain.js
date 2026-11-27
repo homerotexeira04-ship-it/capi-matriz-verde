@@ -14,7 +14,7 @@ export const MESAS = [[198, -106, 22, 11], [254, -56, 18, 9], [240, -128, 13, 7]
 export const ARROYO = [[288, -86], [262, -40], [226, -14], [196, 22], [186, 62], [198, 106], [218, 148], [210, 196], [184, 236], [166, 272], [150, 300]];
 export const DAYMAN = [[300, 324], [262, 312], [220, 318], [176, 304], [130, 314], [84, 326], [36, 318], [-10, 330], [-52, 326], [-100, 334]];
 export const TAJAMAR = [160, 122, 9];
-export const RAIL = { z: 247, x0: 66.8, x1: 300 };   // tramo recto hacia el este (la vía completa está en rail.js)
+export const RAIL = { z: 247, x0: 66.8, x1: 289.2 };   // tramo recto hacia el este (la vía completa está en rail.js)
 export const ESTACION = [13.1, 42];                  // andén de la estación de Salto, en la ciudad
 export const newMask = (x, z) => Math.max(smooth(124, 140, x), smooth(204, 218, z));
 // Área original: se usa para sembrar la flora de siempre en los mismos lugares

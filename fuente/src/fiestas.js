@@ -63,8 +63,9 @@ const LINES = {
     lucia: 'Hoy la flota trabaja hasta tarde: hay gente recorriendo museos toda la noche.'
   }
 };
-// Recorrido de la visita guiada: escenario → lado este → fuente → vuelta (sin cruzar al grupo escolar del oeste)
-const TOUR = [[-44, 37.2, 7], [-37.2, 37.6, 0], [-37.2, 47.2, 0], [-44, 48.9, 7], [-37.2, 47.2, 0], [-37.2, 37.6, 0]];
+// Recorrido de la visita guiada: escenario → frente del monumento a Artigas (la placa mira al norte, como el prócer) → lado este → vuelta
+// (el grupo llega de frente desde el escenario, así no queda parado entre las palmeras de atrás; no cruza al grupo escolar del oeste)
+const TOUR = [[-44, 37.2, 7], [-44, 40.0, 8], [-37.4, 40.8, 0], [-37.4, 37.4, 0]];
 const SKINS = [0x9a6b4b, 0xc58b62, 0x6b4a33, 0xe0ac86, 0xf1c9a5, 0x8a5a3c];
 const HAIRS = [0x1a1412, 0x3b2a1e, 0x6b4a2a, 0xd8c08a, 0x2b2b2b];
 const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 });

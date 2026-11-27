@@ -115,7 +115,7 @@ export class Vecinos {
       }
       if (c.kind === 'rambla') { if (moving) c.x += c.dir * sp * dt; if (c.x > -13) c.dir = -1; if (c.x < -81) c.dir = 1; gr.position.set(c.x, CITY_Y, c.z); if (moving) gr.rotation.y = damp(gr.rotation.y, c.dir > 0 ? Math.PI / 2 : -Math.PI / 2, 6, dt); }
       else if (c.kind === 'west') { if (moving) c.z += c.dir * sp * dt; if (c.z > 90) c.dir = -1; if (c.z < 14) c.dir = 1; gr.position.set(c.x, CITY_Y, c.z); if (moving) gr.rotation.y = damp(gr.rotation.y, c.dir > 0 ? 0 : Math.PI, 6, dt); }
-      else { if (moving) c.a += c.speed * dt * (rain ? 1.6 : 1); gr.position.set(POS.plaza[0] + Math.cos(c.a) * 6.4, CITY_Y, POS.plaza[1] + Math.sin(c.a) * 6.4); if (moving) gr.rotation.y = -c.a; }
+      else { if (moving) c.a += c.speed * dt * (rain ? 1.6 : 1); gr.position.set(POS.plaza[0] + Math.cos(c.a) * 5.9, CITY_Y, POS.plaza[1] + Math.sin(c.a) * 5.9); if (moving) gr.rotation.y = -c.a; }
       const ph = t * 6 * sp / Math.max(0.5, c.speed) + c.phase, sw = moving ? Math.sin(ph) * (rain ? 0.8 : 0.6) : 0;
       c.legL.rotation.x = sw; c.legR.rotation.x = -sw; c.armL.rotation.x = damp(c.armL.rotation.x, -sw * 0.6, 10, dt); c.armR.rotation.x = damp(c.armR.rotation.x, rain ? -0.15 : c.kind === 'plaza' ? -1.1 : sw * 0.6, 10, dt);
       this.reactPose(c, dt, cp, party);

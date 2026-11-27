@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, damp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
-import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank, newMask, RAIL } from './terrain.js';
+import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank, newMask } from './terrain.js';
 import { RX, RZ0, S_CITY, railNear } from './rail.js';
 const _rnC = {};
 
@@ -243,7 +243,7 @@ export class World {
   // Luces de noche de los monumentos: Teatro Larrañaga, Catedral, frente de la represa y monumento a Artigas
   nightLights() {
     const Y = 2.2, [tx, tz] = POS.teatro, [cx, cz] = POS.catedral, [ax, az] = POS.artigas, D = POS.dam;
-    this.wash(tx, Y + 0.9, tz + 3.2 + 0.07, 11.4, 8.6, 0);                 // Teatro: mira al sur, a la Plaza Artigas
+    this.wash(tx, Y + 0.9, tz + 3.2 + 0.07, 11.4, 8.6, 0);                 // Teatro: mira al sur, a la Plaza 33
     this.wash(cx - 4.6 - 0.07, Y, cz, 7.4, 10.2, -Math.PI / 2);             // Catedral: mira al oeste, a la Plaza Artigas
     for (let x = D.x0 + 9; x < D.x1 - 4; x += 8.5) this.wash(x, 0.1, D.z1 + 0.08, 8, D.top + 0.4, 0);   // represa, aguas abajo
     const ring = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), this.mats.pool); ring.rotation.x = -Math.PI / 2; ring.position.set(ax, Y + 0.32, az + 0.6); ring.renderOrder = 7; this.scene.add(ring);

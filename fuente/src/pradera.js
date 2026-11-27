@@ -3,7 +3,7 @@
 // interior y el río Daymán con su monte ribereño. Todo queda al este de x 130 o al sur de z 210.
 import * as THREE from 'three';
 import { rng, lerp, smooth, distPoly } from './util.js';
-import { RAIL, ESTACION, ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
+import { RAIL, ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
 import { C, Batch, textTex } from './world.js';
 import { RX, RZ0, RAIL_L, S_CITY, railXZ, railY, railNear, railRot } from './rail.js';
 import { sign } from './sectors.js';
@@ -179,7 +179,7 @@ function buildVia(w, bp) {
     } }
 }
 
-// ---------- Estación de Salto (ex Midland, Monumento Histórico Nacional): en la ciudad, al este del centro ----------
+// ---------- Estación de Salto (Ing. A. R. Wilkinson; área ferroviaria Monumento Histórico Nacional, 2010): en la ciudad, al este del centro ----------
 // Armada a partir de fotos: dos plantas revocadas en gris arena, planta baja con buñas, ventanas altas arriba, cornisa
 // gruesa, un ala baja con terraza y toldo celeste, el alero del andén sobre columnas de hierro verdes y el cartel «SALTO».
 // Al lado, el edificio de dos plantas lindero; más al sur, la chimenea y los dos galpones contiguos.

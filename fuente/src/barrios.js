@@ -163,7 +163,7 @@ function mercado(w, cx, cz) {
 
 // ================= TEATRO Y CATEDRAL =================
 function teatro(w) {
-  // Teatro Larrañaga (1882): ocupa toda su manzana y mira al sur, a la Plaza Artigas. Cuerpo neoclásico, pórtico de seis columnas,
+  // Teatro Larrañaga (1882): ocupa toda su manzana y mira al sur, a la Plaza 33 Orientales. Cuerpo neoclásico, pórtico de seis columnas,
   // frontón con el nombre y, atrás, la caja escénica más alta.
   const [cx, cz] = POS.teatro, cb = w.cityBatch, b = w.batch, col = 0xead7ae, trim = 0xfaf4e6, base = 0xb9a47a, H = 9.4;
   const x0 = cx - 6.0, x1 = cx + 6.0, z0 = cz - 4.9, z1 = cz + 3.2;

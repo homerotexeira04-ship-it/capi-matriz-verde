@@ -3,9 +3,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, lerp, smooth, clamp, damp, angDiff, distPoly } from './util.js';
-import { RAIL, ESTACION, ARROYO, TAJAMAR, MESAS, terrainH } from './terrain.js';
+import { ARROYO, TAJAMAR, MESAS, terrainH } from './terrain.js';
 import { ESTANCIA, BIOLOGA, CAMS, NESTS, CUEVAS } from './pradera.js';
-import { RAIL_L, S_HOME, railXZ, railY, railNear, railRot } from './rail.js';
+import { S_OUT, S_HOME, railXZ, railY, railNear, railRot } from './rail.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
 import { animalParts } from './animales.js';
@@ -371,14 +371,14 @@ export class Campo {
   placeTrain() {
     const s = this.tr.s, P = this._tp || (this._tp = {});
     this.cars.forEach((c, i) => { const sc = s + (i ? -6.1 : 6.1); railXZ(sc, P); c.position.set(P.x, railY(sc) - 0.05, P.z); c.rotation.y = railRot(P) + (i ? Math.PI : 0); });
-    this.train.visible = s < RAIL_L - 12;
+    this.train.visible = s <= S_OUT;   // no asoma más allá del borde de la maqueta
   }
   depart(cb) { const T = this.tr; if (T.state === 'parado' || T.state === 'llega') { T.state = 'sale'; T.cb = cb; T.v = Math.max(T.v, 0); } }
   updateTrain(dt) {
     const T = this.tr, home = S_HOME;
     if (T.state === 'parado') { T.v = 0; T.t -= dt; if (T.t <= 0 && !this.hold) this.depart(); }
-    else if (T.state === 'sale') { T.v = Math.min(14, T.v + 2.2 * dt); T.s += T.v * dt; if (T.s > RAIL_L) { T.state = 'fuera'; T.t = 28; const cb = T.cb; T.cb = null; if (cb) cb(); } }
-    else if (T.state === 'fuera') { T.t -= dt; if (T.t <= 0 && !this.holdOut) { T.state = 'llega'; T.s = RAIL_L; T.v = 14; } }
+    else if (T.state === 'sale') { T.v = Math.min(14, T.v + 2.2 * dt); T.s += T.v * dt; if (T.s > S_OUT) { T.state = 'fuera'; T.t = 28; const cb = T.cb; T.cb = null; if (cb) cb(); } }
+    else if (T.state === 'fuera') { T.t -= dt; if (T.t <= 0 && !this.holdOut) { T.state = 'llega'; T.s = S_OUT; T.v = 14; } }
     else if (T.state === 'llega') { const d = T.s - home; T.v = Math.max(1.2, Math.min(14, Math.sqrt(2 * 2.2 * Math.max(0, d)))); T.s -= T.v * dt; if (T.s <= home) { T.s = home; T.state = 'parado'; T.t = 25; this.g.audio.bell && this.g.audio.bell(0.5); } }
     this.placeTrain();
     const c = this.g.capi.pos, rn = railNear(c.x, c.z, this._rn || (this._rn = {}));   // no se puede quedar parado en la vía

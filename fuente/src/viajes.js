@@ -2,7 +2,7 @@
 // sus personajes y un sello para el pasaporte. Se puede viajar desde cualquier partida; el modo «Gira» los encadena.
 import * as THREE from 'three';
 import { lerp, rng } from './util.js';
-import { B, BND, ESTACION, RAIL } from './terrain.js';
+import { B, BND, ESTACION } from './terrain.js';
 import { DESTINOS } from './destinos.js';
 import { RAIL_L, S_HOME, railXZ, railY } from './rail.js';
 import { makePerson } from './actors.js';

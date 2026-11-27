@@ -1,12 +1,13 @@
 // La vía del ferrocarril como recorrido: sale de la estación de Salto (en la ciudad, al este del centro, como la
-// estación real del Midland), baja recta hacia el sur entre manzanas, dobla en curva hacia el este y sigue por la pradera.
+// estación real, de Wilkinson), baja recta hacia el sur entre manzanas, dobla en curva hacia el este y sigue por la pradera.
 // s = metros recorridos desde el tope de la vía, al norte del andén.
 import { lerp, smooth, clamp } from './util.js';
 
-export const RX = 15.8, RZ0 = 29.6, RZ1 = 196, RR = 51, RZE = 247, REND = 345;
+export const RX = 15.8, RZ0 = 29.6, RZ1 = 196, RR = 51, RZE = 247, REND = 289.2;   // la vía termina en el borde de la maqueta (x = 290)
 const CX = RX + RR, CZ = RZ1;
 export const L1 = RZ1 - RZ0, LA = RR * Math.PI / 2, L3 = REND - CX;
 export const RAIL_L = L1 + LA + L3;
+export const S_OUT = RAIL_L - 12.3;   // con el tren en s, la punta del coche delantero está en s + 12,2: acá llega al borde
 export const S_CITY = 92.5 - RZ0;   // hasta acá la vía va entre manzanas, a nivel de la calle
 export const S_HOME = 13;           // donde para el tren: los dos coches junto al andén
 

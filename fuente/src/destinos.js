@@ -1,7 +1,7 @@
 // Destinos de la Gira por el Uruguay: cuatro maquetas chicas, cada una con su relieve, su agua y sus construcciones.
 // Quedan lejos hacia el este (x ≥ 1500), fuera de la vista desde Salto, y solo se muestra la del viaje en curso.
 import * as THREE from 'three';
-import { lerp, smooth, clamp, fbm, noise2, distPoly, rng } from './util.js';
+import { lerp, smooth, clamp, fbm, noise2, rng } from './util.js';
 import { DEST } from './terrain.js';
 import { Batch, C, textTex } from './world.js';
 

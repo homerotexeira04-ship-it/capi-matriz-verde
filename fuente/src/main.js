@@ -228,7 +228,7 @@ class Game {
     $('load').textContent = 'Teclado y mouse · también funciona con pantalla táctil';
   }
   play(mode, phase, saved, level, opt = {}) {
-    this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null;
+    this.setPaused(false); if (this.clockStopped != null) this.clockStopped = null; this.runId = (this.runId || 0) + 1;
     this.missions.level = level || (saved && saved.level) || 'ingeniero'; this.missions.swap = !!(saved && saved.swap); this.mg.base = this.missions.level === 'explorador' ? 0.75 : 1;
     if (saved) this.extras.restore(saved); else this.extras.reset();
     if (this.kioskCfg) { this.campo.reset(); this.viajes.reset(); }
@@ -355,7 +355,7 @@ class Game {
   toTitle() {
     if (this.photo) this.togglePhoto();
     this.intl.cancel(); this.tut.stop(); this.setPaused(false); this.audio.llamada = false; this.cineWide = false; this.capi.dancing = false; this.actors.dancing = false; this.vecinos.drums(false); this.clockStopped = null; this.stats.endSession(); if (this.extras.open === 'guide') this.guide.close();
-    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo', 'escuela', 'eWin', 'bigmap'].forEach(id => $(id).classList.add('hidden'));
+    this.toggleHelp(false); if (this.panel) this.togglePanel(false); if (this.mg.active) this.mg.cancel(); this.extras.open = null; ['wardrobe', 'travel', 'diploma', 'arcade', 'album', 'choice', 'domo', 'escuela', 'eWin', 'bigmap', 'fauna', 'fotos', 'gira', 'pasaporte', 'qWin'].forEach(id => $(id).classList.add('hidden')); this.viajes.leave(); this.runId = (this.runId || 0) + 1;
     this.ui.dlg = null; $('dialog').classList.add('hidden'); this.ui.hide(); this.mode = 'title'; $('title').classList.remove('hidden');
     this.refreshTitle(); if (this.cine) this.endCine(); $('credits').classList.add('hidden');
     this.missions.active = false; this.missions.free = false; this.missions.m5 = null; this.missions.fw = 0; this.cam.distT = 150; this.cam.inspect = null; this.cam.target.set(-14, 3, 14); this.keys = {};

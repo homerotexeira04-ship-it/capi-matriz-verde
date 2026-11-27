@@ -1,7 +1,7 @@
 // Gira por el Uruguay: el tren sale de la estación de Salto hacia cuatro destinos, cada uno con su misión corta,
 // sus personajes y un sello para el pasaporte. Se puede viajar desde cualquier partida; el modo «Gira» los encadena.
 import * as THREE from 'three';
-import { clamp, lerp, damp, rng } from './util.js';
+import { lerp, rng } from './util.js';
 import { B, BND, ESTACION, RAIL } from './terrain.js';
 import { DESTINOS } from './destinos.js';
 import { railY } from './pradera.js';
@@ -46,7 +46,7 @@ const CHARLA = {
 export class Viajes {
   constructor(game) {
     const g = this.g = game, w = g.world;
-    this.cur = null; this.cine = null; this.t = 0; this.load();
+    this.cur = null; this.cine = null; this.t = 0; this.tok = 0; this.load();
     NAMES.jefa = 'Inés, jefa de estación';
     for (const k in GENTE) NAMES[GENTE[k].id] = GENTE[k].name;
     GENTE.lunarejo.at = [this.lunU(), 46, -1.6];   // la guardaparque espera junto al centro de visitantes
@@ -149,20 +149,21 @@ export class Viajes {
   go(k) {
     const g = this.g, G = g.grid, d = DESTINOS.find(x => x.k === k); if (!d || this.cine) return;
     this.clock = { rate: G.clockRate, hold: G.holdAt }; G.clockRate = 0;
-    this.cine = { t: 0, phase: 'sube', d }; g.extras.fading = true; g.capi.goto = null;
+    this.cine = { t: 0, phase: 'sube', d }; g.extras.fading = true; g.capi.goto = null; const tok = ++this.tok;
     $('fade').classList.add('on'); $('fadeTxt').textContent = 'Subiendo al tren de la Gira…';
-    setTimeout(() => { g.capi.root.visible = false; g.cam.follow = new THREE.Vector3(); g.cam.followD = 42; $('fade').classList.remove('on'); g.campo.depart(); this.cine.phase = 'viaja'; this.cine.t = 0; g.audio.bell && g.audio.bell(0.6); }, 700);
+    setTimeout(() => { if (tok !== this.tok) return; g.capi.root.visible = false; g.cam.follow = new THREE.Vector3(); g.cam.followD = 42; $('fade').classList.remove('on'); g.campo.depart(); this.cine.phase = 'viaja'; this.cine.t = 0; g.audio.bell && g.audio.bell(0.6); }, 700);
   }
   arrive(d) {
-    const g = this.g;
+    const g = this.g, tok = this.tok;
     $('fade').classList.add('on'); $('fadeTxt').textContent = `Viajando a ${d.name}…`;
     setTimeout(() => {
+      if (tok !== this.tok) return;
       DESTINOS.forEach(x => { x.group.visible = x === d; });
       Object.assign(BND, { minX: d.ox - HALF, maxX: d.ox + HALF, minZ: -HALF, maxZ: HALF });
       const [u, v, h] = d.spawn; g.capi.teleport(d.ox + u, v); g.capi.heading = h; g.capi.root.visible = true; g.cam.follow = null; g.cam.distT = 38; g.cam.yawT = h + Math.PI;
       this.cur = { k: d.k, d, st: {}, done: !!this.sellos[d.k] && false };
       document.body.classList.add('viaje'); this.cine = null;
-      setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; g.ui.toast(d.name.toUpperCase(), d.where, 3.2); g.audio.ok(); }, 600);
+      setTimeout(() => { if (tok !== this.tok) return; $('fade').classList.remove('on'); g.extras.fading = false; g.ui.toast(d.name.toUpperCase(), d.where, 3.2); g.audio.ok(); }, 600);
     }, 1400);
   }
   mark(key) {
@@ -177,18 +178,19 @@ export class Viajes {
   // ---------- Viaje de vuelta ----------
   back() {
     const g = this.g, G = g.grid; if (this.cine) return;
-    g.extras.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = 'Volviendo a Salto en el tren…';
+    g.extras.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = 'Volviendo a Salto en el tren…'; const tok = ++this.tok;
     setTimeout(() => {
+      if (tok !== this.tok) return;
       DESTINOS.forEach(x => { x.group.visible = false; });
       Object.assign(BND, { minX: B.minX, maxX: B.maxX, minZ: B.minZ, maxZ: B.maxZ });
       const [sx, sz] = ESTACION; g.capi.teleport(sx + 4, sz + 4.6); g.capi.heading = Math.PI; g.cam.distT = 40;
       if (this.clock) { G.clockRate = this.clock.rate; G.holdAt = this.clock.hold; this.clock = null; }
       this.cur = null; document.body.classList.remove('viaje');
       const T = g.campo.tr; T.x = ESTACION[0]; T.state = 'parado'; T.t = 25; g.campo.placeTrain();
-      setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; if (this.count() >= 4 && g.missions.mode !== 'gira' && !this.toldAll) { this.toldAll = true; this.openPasaporte(); } }, 600);
+      setTimeout(() => { if (tok !== this.tok) return; $('fade').classList.remove('on'); g.extras.fading = false; if (this.count() >= 4 && g.missions.mode !== 'gira' && !this.toldAll) { this.toldAll = true; this.openPasaporte(); } }, 600);
     }, 1200);
   }
-  leave() { if (this.cur || this.cine) { DESTINOS.forEach(x => { x.group.visible = false; }); Object.assign(BND, { minX: B.minX, maxX: B.maxX, minZ: B.minZ, maxZ: B.maxZ }); this.cur = null; this.cine = null; document.body.classList.remove('viaje'); this.g.capi.root.visible = true; this.g.cam.follow = null; } }
+  leave() { const busy = this.cur || this.cine; this.tok++; if (this.clock) { this.g.grid.clockRate = this.clock.rate; this.g.grid.holdAt = this.clock.hold; this.clock = null; } if (busy) { this.g.extras.fading = false; $('fade').classList.remove('on'); DESTINOS.forEach(x => { x.group.visible = false; }); Object.assign(BND, { minX: B.minX, maxX: B.maxX, minZ: B.minZ, maxZ: B.maxZ }); this.cur = null; this.cine = null; document.body.classList.remove('viaje'); this.g.capi.root.visible = true; this.g.cam.follow = null; } }
 
   // ---------- Pasaporte ----------
   openPasaporte() {

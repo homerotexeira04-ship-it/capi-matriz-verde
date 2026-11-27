@@ -719,7 +719,7 @@ function cloudShade(m, U, key) {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vCsW; varying float vUpN;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCsW = (modelMatrix * vec4(transformed, 1.0)).xz; vUpN = normalize(mat3(modelMatrix) * objectNormal).y;');
     let fs = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uCS[9]; uniform float uCSk; uniform float uWet; uniform float uFrost; varying vec2 vCsW; varying float vUpN;').replace('#include <color_fragment>', `#include <color_fragment>
       if (uCSk > 0.001) { float cs = 0.0; for (int i = 0; i < 9; i++) { vec2 d = (vCsW - uCS[i].xy) / uCS[i].zw; cs = max(cs, 1.0 - smoothstep(0.5, 1.0, length(d))); } diffuseColor.rgb *= 1.0 - uCSk * cs; }
-      ${!wetOn ? 'if (uFrost > 0.001) { float fr = uFrost * smoothstep(0.8, 0.95, vUpN) * (0.7 + 0.3 * fract(sin(dot(floor(vCsW * 2.3), vec2(12.9898, 78.233))) * 43758.5453)); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.95), fr * 0.72); }' : ''}
+      ${!wetOn ? 'if (uFrost > 0.001 && vCsW.x < 1000.0) { float fr = uFrost * smoothstep(0.8, 0.95, vUpN) * (0.7 + 0.3 * fract(sin(dot(floor(vCsW * 2.3), vec2(12.9898, 78.233))) * 43758.5453)); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.95), fr * 0.72); }' : ''}
       ${wetOn ? 'float wetK = uWet * smoothstep(0.82, 0.97, vUpN); diffuseColor.rgb *= 1.0 - 0.32 * wetK;' : ''}`);
     if (wetOn) fs = fs.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.18, wetK);');   // piso mojado: brilla
     sh.fragmentShader = fs;

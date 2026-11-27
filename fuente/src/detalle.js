@@ -1,7 +1,7 @@
 // Detalle fino del suelo: matas de pasto que se mecen con el viento, flores silvestres y piedritas.
 // Son decenas de miles de piezas chicas, en trozos de 48 m: solo se dibujan los trozos cerca de lo que mira la cámara.
 import * as THREE from 'three';
-import { rng, clamp, smooth, noise2, distPoly } from './util.js';
+import { rng, smooth, noise2 } from './util.js';
 import { B, terrainH, waterAt, newMask } from './terrain.js';
 import { windSway, groundColor } from './world.js';
 

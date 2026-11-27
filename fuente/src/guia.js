@@ -203,7 +203,7 @@ export class Guide {
     document.querySelectorAll('.gFps').forEach(b => { b.textContent = g.medidor.on ? 'Ocultar el medidor de cuadros' : 'Mostrar el medidor de cuadros'; });
     $('gSince').textContent = fmtDate(d.since);
     const avg = d.sessions ? d.sessionSec / d.sessions : 0, tiles = [
-      ['Partidas nuevas', d.games, `rápida ${d.mode.rapida || 0} · corta ${d.mode.corta} · larga ${d.mode.larga}`], ['Historias terminadas', d.done.corta + d.done.larga, `corta ${d.done.corta} · larga ${d.done.larga}`],
+      ['Partidas nuevas', d.games, `rápida ${d.mode.rapida || 0} · corta ${d.mode.corta} · larga ${d.mode.larga} · gira ${d.mode.gira || 0}`], ['Historias terminadas', d.done.corta + d.done.larga, `corta ${d.done.corta} · larga ${d.done.larga}`],
       ['Duración media de la visita', mmss(avg), `${d.sessions} visitas`], ['Tiempo total jugado', mmss(d.playSec), `${d.cont} partidas continuadas`],
       ['Tutorial', `${d.tut.done} de ${d.tut.start}`, `completos · ${d.tut.skip} salteados`], ['Nivel elegido', `${d.level.explorador} / ${d.level.ingeniero}`, 'Explorador / Ingeniero'],
       ['Chispas encontradas', d.sparks, `${d.favors} favores cumplidos`], ['Feria de minijuegos', d.feria, 'juegos sueltos']];

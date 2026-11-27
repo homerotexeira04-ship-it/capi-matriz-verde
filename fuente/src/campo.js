@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, lerp, smooth, clamp, damp, angDiff, distPoly } from './util.js';
-import { RAIL, ESTACION, ARROYO, TAJAMAR, MESAS, DAYMAN, terrainH, newMask } from './terrain.js';
+import { RAIL, ESTACION, ARROYO, TAJAMAR, MESAS, terrainH } from './terrain.js';
 import { railY, ESTANCIA, BIOLOGA, CAMS, NESTS, CUEVAS } from './pradera.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
@@ -251,8 +251,8 @@ export class Campo {
   // ---------- Noche de cámaras trampa: pantalla negra y, a la mañana, las fotos ----------
   night() {
     const g = this.g; this.camState = null; this.ct++;
-    g.extras.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = 'Las cámaras trampa trabajan solas toda la noche…';
-    setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; this.photos(); }, 2600);
+    g.extras.fading = true; $('fade').classList.add('on'); $('fadeTxt').textContent = 'Las cámaras trampa trabajan solas toda la noche…'; const run = g.runId;
+    setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; if (g.mode === 'play' && g.runId === run) this.photos(); }, 2600);
   }
   photos() {
     const g = this.g, R = Math.random, shots = []; this.photoBegin();
@@ -294,6 +294,21 @@ export class Campo {
     if (!this.thumbs) this.thumbs = {};
     this.cams.forEach(c => { c.m.visible = c.post.visible = false; });
   }
+  // Retrato para el álbum: el modelo 3D en la pradera, de tres cuartos y con luz de mañana (se hace una vez por especie)
+  portrait(k) {
+    if (!this.portraits) this.portraits = {}; if (this.portraits[k]) return this.portraits[k];
+    const g = this.g, w = g.world, r = g.renderer; this.photoBegin();
+    const A = this.actor(k), P = A.P, big = ['venado', 'nandu', 'aguara', 'puma', 'guazubira', 'carpincho', 'vaca'].includes(k), small = ['mulita', 'lechucita', 'hornero'].includes(k);
+    const x = 251, z = 126, y = terrainH(x, z), d = big ? 3.1 : small ? 1.15 : 2.0, hgt = big ? 0.75 : small ? 0.16 : 0.38;
+    A.g.position.set(x, y, z); A.g.rotation.set(0, -0.9, 0); A.g.visible = true; A.head.rotation.set(-0.05, 0.35, 0); A.legs.forEach((m, j) => { m.rotation.x = Math.sin(1.2 + P.gait[j]) * 0.2; });
+    this.pcam.position.set(x + d * 0.35, y + hgt + d * 0.18, z + d); this.pcam.lookAt(x, y + hgt, z); this.pcam.updateMatrixWorld();
+    w.setTime(10, new THREE.Vector3(x, y, z)); r.shadowMap.autoUpdate = true;
+    const prev = r.getRenderTarget(); r.setRenderTarget(this.prt); r.clear(); r.render(g.scene, this.pcam); r.setRenderTarget(prev); r.readRenderTargetPixels(this.prt, 0, 0, 480, 300, this.pbuf);
+    A.g.visible = false; this.photoEnd();
+    const c = document.createElement('canvas'); c.width = 480; c.height = 300; const cx = c.getContext('2d'), im = cx.createImageData(480, 300);
+    for (let yy = 0; yy < 300; yy++) for (let xx = 0; xx < 480; xx++) { const si = ((299 - yy) * 480 + xx) * 4, di = (yy * 480 + xx) * 4; im.data[di] = this.pbuf[si]; im.data[di + 1] = this.pbuf[si + 1]; im.data[di + 2] = this.pbuf[si + 2]; im.data[di + 3] = 255; }
+    cx.putImageData(im, 0, 0); return (this.portraits[k] = c);
+  }
   photoEnd() { const g = this.g; g.world.setTime(g.grid.hour, g.cam.target); this.cams.forEach(c => { c.m.visible = c.post.visible = c.set; }); }
   shoot(s) {
     const g = this.g, w = g.world, r = g.renderer, R = Math.random, [cx, cz] = CAMS[s.i], cy = terrainH(cx, cz);
@@ -315,7 +330,7 @@ export class Campo {
     this.pcam.position.set(cx, camY, cz); this.pcam.lookAt(best.ax, tgtY, best.az); this.pcam.updateMatrixWorld();
     // luz de día para la foto (la de noche se convierte después a infrarroja, como con el flash de la cámara)
     w.setTime(s.night ? 12 : s.hourNum, new THREE.Vector3(best.ax, best.ah, best.az));
-    const prev = r.getRenderTarget(); r.setRenderTarget(this.prt); r.clear(); r.render(g.scene, this.pcam); r.setRenderTarget(prev);
+    r.shadowMap.autoUpdate = true; const prev = r.getRenderTarget(); r.setRenderTarget(this.prt); r.clear(); r.render(g.scene, this.pcam); r.setRenderTarget(prev);
     r.readRenderTargetPixels(this.prt, 0, 0, 480, 300, this.pbuf); A.g.visible = false;
     const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 300; return c; };
     const color = mk(), ir = mk(), gc = color.getContext('2d'), gi = ir.getContext('2d'), img = gc.createImageData(480, 300), im2 = gi.createImageData(480, 300), b = this.pbuf;
@@ -333,21 +348,6 @@ export class Campo {
     return { color, ir };
   }
   closePhotos() { $('fotos').classList.add('hidden'); if (this.g.extras.open === 'fotos') this.g.extras.open = null; this.g.ui.note('Las fotos quedaron en el álbum de fauna.', 3.5); }
-  drawPhoto(cv, s) {
-    const g = cv.getContext('2d'), W = cv.width, H = cv.height, night = s.night;
-    const sky = g.createLinearGradient(0, 0, 0, H); if (night) { sky.addColorStop(0, '#1d2a22'); sky.addColorStop(1, '#4a5a4c'); } else { sky.addColorStop(0, '#8fb0a6'); sky.addColorStop(1, '#6f8a52'); }
-    g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    g.fillStyle = night ? '#2f3d33' : '#4f6b3a'; for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(Math.random() * W, 40 + Math.random() * 30, 30 + Math.random() * 40, 30 + Math.random() * 20, 0, 0, 7); g.fill(); }
-    g.fillStyle = night ? '#6a786a' : '#8a9a5a'; g.fillRect(0, H * 0.72, W, H);
-    const big = ['venado', 'nandu', 'aguara', 'garza', 'guazubira'].includes(s.k), sc = big ? 92 : ['puma', 'carpincho'].includes(s.k) ? 120 : 150;
-    const col = night ? { main: '#d9e6d4', light: '#ffffff' } : { main: '#3a2c22', light: '#f2ece0' };
-    g.save(); if (Math.random() < 0.5) { g.translate(W, 0); g.scale(-1, 1); } drawAnimal(g, s.k, W * (0.42 + Math.random() * 0.16), H * 0.86, sc, col); g.restore();
-    if (night) { const v = g.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 200); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)'); g.fillStyle = v; g.fillRect(0, 0, W, H); }
-    const img = g.getImageData(0, 0, W, H), d = img.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * (night ? 34 : 14); d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(img, 0, 0);
-    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H - 20, W, 20); g.fillStyle = '#ffffff'; g.font = '12px monospace'; g.textAlign = 'left';
-    g.fillText(`CAM ${s.i + 1}  ${s.time}  ${s.temp}°C  ${night ? 'IR' : ''}`, 8, H - 6); g.textAlign = 'right'; g.fillText('ENERGIMUNDO', W - 8, H - 6);
-  }
-
   // ---------- Álbum de fauna ----------
   openAlbum() {
     const g = this.g, box = $('faList'); box.textContent = '';
@@ -356,7 +356,7 @@ export class Campo {
       const cv = document.createElement('canvas'); cv.width = 120; cv.height = 90; const cg = cv.getContext('2d');
       cg.fillStyle = seen || ft ? '#e8efe0' : '#2a3a55'; cg.fillRect(0, 0, 120, 90);
       const sc2 = ['venado', 'nandu', 'aguara', 'garza', 'guazubira'].includes(f.k) ? 46 : ['puma', 'carpincho'].includes(f.k) ? 60 : 78;
-      const th = this.thumbs && this.thumbs[f.k]; if (th) cg.drawImage(th, 40, 0, 400, 300, 0, 0, 120, 90); else drawAnimal(cg, f.k, 56, 82, sc2, seen || ft ? { main: '#4a3a2a', light: '#ffffff' } : { main: '#11192b', light: '#11192b' });
+      const th = (seen || ft) && this.portrait(f.k); if (th) cg.drawImage(th, 40, 0, 400, 300, 0, 0, 120, 90); else drawAnimal(cg, f.k, 56, 82, sc2, seen || ft ? { main: '#4a3a2a', light: '#ffffff' } : { main: '#11192b', light: '#11192b' });
       card.appendChild(cv);
       const t = document.createElement('div'); t.innerHTML = seen || ft ? `<b>${f.name}</b><small>${[seen ? 'Visto' : '', ft ? `${ft} foto${ft > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}</small><p>${f.fact}</p>` : `<b>?</b><small>${f.rare ? 'Muy raro: quizá en una cámara trampa' : 'Todavía no lo encontraste'}</small>`;
       card.appendChild(t); box.appendChild(card);
@@ -381,7 +381,7 @@ export class Campo {
   // ---------- Animación de la fauna ----------
   update(dt, st) {
     this.t += dt; this.updateTrain(dt); this.updateSeason(st);
-    const g = this.g, c = g.capi.pos, R = this.R, night = st.night > 0.5, far = c.x < 110 && c.z < 200 && g.cam.target.x < 110 && g.cam.target.z < 200;
+    const g = this.g, c = g.capi.pos, R = this.R, night = st.night > 0.5, far = (c.x < 110 && c.z < 200 && g.cam.target.x < 110 && g.cam.target.z < 200) || c.x > 1000;   // en la ciudad o de viaje, la fauna de la pradera no se dibuja
     for (const k in this.sp) { const S2 = this.sp[k]; S2.m.visible = S2.hm.visible = S2.lm.visible = !far; }
     if (Math.hypot(c.x + 34, c.z + 18.5) < 12) this.register('carpincho', 'visto');   // los carpinchos de la orilla de Salto también cuentan
     if (far) return;

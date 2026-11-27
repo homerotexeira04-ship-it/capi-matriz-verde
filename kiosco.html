@@ -177,10 +177,10 @@ body.viaje #mini,body.viaje #bMap,body.viaje #zone,body.viaje #ride,body.viaje #
 .faCard{display:grid;grid-template-columns:1fr;gap:6px;align-items:start;background:#13284a;border:2px solid #2a4374;border-radius:12px;padding:6px;text-align:left}
 .faCard canvas{width:100%;height:auto;aspect-ratio:4/3;border-radius:8px} .faCard b{display:block;color:var(--sun);font-size:15px} .faCard small{display:block;color:var(--leaf);font-size:11.5px} .faCard p{margin:3px 0 0;font-size:11.5px;line-height:1.3;color:var(--ink)}
 .faCard.unk b{color:var(--dim)} .faCard.unk small{color:var(--dim)} .faCard.rare:not(.unk){border-color:#ff8f1f;box-shadow:0 0 0 2px rgba(255,143,31,.35)}
-#fotos .oBox{width:min(1040px,96vw)} #fpList{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+#fotos .oBox{width:min(1040px,96vw)} #fotos .oBox,#gira .oBox,#pasaporte .oBox{max-height:94vh;overflow:auto} #fpList{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
 .fpCard{background:#0d1a30;border:3px solid #2a4374;border-radius:12px;overflow:hidden;text-align:left} .fpCard canvas{display:block;width:100%;height:auto} .fpCard div{padding:6px 10px} .fpCard b{display:block;color:var(--sun);font-size:17px} .fpCard small{color:var(--dim)}
 .fpCard.rare{border-color:#ff8f1f;animation:rareGlow 1.2s ease-in-out 3} @keyframes rareGlow{50%{box-shadow:0 0 0 6px rgba(255,143,31,.45)}}
-.fpTog{margin-top:6px;font-size:13px;padding:4px 12px}
+.fpTog{display:block;margin-top:6px;font-size:13px;padding:4px 12px}
 #fpMsg{margin:8px 0;font-size:16px;color:var(--ink);text-align:center}
 @media (max-width:700px){#fpList{grid-template-columns:1fr}}
 #qWin .oBox{width:min(520px,94vw)} #qWin h2{color:var(--sun);font-size:30px;margin:4px 0} .qBtns{display:grid;gap:9px;width:100%} .qBtns .btn{font-size:19px}
@@ -523,6 +523,8 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
     <dt><kbd>B</kbd></dt><dd>Álbum con los datos de las chispas de saber que encontraste.</dd>
     <dt><kbd>N</kbd> o tocar el minimapa</dt><dd>Mapa grande de la maqueta: tocá un lugar para ver qué hay y cómo llegar.</dd>
     <dt><kbd>T</kbd></dt><dd>Cuando el objetivo de la misión queda lejos, la camioneta eléctrica de mantenimiento te lleva hasta ahí.</dd>
+    <dt>Fauna</dt><dd>Álbum de los animales del campo que viste o que salieron en las cámaras trampa de Ana, la bióloga.</dd>
+    <dt>Estación</dt><dd>Al sur de la ciudad sale el tren de la Gira por el Uruguay: cuatro viajes con sellos para el pasaporte.</dd>
     <dt><kbd>P</kbd></dt><dd>Modo foto: sin carteles y con la cámara libre.</dd>
     <dt><kbd>M</kbd></dt><dd>Silenciar el sonido.</dd>
     <dt>Letra</dt><dd><button class="btn ghost bigToggle" type="button" aria-pressed="false">Letra grande: no</button></dd>
@@ -742,7 +744,7 @@ body.loading .tBox{opacity:0;transform:translateY(16px) scale(.985)}
 <script id="cgBoot">
 // Descarga del juego con avance real (los bytes que van llegando). Abierto como archivo (el kiosco) se carga directo.
 (function () {
-  var BYTES = 1611798, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
+  var BYTES = 1613107, d = document, t0 = performance.now(), share = 0.2, rest = 4700, shown = 0;
   var $ = function (i) { return d.getElementById(i); }, fill = $('cgFill'), run = $('cgRun'), pct = $('cgPct'), lab = $('cgLabel'), bar = $('cgBar');
   // qué parte de la barra le toca a la descarga: la calcula la propia descarga con la velocidad que trae (al principio
   // se usa lo que tardó la vez anterior en esta PC); rest es lo que tarda después en armarse todo en esta PC

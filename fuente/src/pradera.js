@@ -2,7 +2,7 @@
 // (pradera con su arroyo, monte de quebrada, tajamar y estancia), la estación del ferrocarril con su vía hacia el
 // interior y el río Daymán con su monte ribereño. Todo queda al este de x 130 o al sur de z 210.
 import * as THREE from 'three';
-import { rng, lerp, smooth, clamp, distPoly } from './util.js';
+import { rng, lerp, smooth, distPoly } from './util.js';
 import { RAIL, ESTACION, ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
 import { C, Batch } from './world.js';
 import { sign } from './sectors.js';

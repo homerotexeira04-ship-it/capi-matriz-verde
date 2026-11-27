@@ -151,6 +151,7 @@ const TREE = {
   pino: { th: 4.2, tr: 0.22, tc: 0x6b4a33, crowns: [[0.86, 1.25, 0.9, 0x2f5a3a], [1.08, 0.85, 0.75, 0x3b6b45]] }
 };
 
+const _q2v = new THREE.Vector3(), _sf = new THREE.Vector3(), _sr = new THREE.Vector3(), _su = new THREE.Vector3(), _sp = new THREE.Vector3(), _sUp = new THREE.Vector3(0, 1, 0);
 export class World {
   constructor(scene, renderer) {
     this.scene = scene; this.renderer = renderer; this.rand = rng(20260);
@@ -443,14 +444,20 @@ export class World {
     const mang = ang + Math.PI; const md = _s.set(Math.cos(mang) * 0.8, Math.sin(mang) * 0.8 + 0.15, 0.5).normalize();
     this.moonDisc.position.copy(focus).addScaledVector(md, 760); this.moonDisc.visible = md.y > -0.05;
     const day = el > 0.1;
-    if (day) this.sunDir.copy(sd); else this.sunDir.set(-0.35, 0.8, 0.45).normalize();
+    // la dirección de la luz avanza de a pasos chicos (medio grado): si giraba un poquito en cada cuadro, las sombras temblaban
+    const qa = Math.PI * (Math.round((hour - 6) * 30) / 30) / 12, qd = _q2v.set(Math.cos(qa), Math.sin(qa), -0.45).normalize();
+    if (day) this.sunDir.copy(qd); else this.sunDir.set(-0.35, 0.8, 0.45).normalize();
     // cerca del horizonte la luz baja para ocultar el relevo sol/luna
     const hz = smooth(0.02, 0.22, Math.abs(el - 0.1));
     this.sun.intensity = sInt * lerp(0.35, 1, hz);
-    const half = clamp((this.zoom || 60) * 0.95, 70, 165), sc = this.sun.shadow.camera;
-    if (Math.abs(sc.right - half) > 2) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix(); }
-    this.sun.target.position.copy(focus);
-    this.sun.position.copy(focus).addScaledVector(this.sunDir, 200);
+    const half = Math.ceil(clamp((this.zoom || 60) * 0.95, 70, 165) / 16) * 16, sc = this.sun.shadow.camera;   // tamaño en escalones
+    if (sc.right !== half) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix(); }
+    // la caja de la sombra se corre de a un píxel del mapa de sombras, nunca en fracciones: así los bordes no «nadan» al moverse la cámara
+    const texel = 2 * half / this.sun.shadow.mapSize.x, fw = _sf.copy(this.sunDir).negate(), rt = _sr.crossVectors(_sUp, fw).normalize(), up = _su.crossVectors(fw, rt);
+    const fr = Math.round(focus.dot(rt) / texel) * texel, fu = Math.round(focus.dot(up) / texel) * texel, ff = focus.dot(fw);
+    const snap = _sp.copy(rt).multiplyScalar(fr).addScaledVector(up, fu).addScaledVector(fw, ff);
+    this.sun.target.position.copy(snap);
+    this.sun.position.copy(snap).addScaledVector(this.sunDir, 200);
     this.stars.material.opacity = this.night * 0.9; this.stars.position.copy(focus);
     const lst = (hour + 8) % 24;   // cielo de fines del verano: la Cruz sube por el sudeste al anochecer
     for (const sp of this.crux) { const d = skyDir(sp.userData.ra, sp.userData.dec, lst, _s2); sp.position.copy(focus).addScaledVector(d, 850); sp.material.opacity = this.night * smooth(0.02, 0.12, d.y) * (1 - 0.8 * stm); sp.visible = sp.material.opacity > 0.01; }
@@ -561,7 +568,7 @@ export class World {
   plantTrees(trees) {
     if (!this.treeMats) this.treeMats = {
       fl: new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }),
-      flC: windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.55, false),
+      flC: windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.4, false),
       flF: windSway(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1 }), this.windU, 0.38, true) };
     const out = [], trunk = [], crown = [], frond = [];
     for (const t of trees) {
@@ -696,7 +703,7 @@ export function windSway(m, U, amp, radial) {
         vec3 ip = instanceMatrix[3].xyz; float ph = dot(ip.xz, vec2(0.21, 0.17));
         float hg = ${radial ? 'clamp(length(transformed.xz), 0.0, 1.0)' : 'clamp(transformed.y * 0.5 + 0.5, 0.0, 1.0)'};
         float gust = 0.55 + 0.45 * sin(uTime * 0.37 + ip.x * 0.013 + ip.z * 0.007);
-        float sw = (sin(uTime * (1.1 + uWind * 1.7) + ph) * 0.65 + sin(uTime * 2.9 + ph * 1.7) * 0.22) * uWind * gust;
+        float sw = (sin(uTime * (0.9 + uWind * 1.1) + ph) * 0.7 + sin(uTime * 1.9 + ph * 1.7) * 0.1) * uWind * gust;   // vaivén lento, sin temblequeo
         mvPosition.xz += uWindDir * (sw + uWind * 0.3 * gust) * hg * ${amp.toFixed(2)};
         mvPosition.y -= abs(sw) * 0.07 * hg;
       #endif

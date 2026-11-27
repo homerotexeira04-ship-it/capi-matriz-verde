@@ -104,7 +104,7 @@ export class Campo {
     const VC = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
     this.mat = VC;
     // --- tren ---
-    // dos coches con cabina en las puntas: el tren sigue la vía (rail.js), entre manzanas y en curva
+    // dos coches con cabina en las puntas: el tren sigue la vía (rail.js), por la costa hacia el sur
     const cabG = trainCar(true);
     this.train = new THREE.Group(); this.cars = [new THREE.Mesh(cabG, VC), new THREE.Mesh(cabG, VC)];
     this.cars.forEach(c => { c.castShadow = true; c.rotation.order = 'YXZ'; this.train.add(c); });
@@ -162,8 +162,8 @@ export class Campo {
     this.horse.add(this.gaucho.group);
     this.tropa = { s: 0, dir: 1, wait: 8, len: 0 }; for (let i = 1; i < TROPA.length; i++) this.tropa.len += Math.hypot(TROPA[i][0] - TROPA[i - 1][0], TROPA[i][1] - TROPA[i - 1][1]);
     const vacas = this.sp.vaca.list; this.arreo = vacas.slice(0, 6).map((a, i) => { a.tropa = true; a.r = 0; a.off = [(i % 3 - 1) * 1.8, 3 + Math.floor(i / 3) * 2.6]; return a; });
-    // --- tractor arando la chacra entre la vía y el Daymán ---
-    this.tractor = new THREE.Mesh(tractorGeo(), VC); this.tractor.castShadow = true; sc.add(this.tractor); this.tra = { x: 40, row: 0, dir: 1 };
+    // --- tractor arando una chacra al este de las Termas, cerca del Daymán ---
+    this.tractor = new THREE.Mesh(tractorGeo(), VC); this.tractor.castShadow = true; sc.add(this.tractor); this.tra = { x: 110, row: 0, dir: 1 };
     this.season = 'auto'; try { this.season = localStorage.getItem('capi-estacion') || 'auto'; } catch (e) { /* sin almacenamiento */ }
     this.refresh();
   }
@@ -187,7 +187,7 @@ export class Campo {
     for (const a of this.arreo) { const sn = Math.sin(head), cs = Math.cos(head), tx = fx[0] + a.off[0] * cs + a.off[1] * sn * 0.4, tz = fx[1] - a.off[0] * sn + a.off[1] * cs * 0.4; a.tx = tx; a.tz = tz; a.st = moving ? 'walk' : 'idle'; }
   }
   updateTractor(dt) {
-    const T = this.tra, z = 268 + T.row * 3.2, x0 = 30, x1 = 118;
+    const T = this.tra, z = 268 + T.row * 3.2, x0 = 106, x1 = 146;
     T.x += T.dir * 3.2 * dt; if (T.x > x1 || T.x < x0) { T.x = clamp(T.x, x0, x1); T.dir *= -1; T.row = (T.row + 1) % 6; }
     const y = terrainH(T.x, z); this.tractor.position.set(T.x, y, z + (T.dir > 0 ? 0 : 0)); this.tractor.rotation.y = T.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
     if (Math.random() < dt * 5) this.g.fx.puff(T.x - T.dir * 2.2, y + 0.4, z, 1, 0xc9b28a, 0.8);

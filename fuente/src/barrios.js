@@ -50,7 +50,7 @@ export function buildBarrios(w) {
   M.flood = new THREE.MeshStandardMaterial({ color: 0xfffbe8, emissive: 0xfff4d0, emissiveIntensity: 0, roughness: 0.4 });
   M.wallbox = new THREE.MeshStandardMaterial({ color: 0x1b3a2a, emissive: 0x4dffa0, emissiveIntensity: 0.9 });
   w.nightBatch = new Batch(); w.floodBatch = new Batch(); w.ledBatch = new Batch();
-  norte(w, R); teatro(w); catedral(rotWorld(w, POS.catedral[0], POS.catedral[1], Math.PI / 2)); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
+  norte(w, R); teatro(w); museoHT(w); catedral(rotWorld(w, POS.catedral[0], POS.catedral[1], Math.PI / 2)); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
   const s = w.scene, nb = w.nightBatch.mesh(M.nightWin); if (nb) s.add(nb);
   const fl = w.floodBatch.mesh(M.flood); if (fl) s.add(fl);
   const lb = w.ledBatch.mesh(M.wallbox); if (lb) s.add(lb);
@@ -191,6 +191,31 @@ function teatro(w) {
   // cartelera de funciones
   plaque(w, 'HOY · FUNCIÓN 20:30', cx + 4.5, Y + 1.7, z1 + 0.1, 0, 1.9, 0.5, { bg: '#2a1a12', fg: '#ffd166', border: '#e8c66a', glow: 0.6 });
   w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 4.2); w.addOcc(cx - 6.2, cx + 6.2, zp - 1.4, zp + 0.9, Y + 10.2);
+}
+
+// Museo del Hombre y la Tecnología: el ex Mercado Central de Salto (1909-1915, arq. Domingo F. Rocco), entre el puerto y el
+// centro. Dos plantas, planta baja con arcos, cornisa con balaustrada y, arriba del patio central, la linterna del viejo mercado.
+function museoHT(w) {
+  const cb = w.cityBatch, b = w.batch, col = 0xece0c4, trim = 0xfaf4e6, dark = 0x3a2e26, H = 7.2;
+  const x0 = -74, x1 = -62, z0 = 15.2, z1 = 25, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  cb.boxB(cx, Y, cz, x1 - x0, H, z1 - z0, col); cb.boxB(cx, Y, cz, x1 - x0 + 0.2, 0.7, z1 - z0 + 0.2, 0xcdbf9f);
+  cb.boxB(cx, Y + 3.5, cz, x1 - x0 + 0.24, 0.3, z1 - z0 + 0.24, trim); cb.boxB(cx, Y + H, cz, x1 - x0 + 0.5, 0.35, z1 - z0 + 0.5, trim);
+  for (let x = x0 + 0.3; x <= x1 - 0.2; x += 0.42) b.boxB(x, Y + H + 0.35, z1 + 0.1, 0.12, 0.6, 0.12, trim);   // balaustrada del frente
+  b.boxB(cx, Y + H + 0.95, z1 + 0.1, x1 - x0, 0.14, 0.24, trim);
+  for (const x of [x0, x1]) for (const z of [z0, z1]) cb.boxB(x + (x === x0 ? 0.3 : -0.3), Y, z + (z === z0 ? 0.3 : -0.3), 0.8, H + 0.3, 0.8, trim);   // pilastras de esquina
+  // planta baja: arcos en el frente y en los costados
+  for (let i = 0; i < 5; i++) { const x = x0 + 1.6 + i * 2.2; b.boxB(x, Y + 0.3, z1 + 0.04, 1.3, 2.0, 0.08, i === 2 ? 0x5a2a1e : dark); b.add(new THREE.CircleGeometry(0.65, 10, 0, Math.PI), i === 2 ? 0x5a2a1e : dark, x, Y + 2.3, z1 + 0.05, 1, 1, 1, 0, 0, 0, 0); }
+  for (const [fx, ry] of [[x0 - 0.04, -Math.PI / 2], [x1 + 0.04, Math.PI / 2]]) for (let i = 0; i < 4; i++) { const z = z0 + 1.4 + i * 2.35; b.boxB(fx, Y + 0.6, z, 0.08, 1.7, 1.1, dark); w.winBatch[1].add(new THREE.PlaneGeometry(0.9, 1.6), 0xffffff, fx + Math.sign(fx - cx) * 0.03, Y + 5.3, z, 1, 1, 1, 0, ry, 0, 0); }
+  // primer piso: ventanas altas y el frontón del cuerpo central con el nombre
+  for (let i = 0; i < 5; i++) { const x = x0 + 1.6 + i * 2.2; b.boxB(x, Y + 4.4, z1 + 0.04, 1.0, 1.9, 0.08, 0x2d3a44); w.winBatch[1].add(new THREE.PlaneGeometry(0.85, 1.7), 0xffffff, x, Y + 5.35, z1 + 0.09, 1, 1, 1, 0, 0, 0, 0); }
+  cb.boxB(cx, Y + H, z1 - 0.3, 4.6, 1.1, 0.7, trim); gable(cb, cx, Y + H + 1.1, z1 - 0.3, 4.8, 1.1, 0.8, trim);
+  plaque(w, 'MUSEO DEL HOMBRE Y LA TECNOLOGÍA', cx, Y + 3.0, z1 + 0.12, 0, 7.6, 0.6, { bg: '#2f3a33', fg: '#f3e2b0', border: '#cfa24a', glow: 0.4 });
+  // linterna del mercado sobre el patio central
+  cb.boxB(cx, Y + H + 0.35, cz - 0.4, 5.2, 1.6, 4.2, col); cb.boxB(cx, Y + H + 1.95, cz - 0.4, 5.6, 0.2, 4.6, trim);
+  for (const sz of [-1, 1]) b.boxB(cx, Y + H + 0.7, cz - 0.4 + sz * 2.12, 4.6, 0.9, 0.06, 0x8fb3c4);
+  gable(cb, cx, Y + H + 2.15, cz - 0.4, 4.6, 1.2, 5.6, 0x9aa0a4, true);
+  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 3.2);
+  w.addInter('mon:mhyt', cx + 2.4, z1 + 1.3, { console: false, h: 3.4, r: 2 });
 }
 
 // La misma construcción girada alrededor de (cx, cz): la catedral real mira al oeste, a la Plaza Artigas

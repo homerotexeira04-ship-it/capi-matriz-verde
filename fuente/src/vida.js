@@ -5,9 +5,9 @@ import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
-const NAR = [73, -76], TER = [30, 287], TERMICA = [33, 52], FAM = [-34, -18.5];   // las termas, junto al río Daymán como las reales
+const NAR = [73, -76], TERMICA = [33, 52], FAM = [-34, -18.5];   // las termas, junto al río Daymán como las reales
 // Claros donde no se plantan árboles del monte (naranjal, termas, central térmica)
-export const CLEAR = [[61, 86, -89, -62], [16, 46, 276, 300], [24, 42, 42, 62]];
+export const CLEAR = [[61, 86, -89, -62], [8, 100, 256, 302], [24, 42, 42, 62]];
 
 const slab = (w, cx, cz, sx, sz, color) => {
   let lo = 1e9, hi = -1e9;
@@ -23,20 +23,11 @@ export function buildSalto(w) {
   for (let i = 0; i < 6; i++) for (let k = 0; k < 6; k++) w.tree('naranjo', nx - 8 + i * 3.2 + (R() - 0.5) * 0.5, nz - 8 + k * 3.2 + (R() - 0.5) * 0.5, 0.85 + R() * 0.3);
   for (let i = 0; i < 4; i++) { const x = nx - 4.5 + i * 2.1, z = nz + 10.6, y = w.groundAt(x, z); b.boxB(x, y, z, 1.3, 0.7, 1.0, 0xb98a52); b.boxB(x, y + 0.7, z, 1.1, 0.16, 0.8, 0xff8f1f); }
   sign(w, 'NARANJAS DE SALTO', nx + 7.5, w.groundAt(nx + 7.5, nz + 11.2), nz + 11.2, 0, 7.6, 1.3, { bg: '#1f5a2a', border: '#ffb347' });
-  // ---------- Termas ----------
-  const [tx, tz] = TER, ty = slab(w, tx, tz, 18, 13.5, 0xeadfc6);
-  const pools = [[tx - 4, tz + 0.6, 3.5], [tx + 4.4, tz + 2, 2.5]];
-  for (const [px, pz, pr] of pools) { b.cyl(px, ty, pz, pr + 0.3, pr + 0.4, 0.42, 0xd7dde0, 18); b.cyl(px, ty + 0.36, pz, pr, pr, 0.08, 0x35c9d2, 18); w.addCircle(px, pz, pr + 0.35); }
-  b.boxB(tx + 3.6, ty, tz - 4.6, 7, 2.6, 3, 0xf6f0e2); b.boxB(tx + 3.6, ty + 2.6, tz - 4.6, 7.6, 0.28, 3.6, 0xc65f3e); b.boxB(tx + 3.6, ty, tz - 3.08, 1.2, 1.9, 0.08, 0x6b4a2f); w.addSolid(tx + 0.1, tx + 7.1, tz - 6.1, tz - 3.1);
-  [[tx - 7.2, tz - 4.2, 0xff6b6b], [tx - 2.4, tz - 5, 0xffd23f], [tx + 7.6, tz - 0.6, 0x4fc3f7]].forEach(([ux, uz, col]) => {
-    b.cyl(ux, ty, uz, 0.06, 0.06, 2.2, 0xdddddd, 5); b.add(new THREE.ConeGeometry(1.35, 0.55, 8), col, ux, ty + 2.4, uz); b.boxB(ux + 1.1, ty, uz + 0.3, 0.7, 0.28, 1.7, 0xffffff); w.addCircle(ux, uz, 0.2);
-  });
-  sign(w, 'TERMAS DEL DAYMÁN', tx - 4.5, ty, tz - 6.9, 0, 7.4, 1.3, { bg: '#0d5c6b', border: '#9be7ff' });
-  { const px = tx - 0.4, pz = tz + 4.6; b.boxB(px, ty, pz, 9.6, 0.42, 3.6, 0xd7dde0); b.boxB(px, ty + 0.36, pz, 9.0, 0.08, 3.0, 0x35c9d2); w.addSolid(px - 4.8, px + 4.8, pz - 1.8, pz + 1.8, ty + 0.5); }   // pileta rectangular
-  for (const [px, pz] of [[tx - 8.6, tz + 5.2], [tx + 8.4, tz + 5.4], [tx + 8.6, tz - 5.6]]) w.tree('palm', px, pz, 0.9);
-  w.updaters.push((dt, st) => {
-    if (Math.random() < 16 * dt) { const p = pools[Math.random() < 0.62 ? 0 : 1], a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * p[2] * 0.9; st.fx.soft.emit(p[0] + Math.cos(a) * r, ty + 0.5, p[1] + Math.sin(a) * r, (Math.random() - 0.5) * 0.3, 0.7 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3, 2.2 + Math.random(), 0.5, 1.9, 0xffffff, 0.32, -0.25, 0.5); }
-  });
+  // ---------- Termas del Daymán (en la realidad, a unos 9 km al sur de Salto, sobre la ruta 3 y junto al río Daymán) ----------
+  // Un pueblito termal: la avenida de acceso desde la ruta, el pozo (lo perforaron buscando petróleo y salió agua caliente del
+  // Acuífero Guaraní), el Complejo Termal Municipal con una decena de piscinas que humean (una semicubierta y las de los niños),
+  // al lado el parque acuático Acuamanía con sus toboganes, hoteles y aparts sobre la avenida y las casas del barrio.
+  buildTermas(w, R);
   // ---------- Central térmica de respaldo: humea cuando la red quema combustible ----------
   const [cx, cz] = TERMICA, cy = slab(w, cx, cz, 14, 12, 0x9d998e);
   b.boxB(cx - 1.8, cy, cz - 1.2, 7.4, 3.4, 5.2, 0x727885); b.boxB(cx - 1.8, cy + 3.4, cz - 1.2, 7.9, 0.3, 5.7, 0x4b505c); b.boxB(cx - 1.8, cy, cz + 1.42, 1.6, 2.2, 0.08, 0x30343c);
@@ -190,4 +181,117 @@ export class Vida {
       this.rainbow.material.uniforms.uA.value = this.rainbow.material.uniforms.uA.value = smooth(0, 5, m - this.rainbowT) * smooth(0, 9, this.rainbowT) * (1 - night) * (1 - storm);
     } else this.rainbow.visible = false;
   }
+}
+
+// ================= TERMAS DEL DAYMÁN =================
+const AV_Z = 268.5;   // avenida de acceso, desde la ruta 3 hacia el este
+function buildTermas(w, R) {
+  const b = w.batch, RIM = 0xe3e7ea, HOT = 0x35c9d2, KID = 0x86e6ee, DECK = 0xeadfc6, steam = [];
+  w.road([[6.6, AV_Z], [40, AV_Z], [98, AV_Z]], 3.4, 0x4b5058);
+  // --- Complejo Termal Municipal: piso, muro bajo y entrada (boletería y vestuarios) ---
+  const X0 = 12, X1 = 50, Z0 = 270.6, Z1 = 300, ty = slab(w, (X0 + X1) / 2, (Z0 + Z1) / 2, X1 - X0, Z1 - Z0, DECK);
+  const wall = (x0, x1, z0, z1) => { b.boxB((x0 + x1) / 2, ty, (z0 + z1) / 2, x1 - x0, 0.9, z1 - z0, 0xf4efe4); w.addSolid(x0, x1, z0, z1, ty + 1); };
+  wall(X0, X0 + 0.3, Z0, Z1); wall(X1 - 0.3, X1, Z0, Z1); wall(X0, X1, Z1 - 0.3, Z1);
+  wall(X0, 22, Z0, Z0 + 0.3); wall(40, X1, Z0, Z0 + 0.3);
+  { const y = ty, H = 3.3;   // edificio de la entrada con un pasaje en el medio
+    for (const [x0, x1] of [[22, 29.6], [32.4, 40]]) { b.boxB((x0 + x1) / 2, y, 272.5, x1 - x0, H, 3.8, 0xf6f0e2); w.addSolid(x0, x1, 270.6, 274.4); w.addOcc(x0, x1, 270.6, 274.4, y + H + 0.6);
+      for (let x = x0 + 1.2; x < x1 - 0.6; x += 2.2) b.boxB(x, y + 1.1, 270.56, 1.1, 1.3, 0.06, 0x2d3a44); }
+    b.boxB(31, y + H, 272.5, 18.6, 0.3, 4.4, 0xc65f3e); b.boxB(31, y + H + 0.3, 272.5, 17.8, 0.45, 3.6, 0xb5533c);
+    for (const x of [29.7, 32.3]) b.cyl(x, y, 270.8, 0.16, 0.16, H, 0xf4f1ea, 8);
+    sign(w, 'COMPLEJO TERMAL MUNICIPAL', 31, y + H - 1.6, 270.2, 0, 8.8, 1.0, { bg: '#0d5c6b', border: '#9be7ff' });
+  }
+  // --- piscinas: todas de agua termal (la más caliente llega a unos 44 °C) ---
+  const round = (x, z, r, col = HOT) => { b.cyl(x, ty, z, r + 0.3, r + 0.42, 0.42, RIM, 22); b.cyl(x, ty + 0.36, z, r, r, 0.08, col, 22); w.addCircle(x, z, r + 0.38); steam.push([x, z, r, 0, r * r * 3.1]); };
+  const rect = (x, z, sx, sz, col = HOT) => { b.boxB(x, ty, z, sx + 0.6, 0.42, sz + 0.6, RIM); b.boxB(x, ty + 0.36, z, sx, 0.08, sz, col); w.addSolid(x - sx / 2 - 0.3, x + sx / 2 + 0.3, z - sz / 2 - 0.3, z + sz / 2 + 0.3, ty + 0.5); steam.push([x, z, sx / 2, sz / 2, sx * sz]); };
+  const rail = (x, z) => { for (const o of [-0.35, 0.35]) b.cyl(x + o, ty + 0.42, z, 0.04, 0.04, 0.9, 0xd5d8dd, 6); b.box(x, ty + 1.3, z, 0.74, 0.05, 0.05, 0xd5d8dd); };
+  rect(31, 279.6, 11, 5.4); rail(26.5, 276.6); rail(35.5, 282.6);          // la grande
+  round(17.6, 280.2, 3.0); round(44.2, 279.4, 2.4);
+  round(18.6, 289.4, 2.6); round(21.9, 291.6, 2.0);                         // la de dos lóbulos
+  rect(31.5, 288.4, 7, 4.2); rail(28.6, 290.8);
+  round(43.2, 289.2, 2.3, KID); round(46.3, 295.6, 1.3); round(16.8, 296.4, 1.3);   // la de los niños y dos de hidromasaje
+  { const x = 43.2, z = 289.2; b.cyl(x, ty + 0.4, z, 0.16, 0.2, 1.6, 0xffd23f, 8); b.add(new THREE.ConeGeometry(1.15, 0.6, 12), 0xff6b6b, x, ty + 2.3, z); }   // hongo de agua
+  { const x = 31, z = 295.3, sx = 8, sz = 4.6, H = 3.4;   // piscina semicubierta: techo liviano y dos lados cerrados
+    rect(x, z, sx, sz);
+    for (const cx of [x - sx / 2 - 0.6, x, x + sx / 2 + 0.6]) for (const cz of [z - sz / 2 - 0.6, z + sz / 2 + 0.6]) { b.cyl(cx, ty, cz, 0.14, 0.14, H, 0xf4f1ea, 8); w.addCircle(cx, cz, 0.25); }
+    b.box(x, ty + H + 0.15, z, sx + 2, 0.12, sz + 2, 0xf2f4f5, 0, 0.06, 0); for (let k = -2; k <= 2; k++) b.box(x + k * 2.2, ty + H + 0.24, z, 0.1, 0.08, sz + 2, 0xc9ced2, 0, 0.06, 0);
+    b.boxB(x, ty, z + sz / 2 + 0.75, sx + 1.4, 2.2, 0.1, 0xbfe3ee); b.boxB(x + sx / 2 + 0.75, ty, z, 0.1, 2.2, sz + 1.4, 0xbfe3ee);   // vidrios bajos contra el viento
+  }
+  // reposeras, sombrillas y palmeras
+  [[24.6, 284.2, 0xff6b6b], [38.4, 284.4, 0xffd23f], [25.4, 297.3, 0x4fc3f7], [38, 292.6, 0xff8f1f], [14.8, 285.4, 0x57e389], [47.4, 285.2, 0xff6b6b]].forEach(([ux, uz, col]) => {
+    b.cyl(ux, ty, uz, 0.06, 0.06, 2.2, 0xdddddd, 5); b.add(new THREE.ConeGeometry(1.35, 0.55, 8), col, ux, ty + 2.4, uz); w.addCircle(ux, uz, 0.2);
+    for (const o of [-0.9, 0.9]) b.box(ux + o, ty + 0.25, uz + 0.9, 0.62, 0.12, 1.7, 0xffffff, 0, -0.12, 0);
+  });
+  for (const [px, pz] of [[13.6, 272.6], [48.4, 272.6], [13.8, 299], [48.2, 298.8], [24.6, 276.2], [37.6, 276.4], [26.2, 285.4], [36.6, 288], [14.6, 291.4], [47.6, 290.4], [22.4, 297.8], [39.8, 298]]) w.tree('palm', px, pz, 0.8 + R() * 0.25, ty);
+  // --- el pozo: lo perforaron buscando petróleo y salió agua caliente ---
+  { const x = 17.5, z = 262.8, y = w.groundAt(x, z);
+    b.boxB(x, y, z, 6.4, 0.2, 5.2, 0xbdb4a2);
+    for (const [fx0, fx1, fz0, fz1] of [[x - 3.2, x + 3.2, z - 2.6, z - 2.5], [x - 3.2, x - 3.1, z - 2.6, z + 2.6], [x + 3.1, x + 3.2, z - 2.6, z + 2.6]]) { b.boxB((fx0 + fx1) / 2, y, (fz0 + fz1) / 2, fx1 - fx0, 1.2, fz1 - fz0, 0x2b2d33); w.addSolid(fx0, fx1, fz0, fz1, y + 1.3); }
+    b.cyl(x, y + 0.2, z, 0.32, 0.38, 1.5, 0x5d6268, 10); b.cyl(x, y + 1.7, z, 0.48, 0.48, 0.18, 0x3a3f46, 10);
+    b.cyl(x, y + 1.95, z, 0.42, 0.42, 0.06, 0xd62828, 12, Math.PI / 2, 0, 0); b.cyl(x + 1.7, y + 1.0, z, 0.16, 0.16, 3.0, 0x5d6268, 8, 0, 0, Math.PI / 2);   // válvula y caño
+    b.cyl(x + 3.4, y + 0.1, z + 4.3, 0.16, 0.16, 8.4, 0x5d6268, 8, Math.PI / 2, 0, 0);   // el caño baja hacia el complejo
+    w.addCircle(x, z, 0.6); w.addInter('mon:pozo', x, z + 3.1, { console: false, h: 3.2, r: 2.2 });
+    sign(w, 'POZO TERMAL', x - 1.6, y, z + 2.4, 0, 3.6, 0.7, { bg: '#5d3a1a', border: '#ffd23f' });
+    steam.push([x, z, 0.3, 0, 6, true]);
+  }
+  // --- estacionamiento ---
+  { const x0 = 25, x1 = 48, z0 = 259.6, z1 = 266.4, y = w.groundAt(36, 263);
+    b.boxB((x0 + x1) / 2, y - 0.3, (z0 + z1) / 2, x1 - x0, 0.4, z1 - z0, 0x5a5f66);
+    for (let x = x0 + 2.6; x < x1; x += 2.6) b.boxB(x, y + 0.1, z0 + 2.2, 0.08, 0.02, 3.6, 0xf4f4f4);
+    [[26.3, 0xd62828], [31.5, 0xf4f1ea], [36.7, 0x1d6fb8], [44.5, 0x3a3f46]].forEach(([x, col]) => { const z = z0 + 2.3; b.boxB(x, y + 0.35, z, 1.7, 0.75, 3.6, col); b.boxB(x, y + 1.1, z + 0.2, 1.5, 0.6, 2.0, 0x2d3a44); for (const o of [-0.85, 0.85]) for (const q of [-1.1, 1.1]) b.cyl(x + o, y + 0.32, z + q, 0.32, 0.32, 0.22, 0x1c1c1e, 10, 0, 0, Math.PI / 2); w.addSolid(x - 0.9, x + 0.9, z - 1.8, z + 1.8, y + 1.6); });
+  }
+  // --- Acuamanía: parque acuático termal, al lado del complejo ---
+  { const ax0 = 53, ax1 = 72, az0 = 271, az1 = 300, ay = slab(w, (ax0 + ax1) / 2, (az0 + az1) / 2, ax1 - ax0, az1 - az0, 0xf2e6c9);
+    const wl = (x0, x1, z0, z1) => { b.boxB((x0 + x1) / 2, ay, (z0 + z1) / 2, x1 - x0, 1.1, z1 - z0, 0x57c7d4); w.addSolid(x0, x1, z0, z1, ay + 1.2); };
+    wl(ax0, ax0 + 0.3, az0, az1); wl(ax1 - 0.3, ax1, az0, az1); wl(ax0, ax1, az1 - 0.3, az1); wl(ax0, 60, az0, az0 + 0.3); wl(63.5, ax1, az0, az0 + 0.3);
+    sign(w, 'ACUAMANÍA · PARQUE ACUÁTICO TERMAL', 61.7, ay, az0 - 0.4, 0, 9.4, 1.0, { bg: '#e6007e', border: '#ffd23f' });
+    const splash = [63.4, 294.6, 9.6, 6.2]; b.boxB(splash[0], ay, splash[1], splash[2] + 0.6, 0.42, splash[3] + 0.6, RIM); b.boxB(splash[0], ay + 0.36, splash[1], splash[2], 0.08, splash[3], 0x3fb8e8);
+    w.addSolid(splash[0] - 5.1, splash[0] + 5.1, splash[1] - 3.4, splash[1] + 3.4, ay + 0.5);
+    b.cyl(57.6, ay, 278, 3.0, 3.1, 0.42, RIM, 22); b.cyl(57.6, ay + 0.36, 278, 2.7, 2.7, 0.08, 0x3fb8e8, 22); w.addCircle(57.6, 278, 3.1);
+    // torre de los toboganes con su escalera
+    const TX = 66.5, TZ = 279.5, H = 6;
+    for (const ox of [-1.5, 1.5]) for (const oz of [-1.5, 1.5]) { b.cyl(TX + ox, ay, TZ + oz, 0.16, 0.16, H + 2.2, 0xffd23f, 8); w.addCircle(TX + ox, TZ + oz, 0.25); }
+    b.boxB(TX, ay + H - 0.2, TZ, 3.4, 0.2, 3.4, 0x1d6fb8); b.add(new THREE.ConeGeometry(2.7, 1.2, 4), 0xe6007e, TX, ay + H + 2.8, TZ, 1, 1, 1, 0, Math.PI / 4, 0);
+    for (let k = 0; k < 20; k++) { const z = 271.6 + k * 0.42, y = ay + (k + 1) * (H / 20); b.boxB(69.2, y - 0.12, z, 1.2, 0.12, 0.42, 0xd5d8dd); }
+    for (const o of [-0.62, 0.62]) b.box(69.2 + o, ay + H / 2 + 0.7, 271.6 + 4.2, 0.06, 0.06, 9.6, 0x5d6268, 0, -Math.atan2(H, 8.4), 0);
+    w.addSolid(68.5, 69.9, 271.4, 280.8, ay + 2);
+    const slide = (pts, col) => {   // canaleta abierta con barandas, por tramos rectos
+      for (let i = 0; i < pts.length - 1; i++) { const [x0, y0, z0] = pts[i], [x1, y1, z1] = pts[i + 1], dx = x1 - x0, dz = z1 - z0, hl = Math.hypot(dx, dz), L = Math.hypot(hl, y1 - y0) + 0.05, ry = -Math.atan2(dz, dx), rz = Math.atan2(y1 - y0, hl), mx = (x0 + x1) / 2, my = (y0 + y1) / 2, mz = (z0 + z1) / 2, nx = -dz / hl, nz = dx / hl;
+        b.box(mx, my, mz, L, 0.1, 1.1, col, ry, 0, rz); for (const o of [-0.55, 0.55]) b.box(mx + nx * o, my + 0.2, mz + nz * o, L, 0.36, 0.08, col, ry, 0, rz);
+        if (i % 3 === 1 && my > ay + 1.2) b.cyl(mx, ay, mz, 0.09, 0.09, my - ay - 0.1, 0xd5d8dd, 6); }
+    };
+    const path = (n, f) => { const out = []; for (let i = 0; i <= n; i++) out.push(f(i / n)); return out; };
+    slide(path(14, t => [65.3 - 4.2 * t + 0.9 * Math.sin(t * Math.PI * 2), ay + 0.9 + (H - 0.7) * Math.pow(1 - t, 1.25), 281.4 + 9.8 * t]), 0xffd23f);
+    slide(path(26, t => { const a = -Math.PI / 2 + t * Math.PI * 2.3, r = 2.3; return t < 0.8 ? [69.2 + r * Math.cos(a) * 0.95, ay + 0.9 + (H - 0.7) * (1 - t * 0.95), 285 + r * Math.sin(a)] : [lerp(69.2 + r * Math.cos(-Math.PI / 2 + 0.8 * Math.PI * 2.3) * 0.95, 66.8, (t - 0.8) / 0.2), ay + 0.9 + (H - 0.7) * (1 - t * 0.95), lerp(285 + r * Math.sin(-Math.PI / 2 + 0.8 * Math.PI * 2.3), 291.6, (t - 0.8) / 0.2)]; }), 0xff4d4d);
+    slide(path(16, t => t < 0.45 ? [lerp(64.8, 59.6, t / 0.45), ay + 0.9 + (H - 0.7) * (1 - t), lerp(279.6, 282.6, t / 0.45)] : [59.6 + 0.6 * Math.sin((t - 0.45) * 6), ay + 0.9 + (H - 0.7) * (1 - t), lerp(282.6, 291.4, (t - 0.45) / 0.55)]), 0x1d9bf0);
+    for (const [px, pz] of [[54.4, 272.4], [70.6, 298.6], [54.6, 298.6], [55, 286]]) w.tree('palm', px, pz, 0.85, ay);
+    steam.push([57.6, 278, 2.7, 0, 12]);
+  }
+  // --- hoteles y aparts sobre la avenida ---
+  [[56.5, 0xf4efe4, 0xc65f3e, 'HOTEL TERMAL'], [68, 0xf6d6c4, 0xb5533c, 'APART'], [80.2, 0xe8f1f2, 0x4f6b7a, 'HOTEL'], [92, 0xf2e3b6, 0xc65f3e, 'HOSTERÍA']].forEach(([cx, col, roof, name]) => {
+    const z0 = 259.8, z1 = 266.4, x0 = cx - 4.8, x1 = cx + 4.8, y = w.groundAt(cx, (z0 + z1) / 2) - 0.2, H = 6.2;
+    b.boxB(cx, y, (z0 + z1) / 2, x1 - x0, H, z1 - z0, col); b.boxB(cx, y + H, (z0 + z1) / 2, x1 - x0 + 0.3, 0.35, z1 - z0 + 0.3, roof);
+    for (let x = x0 + 1.2; x < x1 - 0.5; x += 1.8) for (const yy of [0.9, 3.9]) { b.boxB(x, y + yy, z1 + 0.02, 0.9, 1.4, 0.06, 0x2d3a44); w.winBatch[1].add(new THREE.PlaneGeometry(0.7, 1.2), 0xffffff, x, y + yy + 0.7, z1 + 0.07, 1, 1, 1, 0, 0, 0); }
+    b.boxB(cx, y + 3.1, z1 + 0.55, x1 - x0 - 0.6, 0.12, 1.1, 0xf4f4f4); for (let x = x0 + 0.5; x <= x1 - 0.4; x += 0.45) b.boxB(x, y + 3.22, z1 + 1.05, 0.05, 0.85, 0.05, 0x5d6268);   // balcón
+    b.boxB(cx, y, z1 + 0.02, 1.4, 2.4, 0.08, 0x6b4a2f);
+    sign(w, name, cx, y + 4.4, z1 + 1.3, 0, 3.4, 0.7, { bg: '#0d5c6b', border: '#9be7ff' });
+    w.addSolid(x0, x1, z0, z1 + 1.1); w.addOcc(x0, x1, z0, z1, y + H + 0.4);
+    w.tree('palm', x1 + 0.9, z1 + 1.2, 0.8);
+  });
+  // --- casas del barrio, al este ---
+  [[77, 276, 0], [84, 276.5, 0.05], [91, 275.6, -0.04], [77.6, 286, 0.03], [85, 287, -0.05], [92, 286.4, 0.02], [80, 295.6, 0], [89, 296, 0.06]].forEach(([x, z, ry], i) => {
+    w.houses.push({ x, y: w.groundAt(x, z) - 0.1, z, w: 4.2 + (i % 3) * 0.4, d: 4.4, h: 2.5, rh: 1.4, c: [0xf4efe4, 0xf6d6c4, 0xe8f1f2, 0xf2e3b6][i % 4], rc: [0xc65f3e, 0xb5533c, 0x6d7b84][i % 3], ry });
+    w.addSolid(x - 2.3, x + 2.3, z - 2.3, z + 2.3);
+    if (i % 2 === 0) w.tree(i % 4 ? 'jaca' : 'native', x + 3.2, z + 2.6, 0.7);
+  });
+  sign(w, 'BARRIO JARDINES', 74.4, w.groundAt(74.4, 270.8), 270.8, 0, 4.6, 0.8);
+  // --- cartel grande en la ruta 3 ---
+  sign(w, 'TERMAS DEL DAYMÁN', 9.4, w.groundAt(9.4, 265.4), 265.4, Math.PI / 2, 7.4, 1.3, { bg: '#0d5c6b', border: '#9be7ff' });
+  // vapor: más en las piscinas grandes (el agua termal humea, sobre todo en invierno y de noche)
+  const tot = steam.reduce((a, q) => a + q[4], 0);
+  w.updaters.push((dt, st) => {
+    if (Math.random() > 22 * dt) return;
+    let r = Math.random() * tot, q = steam[0]; for (const p of steam) { r -= p[4]; if (r <= 0) { q = p; break; } }
+    let x, z; if (q[3]) { x = q[0] + (Math.random() - 0.5) * 2 * q[2]; z = q[1] + (Math.random() - 0.5) * 2 * q[3]; } else { const a = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * q[2] * 0.9; x = q[0] + Math.cos(a) * rr; z = q[1] + Math.sin(a) * rr; }
+    st.fx.soft.emit(x, (q[5] ? w.groundAt(q[0], q[1]) + 2.2 : ty + 0.5), z, (Math.random() - 0.5) * 0.3, 0.7 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3, 2.2 + Math.random(), 0.5, 1.9, 0xffffff, 0.32, -0.25, 0.5);
+  });
 }

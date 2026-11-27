@@ -87,7 +87,7 @@ export class Urbano {
         const onZ = sg.dz === 0 && Math.abs(sg.a[1] - cz) < 0.8 && (cx - sg.a[0]) * sg.dx > 0 && (cx - sg.a[0]) * sg.dx < sg.len;
         if (onX) cross.push({ s: sg.s0 + Math.abs(cz - sg.a[1]), grp: 0, k }); if (onZ) cross.push({ s: sg.s0 + Math.abs(cx - sg.a[0]), grp: 1, k });
       });
-      // paso a nivel: donde el recorrido cruza la vía del tren, entre manzanas
+      // paso a nivel: donde el recorrido cruza la vía del tren (con la vía por la costa, hoy ninguno)
       const rail = []; for (const sg of segs) if (sg.dz === 0 && sg.a[1] > RZ0 && sg.a[1] < RZ0 + S_CITY && (RX - sg.a[0]) * sg.dx > 0 && (RX - sg.a[0]) * sg.dx < sg.len) rail.push({ s: sg.s0 + Math.abs(RX - sg.a[0]), sr: sg.a[1] - RZ0 });
       return { segs, L, cross, rail };
     });

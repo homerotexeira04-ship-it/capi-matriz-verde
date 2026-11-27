@@ -3,9 +3,9 @@
 // interior y el río Daymán con su monte ribereño. Todo queda al este de x 130 o al sur de z 210.
 import * as THREE from 'three';
 import { rng, lerp, smooth, distPoly } from './util.js';
-import { RAIL, ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
+import { ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
 import { C, Batch, textTex } from './world.js';
-import { RX, RZ0, RAIL_L, S_CITY, railXZ, railY, railNear, railRot } from './rail.js';
+import { RX, RZ0, RAIL_L, S_CITY, PUENTE_DAYMAN, railXZ, railY, railNear, railRot } from './rail.js';
 import { sign } from './sectors.js';
 
 export const ESTANCIA = [150, 182];
@@ -13,7 +13,6 @@ export const BIOLOGA = [192, 96];
 // Lugares para las cámaras trampa: borde del monte de la quebrada, orilla del arroyo y la pradera abierta
 export const CAMS = [[214, 30, 'Monte de la quebrada'], [214, 128, 'Orilla del arroyo'], [176, 214, 'Pradera abierta']];
 export const NESTS = [[134, 196], [134, 160], [178, 120], [178, 204]], CUEVAS = [[214, 196], [246, 72], [160, 92]];
-export const PUENTE_ARROYO = (() => { let best = [0, 1e9]; for (let x = 120; x < 260; x += 0.5) { const d = distPoly(x, RAIL.z, ARROYO); if (d < best[1]) best = [x, d]; } return best[0]; })();
 const TRI_X = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2).rotateY(Math.PI / 2);   // techo a dos aguas, cumbrera a lo largo de x
 const gable = (b, x, y0, z, len, h, wid, color) => { const sy = h / 1.5; b.add(TRI_X, color, x, y0 + 0.5 * sy, z, len, sy, wid / 1.732); };
 const GRAVEL = 0xb5a27f, ASPH = 0x4b5058, BASALTO = [0x5c4a3e, 0x6b5444, 0x4f4038, 0x76604d];
@@ -36,16 +35,19 @@ export function buildPradera(w) {
     sign(w, 'RUTA 3 · A PAYSANDÚ', x + 4.6, gy(x + 4.6, 352), 352, 0, 6.6, 1.0, { bg: '#2e7d32', border: '#ffffff' });
   }
 
-  // ---------- Vía del ferrocarril (ver rail.js): durmientes, rieles, pasos a nivel y puente de hierro sobre el arroyo ----------
-  const bx = PUENTE_ARROYO;
+  // ---------- Vía del ferrocarril (ver rail.js): durmientes, rieles, pasos a nivel y puente de hierro sobre el Daymán ----------
   buildVia(w, b);
-  { const x0 = bx - 9, x1 = bx + 9, y = railY(railNear(bx, RAIL.z).s) - 0.34;
-    b.boxB(bx, y - 0.6, RAIL.z, x1 - x0, 0.6, 3.4, 0x5d6268);
-    for (const s of [-1.6, 1.6]) { b.boxB(bx, y + 2.4, RAIL.z + s, x1 - x0, 0.22, 0.22, 0x4e555c); b.boxB(bx, y, RAIL.z + s, x1 - x0, 0.22, 0.22, 0x4e555c);
-      for (let k = 0; k < 6; k++) { const xa = x0 + k * 3; b.add(new THREE.BoxGeometry(0.16, 3.6, 0.16), 0x4e555c, xa + 1.5, y + 1.2, RAIL.z + s, 1, 1, 1, 0, 0, (k % 2 ? 1 : -1) * 0.69); b.boxB(xa, y, RAIL.z + s, 0.2, 2.6, 0.2, 0x4e555c); } }
-    for (const xa of [x0 + 2, x1 - 2]) b.boxB(xa, -2, RAIL.z, 1.6, y - 0.6 + 2, 3.2, 0x9c8f7f);
+  { const [z0, z1] = PUENTE_DAYMAN, x = RX, y = railY(railNear(x, (z0 + z1) / 2).s) - 0.34, n = Math.round((z1 - z0) / 3), st = (z1 - z0) / n;   // puente de reticulado, de factura inglesa como los de la época
+    b.boxB(x, y - 0.6, (z0 + z1) / 2, 3.4, 0.6, z1 - z0, 0x5d6268);
+    for (const sd of [-1.6, 1.6]) { b.boxB(x + sd, y + 2.4, (z0 + z1) / 2, 0.22, 0.22, z1 - z0, 0x4e555c); b.boxB(x + sd, y, (z0 + z1) / 2, 0.22, 0.22, z1 - z0, 0x4e555c);
+      for (let k = 0; k < n; k++) { const za = z0 + k * st; b.add(new THREE.BoxGeometry(0.16, 3.6, 0.16), 0x4e555c, x + sd, y + 1.2, za + st / 2, 1, 1, 1, (k % 2 ? 1 : -1) * 0.69, 0, 0); b.boxB(x + sd, y, za, 0.2, 2.6, 0.2, 0x4e555c); } }
+    for (const za of [z0 + 1.5, z1 - 1.5]) b.boxB(x, -2, za, 3.2, y - 0.6 + 2, 1.6, 0x9c8f7f);   // estribos de piedra
+    for (let za = z0 + st * 3; za < z1 - st * 2; za += st * 4) b.boxB(x, -3.5, za, 2.4, y - 0.6 + 3.5, 1.2, 0xa39d92);   // pilas
   }
+  // acceso a la estación desde la calle del sur de la ciudad
+  w.road([[-76, 93.4], [-68.5, 99], [-68.5, 126]], 3.2, ASPH);
   buildEstacion(w);
+  w.addInter('mon:crec', -69.9, 118.4, { console: false, h: 3, r: 1.8 });   // marca de la creciente de 1959 en la fachada
 
   // ---------- Cerros chatos: piedras de basalto en las laderas y un mirador en la cima del más alto ----------
   for (const [mx, mz, r, a] of MESAS) {
@@ -64,7 +66,7 @@ export function buildPradera(w) {
 
   // ---------- Monte de quebrada a lo largo del arroyo y monte ribereño del Daymán ----------
   const nearRail = (x, z, d) => railNear(x, z).d < d;
-  const avoid = (x, z) => nearRail(x, z, 5) || (x > 14 && x < 48 && z > 274 && z < 302) || w.nearRoad(x, z, 3.5) || Math.hypot(x - ESTANCIA[0], z - ESTANCIA[1]) < 16 || Math.hypot(x - TAJAMAR[0], z - TAJAMAR[1]) < 13 || CAMS.some(c => Math.hypot(c[0] - x, c[1] - z) < 3.2) || Math.hypot(x - BIOLOGA[0], z - BIOLOGA[1]) < 4;
+  const avoid = (x, z) => nearRail(x, z, 5) || (x > 6 && x < 100 && z > 255 && z < 303) || w.nearRoad(x, z, 3.5) || Math.hypot(x - ESTANCIA[0], z - ESTANCIA[1]) < 16 || Math.hypot(x - TAJAMAR[0], z - TAJAMAR[1]) < 13 || CAMS.some(c => Math.hypot(c[0] - x, c[1] - z) < 3.2) || Math.hypot(x - BIOLOGA[0], z - BIOLOGA[1]) < 4;
   const strip = (pts, w0, w1, step, types) => {
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, az] = pts[i], [cx, cz] = pts[i + 1], L = Math.hypot(cx - ax, cz - az), nx = -(cz - az) / L, nz = (cx - ax) / L;
@@ -147,24 +149,22 @@ export function buildPradera(w) {
   };
   fence([[134, 240], [134, 140], [178, 140]]); fence([[178, 100], [178, 238]]); fence([[134, 140], [134, 30], [182, 30]]);
   fence([[226, 60], [286, 60]]); fence([[230, 160], [286, 160]]); fence([[226, 236], [286, 236]]);
-  fence([[-40, 262], [130, 262]]);
+  fence([[-40, 262], [4, 262]]); fence([[100, 262], [130, 262]]);   // en el medio están las Termas del Daymán
   w.treesNew = w.trees.splice(t0);   // los árboles de la ampliación van en mallas aparte: así no se dibujan cuando la cámara mira a la ciudad
 }
 
-// ---------- Vía: durmientes y rieles a lo largo del recorrido; en la ciudad, a nivel de la calle con balasto y tablones ----------
-const CALLES = [[53.4, 56.6], [67.4, 79.6], [90.4, 93.6]];   // calles que cruza la vía entre las manzanas (z)
+// ---------- Vía: durmientes y rieles a lo largo del recorrido; en el área de la estación, a nivel del patio con balasto ----------
 function buildVia(w, bp) {
-  const P = {}, Q = {}, enCalle = z => CALLES.some(([a, c]) => z > a - 0.2 && z < c + 0.2);
+  const P = {}, Q = {};
   const pick = s => s < S_CITY + 2 ? w.batch : bp;
-  for (let s = 0.5; s <= RAIL_L; s += 1.1) { railXZ(s, P); if (s < S_CITY + 2 && enCalle(P.z)) continue; pick(s).box(P.x, railY(s) - 0.22, P.z, 0.32, 0.16, 2.4, 0x6a5038, railRot(P)); }
+  for (let s = 0.5; s <= RAIL_L; s += 1.1) { railXZ(s, P); pick(s).box(P.x, railY(s) - 0.22, P.z, 0.32, 0.16, 2.4, 0x6a5038, railRot(P)); }
   for (let s = 0; s < RAIL_L; s += 3) {
     const s1 = Math.min(RAIL_L, s + 3); railXZ(s, P); railXZ(s1, Q);
     const ux = Q.x - P.x, uz = Q.z - P.z, L = Math.hypot(ux, uz), nx = -uz / L, nz = ux / L, y0 = railY(s), y1 = railY(s1), ry = -Math.atan2(uz, ux), rz = Math.atan2(y1 - y0, L);
     for (const o of [-0.72, 0.72]) pick(s).box((P.x + Q.x) / 2 + nx * o, (y0 + y1) / 2 - 0.08, (P.z + Q.z) / 2 + nz * o, L + 0.06, 0.14, 0.12, 0x8f969c, ry, 0, rz);
   }
-  // en la ciudad: balasto entre calles y tablones en los cruces
-  let z0 = RZ0 - 0.8;
-  for (const [a, c] of CALLES) { w.batch.boxB(RX, 2.18, (z0 + a) / 2, 3.6, 0.08, a - z0, 0x8a8076); w.batch.boxB(RX, 2.2, (a + c) / 2, 2.2, 0.2, c - a, 0x5a4636); z0 = c; }
+  // en el área de la estación: balasto sobre el piso del patio
+  w.batch.boxB(RX, 2.18, RZ0 - 0.8 + (S_CITY + 0.8) / 2, 3.6, 0.08, S_CITY + 0.8, 0x8a8076);
   // tope al final de la vía, al norte del andén
   { const y = 2.2, z = RZ0 - 0.6; for (const o of [-0.72, 0.72]) w.batch.boxB(RX + o, y, z, 0.3, 1.0, 0.3, 0x3a3f46); w.batch.boxB(RX, y + 0.7, z - 0.1, 2.6, 0.45, 0.35, 0xd62828); for (let k = -1; k <= 1; k += 2) w.batch.boxB(RX + k * 0.6, y + 0.7, z - 0.29, 0.5, 0.45, 0.02, 0xf4f4f4); w.addSolid(RX - 1.3, RX + 1.3, z - 0.3, z + 0.2, y + 1.2); }
   // pasos a nivel con los caminos de afuera: tablones y cruces de San Andrés
@@ -179,20 +179,35 @@ function buildVia(w, bp) {
     } }
 }
 
-// ---------- Estación de Salto (Ing. A. R. Wilkinson; área ferroviaria Monumento Histórico Nacional, 2010): en la ciudad, al este del centro ----------
-// Armada a partir de fotos: dos plantas revocadas en gris arena, planta baja con buñas, ventanas altas arriba, cornisa
-// gruesa, un ala baja con terraza y toldo celeste, el alero del andén sobre columnas de hierro verdes y el cartel «SALTO».
-// Al lado, el edificio de dos plantas lindero; más al sur, la chimenea y los dos galpones contiguos.
+// ---------- Estación de Salto (la del Noroeste, Ing. A. R. Wilkinson; área ferroviaria Monumento Histórico Nacional, 2010) ----------
+// Está en el barrio del puerto, junto al río: el río inundaba seguido la planta baja y en la fachada quedaron las marcas
+// de las crecientes (la de 1959, la más grande). Armada a partir de fotos: dos plantas revocadas en gris arena, planta baja
+// con buñas, ventanas altas arriba, balcón corrido, cornisa gruesa, un ala baja con terraza y toldo celeste, el alero del
+// andén sobre columnas de hierro verdes y el cartel «SALTO». Al lado, el edificio de dos plantas lindero; más al sur, la
+// chimenea y los dos galpones contiguos (hoy, espacio cultural).
+// Se arma en coordenadas "de plano" (andén al este del edificio) y se espeja hacia la costanera: la vía queda del lado del río.
+const MX = x => -65.7 - x, MZ = z => z + 70;
+function espejo(w) {
+  const b = w.batch, wb = w.winBatch[1];
+  const mb = { boxB: (x, y, z, sx, sy, sz, c) => b.boxB(MX(x), y, MZ(z), sx, sy, sz, c), box: (x, y, z, sx, sy, sz, c, ry = 0, rx = 0, rz = 0) => b.box(MX(x), y, MZ(z), sx, sy, sz, c, -ry, rx, -rz),
+    cyl: (x, y, z, ...r) => b.cyl(MX(x), y, MZ(z), ...r), sph: (x, y, z, ...r) => b.sph(MX(x), y, MZ(z), ...r),
+    add: (g, c, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => b.add(g, c, MX(x), y, MZ(z), sx, sy, sz, rx, -ry, -rz) };
+  const mwb = { add: (g, c, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) => wb.add(g, c, MX(x), y, MZ(z), sx, sy, sz, rx, -ry, -rz) };
+  const rect = f => (x0, x1, z0, z1, ...r) => f(Math.min(MX(x0), MX(x1)), Math.max(MX(x0), MX(x1)), MZ(z0), MZ(z1), ...r);
+  return { batch: mb, winBatch: [w.winBatch[0], mwb], addSolid: rect(w.addSolid.bind(w)), addOcc: rect(w.addOcc.bind(w)), addPlatform: rect(w.addPlatform.bind(w)),
+    addInter: (id, x, z, o) => w.addInter(id, MX(x), MZ(z), o), scene: { add: m => { m.position.x = MX(m.position.x); m.position.z = MZ(m.position.z); m.rotation.y = -m.rotation.y; w.scene.add(m); } } };
+}
 function plaqueMesh(w, text, x, y, z, ry, sw, sh, o = {}) {
   const t = textTex(text, { w: 512, h: Math.max(64, Math.round(512 * sh / sw)), bg: o.bg || '#f4f4f4', fg: o.fg || '#1c1c1e', border: o.border || '#1c1c1e', size: 80 });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: o.glow != null ? o.glow : 0.25, roughness: 0.8 }));
-  m.position.set(x, y, z); m.rotation.y = ry; w.scene.add(m); if (o.both) { const m2 = m.clone(); m2.rotation.y = ry + Math.PI; w.scene.add(m2); } return m;
+  m.position.set(x, y, z); m.rotation.y = ry; w.scene.add(m); if (o.both) { const m2 = new THREE.Mesh(m.geometry, m.material); m2.position.set(x, y, z); m2.rotation.y = ry + Math.PI; w.scene.add(m2); } return m;
 }
-export function buildEstacion(w) {
+export function buildEstacion(w0) {
+  const w = espejo(w0);
   const b = w.batch, Y = 2.2, STU = 0xc8c0ae, STUd = 0xb1a995, TRIM = 0xe6e0d0, WIN = 0x2d3a44, DOOR = 0x4a3426, GREEN = 0x2f5a3a;
   const box = (x0, x1, y0, y1, z0, z1, c) => b.boxB((x0 + x1) / 2, y0, (z0 + z1) / 2, x1 - x0, y1 - y0, z1 - z0, c);
-  // suelo de la manzana de la estación y de las de los galpones
-  for (const [z0, z1] of [[28.6, 53.4], [56.6, 67.4], [79.6, 90.4]]) box(5.6, 18.4, 1.3, 2.2, z0, z1, C.sidewalk);
+  // piso del patio de la estación, de la chimenea y de los galpones
+  box(5.6, 18.4, 1.3, 2.2, 28.6, 90.4, C.sidewalk);
   // edificio principal
   const x0 = 5.8, x1 = 11.8, z0 = 31.5, z1 = 50.5, H1 = 3.6, H2 = 7.0;
   box(x0, x1, Y, Y + H2, z0, z1, STU);
@@ -210,7 +225,15 @@ export function buildEstacion(w) {
   plaqueMesh(w, 'ESTACIÓN SALTO', x0 - 0.1, Y + 3.9, 41, -Math.PI / 2, 3.6, 0.6, { bg: '#2f3a33', fg: '#f3e2b0', border: '#cfa24a', glow: 0.35 });
   plaqueMesh(w, 'MONUMENTO HISTÓRICO NACIONAL', x0 - 0.06, Y + 2.0, 38.0, -Math.PI / 2, 1.2, 0.36, { bg: '#3a3226', fg: '#f3e2b0', border: '#cfa24a' });
   b.cyl(x1 + 0.1, Y + 3.1, 41, 0.55, 0.55, 0.1, 0xf4f1ea, 16, 0, 0, Math.PI / 2); b.cyl(x1 + 0.06, Y + 3.1, 41, 0.62, 0.62, 0.08, 0x2b2d33, 16, 0, 0, Math.PI / 2);   // reloj
-  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H2 + 1);
+  // balcón corrido del primer piso, sobre la calle
+  box(x0 - 0.95, x0, Y + H1 + 0.3, Y + H1 + 0.45, z0 + 0.4, z1 - 0.4, TRIM);
+  for (let z = z0 + 0.5; z <= z1 - 0.4; z += 0.45) box(x0 - 0.92, x0 - 0.86, Y + H1 + 0.45, Y + H1 + 1.35, z - 0.03, z + 0.03, 0x2b2d33);
+  box(x0 - 0.95, x0 - 0.83, Y + H1 + 1.35, Y + H1 + 1.43, z0 + 0.4, z1 - 0.4, 0x2b2d33);
+  for (let z = z0 + 2.25; z < z1 - 1; z += 4.2) b.box(x0 - 0.5, Y + H1 + 0.1, z, 0.9, 0.08, 0.08, 0x2b2d33, 0, 0, -0.55);   // ménsulas
+  // marcas de las crecientes en la fachada: la de 1959, la más grande
+  box(x0 - 0.06, x0 - 0.02, Y + 2.35, Y + 2.43, 47.7, 49.1, 0x1d6fb8);
+  plaqueMesh(w, 'CRECIENTE 1959', x0 - 0.07, Y + 2.15, 48.4, -Math.PI / 2, 1.3, 0.3, { bg: '#1d6fb8', fg: '#ffffff', border: '#ffffff' });
+  w.addSolid(x0 - 0.95, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H2 + 1);
   // ala baja al norte, con terraza, baranda y el toldo celeste
   box(x0, x1, Y, Y + 3.2, 28.9, z0, STU); box(x0 - 0.1, x1 + 0.1, Y + 3.2, Y + 3.4, 28.8, z0, TRIM);
   for (let z = 29.1; z < z0; z += 0.5) box(x1 - 0.06, x1 + 0.06, Y + 3.4, Y + 4.2, z - 0.05, z + 0.05, TRIM); box(x1 - 0.1, x1 + 0.1, Y + 4.2, Y + 4.32, 28.9, z0, TRIM);

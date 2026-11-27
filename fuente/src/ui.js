@@ -4,7 +4,7 @@ import { B, ZONES, terrainH, waterAt, coastD, westD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
-export const NAMES = { corte: 'Maqueta en corte · una unidad de Salto Grande', capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento' };
+export const NAMES = { corte: 'Maqueta en corte · una unidad de Salto Grande', capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento', placa2: 'Placa' };
 
 // Retratos pixelados (grilla 24×24) con parpadeo y boca animada
 export function drawFace(g, who, t, talking, col) {
@@ -35,6 +35,10 @@ export function drawFace(g, who, t, talking, col) {
   if (who === 'corte') {   // la unidad generadora en corte: generador arriba, eje y turbina abajo, agua celeste
     R(0, 0, 24, 24, '#1c3d5a'); R(0, 15, 24, 9, '#3f9ad8'); R(4, 4, 16, 5, '#2f6f5f'); R(6, 5, 12, 3, '#b87333'); R(11, 9, 2, 6, '#b8bec6');
     R(6, 15, 12, 2, '#c8913a'); R(4, 17, 4, 1, '#c8913a'); R(16, 17, 4, 1, '#c8913a'); R(10, 17, 4, 3, '#c8913a'); R(1, 20, 4, 1, '#bfe9fb'); R(18, 21, 4, 1, '#bfe9fb');
+    return;
+  }
+  if (who === 'placa2') {   // placa de bronce con renglones
+    R(0, 0, 24, 24, '#3a3226'); R(2, 2, 20, 20, '#cfa24a'); R(3, 3, 18, 18, '#5b4a33'); for (const y of [6, 9, 12, 15, 18]) R(6, y, y === 6 ? 12 : y === 18 ? 7 : 11, 1, '#e3c06a');
     return;
   }
   if (who === 'placa') {   // placa de bronce con un jinete

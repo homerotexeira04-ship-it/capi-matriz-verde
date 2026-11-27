@@ -1,6 +1,6 @@
 // Relieve analítico del diorama y posiciones clave de los cinco sectores.
 import { clamp, lerp, smooth, fbm, distPoly } from './util.js';
-import { RX, RZ0, S_CITY, railNear, railY } from './rail.js';
+import { RX, RZ0, railNear, railY } from './rail.js';
 const _rn = {};
 
 // Diorama "como en la realidad": el río Uruguay corre de norte a sur por el oeste; la represa de Salto Grande lo cruza
@@ -8,14 +8,13 @@ const _rn = {};
 export const B = { minX: -230, maxX: 290, minZ: -150, maxZ: 370 };
 // Ampliación de la maqueta (todo lo nuevo queda al este de x 130 o al sur de z 210, así lo de antes no se mueve):
 // la Cuchilla de Haedo con sus cerros chatos de basalto (noreste), los Potreros de Arerunguá con su arroyo y su monte de
-// quebrada (este), la estación del ferrocarril y el río Daymán, que desemboca en el río Uruguay (sur)
+// quebrada (este), las Termas y el río Daymán, que desemboca en el río Uruguay (sur)
 export const B1 = { maxX: 130, maxZ: 210 };
 export const MESAS = [[198, -106, 22, 11], [254, -56, 18, 9], [240, -128, 13, 7], [170, -44, 11, 5.5], [262, 10, 12, 6]];   // x, z, radio, altura
 export const ARROYO = [[288, -86], [262, -40], [226, -14], [196, 22], [186, 62], [198, 106], [218, 148], [210, 196], [184, 236], [166, 272], [150, 300]];
 export const DAYMAN = [[300, 324], [262, 312], [220, 318], [176, 304], [130, 314], [84, 326], [36, 318], [-10, 330], [-52, 326], [-100, 334]];
 export const TAJAMAR = [160, 122, 9];
-export const RAIL = { z: 247, x0: 66.8, x1: 289.2 };   // tramo recto hacia el este (la vía completa está en rail.js)
-export const ESTACION = [13.1, 42];                  // andén de la estación de Salto, en la ciudad
+export const ESTACION = [-78.9, 111];                // andén de la estación de Salto, junto al río (la vía está en rail.js)
 export const newMask = (x, z) => Math.max(smooth(124, 140, x), smooth(204, 218, z));
 // Área original: se usa para sembrar la flora de siempre en los mismos lugares
 export const B0 = { minX: -125, maxX: 110, minZ: -110, maxZ: 125 };
@@ -37,7 +36,7 @@ export const POS = {
   inverter: [13.5, -77.5], batYard: [37, -69], batConsole: [37, -60.2],
   boiler: [60, 63], chips: [48, 58], bioSub: [73, 56],
   bridge: { x: -46, z0: -42, z1: -12 },
-  stops: [[-24, 71.8, 'Terminal del Bulevar'], [-44, 52.3, 'Plaza Artigas'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
+  stops: [[-24, 73.4, 'Terminal del Bulevar'], [-44, 52.3, 'Plaza Artigas'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
     [-56, -3.2, 'Barrio Norte'], [-86.4, 52.6, 'Puerto'], [12, 0.4, 'Barrio Jardín'], [-79.5, -55.6, 'Energimundo']],
   // Ciudad ampliada
   norte: { z: 6, xs: [-68, -52, -36, -20] }, hospital: [-68, 6], escuela: [-52, 6], mercado: [-36, 6],
@@ -52,7 +51,7 @@ export const POS = {
 };
 
 // Zonas planas (sin ondulación) con borde difuminado: [x0, x1, z0, z1]
-const FLAT = [[-90, 24, -12, 104], [40, 82, 50, 72], [50, 78, 79, 94], [42, 56, 2, 14], [-52, -40, -48, -8], [27, 41, 19, 31], [2, 44, -32, 10], [-18, 6, -24, -6], [-16, 50, -110, -54], [-94, -34, -112, -46]];
+const FLAT = [[-90, 24, -12, 104], [-90, -62, 92, 150], [40, 82, 50, 72], [50, 78, 79, 94], [42, 56, 2, 14], [-52, -40, -48, -8], [27, 41, 19, 31], [2, 44, -32, 10], [-18, 6, -24, -6], [-16, 50, -110, -54], [-94, -34, -112, -46]];
 function flatMask(x, z) {
   let m = 0;
   for (const r of FLAT) {
@@ -90,7 +89,7 @@ export function terrainH(x, z) {
   }
   if (z < DAM_Z - 2 && d < 3 && fd < 3) h = Math.max(h, 1.0);   // fondo del lago (arriba de la represa)
   const nm = newMask(x, z); if (nm > 0 && d > -6) h = ampliacion(x, z, h, nm);
-  if (x > RX - 6 && z > RZ0 + 50 && h > 0.5) { const rn = railNear(x, z, _rn); if (rn.d < 4 && rn.s > S_CITY - 2) h = lerp(h, railY(rn.s) - 0.3, smooth(4, 1.6, rn.d)); }   // terraplén de la vía
+  if (h > 0.5 && Math.abs(x - RX) < 4 && z > RZ0 - 4) { const rn = railNear(x, z, _rn); if (rn.d < 4) h = lerp(h, railY(rn.s) - 0.3, smooth(4, 1.6, rn.d)); }   // terraplén de la vía
   const dc = channelD(x, z), hw = lerp(3.5, 7.5, smooth(12, -12, x)) + 1.5 * smooth(-50, -100, x);   // angosto en la naciente, ancho en la desembocadura
   if (dc < hw + 4.5 && z > -60) h = Math.min(h, lerp(-2.6, h, smooth(hw, hw + 4.5, dc)));
   return h;
@@ -123,8 +122,6 @@ export function waterAt(x, z) { if (x > 1000 && DEST.water) return DEST.water(x,
 export const ZONES = [
   { id: 'haedo', area: true, name: 'Cuchilla de Haedo · cerros chatos', x: 210, z: -80, color: '#c9a27a', rect: [132, 290, -150, 0] },
   { id: 'arerungua', area: true, name: 'Potreros de Arerunguá', x: 220, z: 120, color: '#d4c36a', rect: [132, 290, 0, 236] },
-  { id: 'estacion', name: 'Estación del ferrocarril', x: 10, z: 42, color: '#ff8f5a', rect: [4.5, 19, 28.6, 54] },
-  { id: 'termas', name: 'Termas del Daymán', x: 30, z: 287, color: '#35c9d2', rect: [16, 46, 276, 300] },
   { id: 'dayman', area: true, name: 'Río Daymán', x: 90, z: 330, color: '#4cc9f0', rect: [-90, 290, 290, 370] },
   { id: 'rio', area: true, name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 370] },
   { id: 'campo', area: true, name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
@@ -140,5 +137,8 @@ export const ZONES = [
   { id: 'sur', name: 'Barrio Sur', x: -28, z: 118, color: '#f4a261', rect: [-42, -8, 97, 136] },
   { id: 'jardin', name: 'Barrio Jardín', x: 24, z: -10, color: '#b5e48c', rect: [4, 46, -34, 10] },
   { id: 'orilla', name: 'Concordia (Argentina)', x: -190, z: 40, color: '#9be7ff', rect: [-230, -152, -92, 370] },
-  { id: 'museo', name: 'Energimundo', x: -67, z: -70, color: '#e6007e', rect: [-86, -48, -98, -49] }
+  { id: 'museo', name: 'Energimundo', x: -67, z: -70, color: '#e6007e', rect: [-86, -48, -98, -49] },
+  // al final: ganan sobre las áreas grandes que las rodean (campo, río Daymán, ciudad)
+  { id: 'estacion', name: 'Estación del ferrocarril', x: -76, z: 112, color: '#ff8f5a', rect: [-86, -66, 96, 146] },
+  { id: 'termas', name: 'Termas del Daymán', x: 40, z: 282, color: '#35c9d2', rect: [6, 100, 256, 301] },
 ];

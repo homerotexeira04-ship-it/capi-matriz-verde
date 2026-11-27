@@ -11,7 +11,7 @@ const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 23.5, x1: 31.5, z0: 37.5, z1: 44.5, g0: 26, g1: 29 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Artigas', 0.08], [-82.2, 28.6, 'la costanera', 0.15], [5.6, 72.6, 'el bulevar', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [25.5, 283.6, 0.3], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9], graciela: [-169.6, 51.2, 1.86] };
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [28.6, 284.9, 2.6], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9], graciela: [-169.6, 51.2, 1.86] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
 const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
@@ -31,8 +31,26 @@ const MON = [
   'A los lados están el ciudadano y el gaucho. Detrás, las palmeras representan al pueblo de la Redota que marcha hacia el norte, detrás de Artigas.',
   '¿Por qué hacia el norte? En 1811 Artigas marchó al norte con miles de orientales: es el Éxodo del Pueblo Oriental, la Redota.',
   'En diciembre de 1811 acamparon casi un mes en el Salto, frente a los saltos del río Uruguay, y después cruzaron al campamento del Ayuí, en la otra orilla.',
+  'La plaza se llamó primero Plaza 18 de Julio y la gente le decía «la plaza nueva»: a comienzos del siglo XX el centro de Salto se fue corriendo desde el puerto hacia el este, hasta acá. Desde 1940 se llama Plaza Artigas. Está entre las calles Uruguay, Artigas, 25 de Agosto y 18 de Julio.',
   'José Gervasio Artigas nació en Montevideo en 1764 y murió en el Paraguay en 1850, después de treinta años de exilio. Defendió la libertad de los pueblos y el federalismo, y en 1815 dictó un reglamento para repartir tierras entre los más pobres.'
 ];
+// Otras placas para leer con E
+const PLACAS = {
+  artigas: { label: 'Leer la placa del monumento a Artigas', t: MON },
+  pozo: { label: 'Leer la placa del pozo termal', t: [
+    'Pozo de las Termas del Daymán. Lo perforaron buscando petróleo… y salió agua caliente.',
+    'El agua viene del Acuífero Guaraní, una de las reservas de agua subterránea más grandes del mundo, que comparten Uruguay, Argentina, Brasil y Paraguay. Sube sola, por su propia presión, desde unos 2.000 metros de profundidad.',
+    'Sale a unos 46 °C: es la más caliente de las termas uruguayas. En las piscinas el agua llega hasta unos 44 °C.',
+    'Es calor de la Tierra: geotermia. Acá se usa para bañarse y para el turismo, que es el trabajo de mucha gente del pueblo.'] },
+  mhyt: { label: 'Leer la placa del Museo del Hombre y la Tecnología', t: [
+    'Museo del Hombre y la Tecnología. El edificio se construyó entre 1909 y 1915 para el Mercado Central de Salto, obra del arquitecto Domingo F. Rocco.',
+    'Adentro se recorre cómo la tecnología fue cambiando la vida de la gente de la región, y hay una sala dedicada a la represa de Salto Grande y a cómo funciona.',
+    'Es Monumento Histórico Nacional y la entrada es gratis.'] },
+  crec: { label: 'Mirar la marca de la creciente', t: [
+    'Marca de la creciente de 1959, la más grande que se recuerda en Salto: el río Uruguay llegó hasta acá.',
+    'La estación está junto al río, en el barrio del puerto. Las crecientes inundaban seguido la planta baja, y después de cada una había que limpiar y arreglar todo.',
+    'La proyectó el ingeniero Arturo Rodolfo Wilkinson. Con sus dos galpones, la chimenea y el edificio de al lado, es Monumento Histórico Nacional desde 2010. Hoy los galpones se usan para teatro, pintura y candombe.'] }
+};
 const WHO = {
   mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.'], ['¿Cómo se llama el perro?', 'Pampa. Si te sigue es porque le caíste bien. Cuando se cansa, vuelve solo al fogón.']] },
   lucia: { q: [['¿Por qué ómnibus eléctricos?', 'No echan humo en la calle, hacen mucho menos ruido y andan con electricidad hecha acá, no con combustible traído de afuera.'], ['¿Cuándo conviene cargarlos?', 'Cuando sobra energía: al mediodía con mucho sol o de madrugada, cuando la ciudad duerme y gasta poco.']] },
@@ -183,7 +201,7 @@ export class Social {
   describe(id) {
     const [k, s] = id.split(':'), i = +s;
     if (k === 'feria') return { state: 'ok', label: 'Jugar en la feria' };
-    if (k === 'mon') return { state: 'ok', label: 'Leer la placa del monumento a Artigas' };
+    if (k === 'mon') return PLACAS[s] ? { state: 'ok', label: PLACAS[s].label } : null;
     if (k === 'npc' && FEST_NPC[s] && !(this.g.fiestas && this.g.fiestas.mode === FEST_NPC[s] && this.g.fiestas.present(s))) return { state: 'hidden' };
     if (k === 'npc' && WHO[s] && SOCIAL_NAMES[s]) return { state: 'ok', label: 'Hablar con ' + SOCIAL_NAMES[s].split(',')[0] };
     if (k === 'met') return this.active === 'valeria' && !this.prog[i] ? { state: 'need', label: 'Leer el medidor de ' + METERS[i][2] } : { state: 'locked' };
@@ -193,7 +211,7 @@ export class Social {
   interact(id) {
     const g = this.g, [k, s] = id.split(':'), i = +s;
     if (k === 'feria') { this.openArcade(); return true; }
-    if (k === 'mon') { g.ui.dialog(MON.map(t => L('placa', t))); return true; }
+    if (k === 'mon') { if (!PLACAS[s]) return false; g.ui.dialog(PLACAS[s].t.map(t => L(s === 'artigas' ? 'placa' : 'placa2', t))); return true; }
     if (k === 'npc' && SOCIAL_NAMES[s]) { this.menu(s); return true; }
     if (k === 'met') { g.capi.work(0.8); g.ui.note(`Medidor de ${METERS[i][2]}: ${Math.round(g.grid.out.demand * METERS[i][3])} MW en este momento.`, 4); this.step(i); return true; }
     if (k === 'pas') { g.ui.note('“¡Gracias, Capi! Me tomo el próximo ómnibus eléctrico.”', 4); this.step(i); return true; }

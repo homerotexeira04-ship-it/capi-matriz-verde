@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, damp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
 import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank, newMask } from './terrain.js';
-import { RX, RZ0, S_CITY, railNear } from './rail.js';
+import { RX, RZ0, railNear } from './rail.js';
 const _rnC = {};
 
 export const C = {
@@ -537,8 +537,13 @@ export class World {
     const gl = this.glassBatch.mesh(M.glass); if (gl) { gl.renderOrder = 6; s.add(gl); }
     const sc = this.screenBatch.mesh(M.screen); if (sc) s.add(sc);
 
-    // Nada de árboles ni obstáculos sueltos sobre la vía
-    { const rn = {}, on = (x, z, m) => railNear(x, z, rn).d < m; this.trees = this.trees.filter(t => !on(t.x, t.z, 3)); if (this.treesNew) this.treesNew = this.treesNew.filter(t => !on(t.x, t.z, 3)); this.circles = this.circles.filter(c => !on(c.x, c.z, 2.2)); }
+    // Ningún árbol adentro de un edificio (se cuelan cuando un edificio nuevo ocupa una manzana o un claro)
+    { const gone = [], inB = t => this.boxes.some(b => t.x > b.x0 + 0.05 && t.x < b.x1 - 0.05 && t.z > b.z0 + 0.05 && t.z < b.z1 - 0.05 && b.top > (t.y || 0) + 1.5);
+      const keep = list => list.filter(t => { if (t.type !== 'bush' && inB(t)) { gone.push(t); return false; } return true; });
+      this.trees = keep(this.trees); if (this.treesNew) this.treesNew = keep(this.treesNew);
+      if (gone.length) this.circles = this.circles.filter(c => !gone.some(t => Math.abs(t.x - c.x) < 1e-6 && Math.abs(t.z - c.z) < 1e-6)); }
+    // sin árboles sobre la vía ni en el área de la estación
+    { const rn = {}, on = (x, z, m) => railNear(x, z, rn).d < m || (x > -86 && x < -64 && z > 92 && z < 164); this.trees = this.trees.filter(t => !on(t.x, t.z, 3)); if (this.treesNew) this.treesNew = this.treesNew.filter(t => !on(t.x, t.z, 3)); this.circles = this.circles.filter(c => !on(c.x, c.z, 2.2)); }
     // Árboles (InstancedMesh): troncos, copas y penachos de palmera
     this.plantTrees(this.trees);
     if (this.treesNew) { const cells = new Map(); for (const t of this.treesNew) { const k = Math.floor(t.x / 90) + ',' + Math.floor(t.z / 90); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(t); }
@@ -775,7 +780,7 @@ export function groundColor(c, x, z, h, ny) {
     c.lerp(cA.set(p < 0.5 ? 0x93b057 : 0xb9b163), nm * 0.5 * smooth(0.15, 0.85, p));
     if (h > 9) c.lerp(cA.set(0xa79d6c), smooth(9, 12.5, h) * 0.55 * nm);
     if (ny < 0.8) c.lerp(cA.set(0x6b5444), smooth(0.8, 0.5, ny) * nm);
-    if (x > RX - 4 && z > RZ0 + 55) { const rn = railNear(x, z, _rnC); if (rn.d < 2.6 && rn.s > S_CITY - 2) c.lerp(cA.set(0x8a8076), smooth(2.6, 1.8, rn.d)); }   // balasto de la vía
+    if (Math.abs(x - RX) < 4 && z > RZ0 - 2) { const rn = railNear(x, z, _rnC); if (rn.d < 2.6) c.lerp(cA.set(0x8a8076), smooth(2.6, 1.8, rn.d)); }   // balasto de la vía
   }
   if (ny < 0.82) c.lerp(cA.set(0x9c8a66), smooth(0.82, 0.6, ny));
 }

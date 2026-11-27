@@ -164,20 +164,19 @@ export function buildCity(w) {
     const cx = xs[i], cz = zs[j], key = i + ',' + j, barrio = i === 0 ? 0 : i >= 3 ? 2 : 1;
     if ((i === 1 || i === 2) && (j === 1 || j === 2)) return;   // las cuatro manzanas centrales son la Plaza Artigas, la principal
     if (key === '4,2') return;                                    // plazoleta (se arma después)
-    const rail = i === 5 && j >= 1 && j <= 4;                     // área ferroviaria: la estación, la chimenea y los galpones (pradera.js)
-    if (!rail) b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, C.sidewalk);
+    b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, C.sidewalk);
     if (key === '3,0') { substation(w, cx, cz); return; }
     if (key === '3,3') { terminal(w, cx, cz); return; }
     if (key === '2,0') { tower(w, cx, cz); return; }
-    // El teatro, la catedral, la Plaza 33 y la estación ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
-    const land = key === '0,1' || key === '3,2' || key === '0,2' || rail, bw0 = land ? dummy : w;
+    // El teatro, la catedral, la Plaza 33 y el Museo del Hombre y la Tecnología ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
+    const land = key === '0,1' || key === '3,2' || key === '0,2' || key === '0,0', bw0 = land ? dummy : w;
     const n = R() < 0.45 ? 2 : 3, total = 10.6, gap = 0.5, bw = (total - gap * (n - 1)) / n;
     for (let k = 0; k < n; k++) {
       const x = cx - total / 2 + bw / 2 + k * (bw + gap), tall = (i === 1 || i === 2) && j < 4 ? 6.5 + R() * 6.5 : 4.2 + R() * 4;
       building(bw0, x, cz + (R() - 0.5) * 0.6, bw, 7 + R() * 1.0, tall, PAL[Math.floor(R() * PAL.length)], barrio, Math.floor(R() * 4));
     }
     if (key === '4,1') { w.tree('jaca', cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y); return; }
-    const tt = R() < 0.5 ? 'jaca' : 'native'; if (key === '0,1' || key === '0,2' || rail) return;
+    const tt = R() < 0.5 ? 'jaca' : 'native'; if (key === '0,1' || key === '0,2') return;
     w.tree(tt, cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y);
   };
   // primero las 16 manzanas de siempre (mismo orden de dados), después el ensanche
@@ -190,11 +189,11 @@ export function buildCity(w) {
   plazoleta(w, POS.plaza33[0], POS.plaza33[1], 'PLAZA 33 ORIENTALES');
 
   // Farolas, palmeras y bancos del bulevar (el tramo de x -68 a -48 queda libre para las llamadas)
-  for (let x = -80; x <= 20; x += 8) { if ((x > -68 && x < -48) || Math.abs(x - 15.8) < 3) continue; w.lamp(x, 75.1, Math.PI, Y); }
+  for (let x = -80; x <= 20; x += 8) { if (x > -68 && x < -48) continue; w.lamp(x, 75.1, Math.PI, Y); }
   for (let z = 16; z <= 92; z += 8) { if (inGap(z)) continue; w.lamp(-82.5, z, Math.PI / 2, Y); }
   for (let x = -76; x <= 8; x += 12) { if (x > -68 && x < -48) continue; w.tree('palm', x + 4, 72.2, 0.95 + R() * 0.2, Y); if (x !== -4) b.boxB(x, Y, 74.6, 2.2, 0.45, 0.6, C.wood); }   // en x -4 está el puesto de la feria
   for (let z = 20; z <= 86; z += 11) { w.tree('palm', -79.4, z, 1, Y); if (!inGap(z + 4)) b.boxB(-82.1, Y, z + 4, 0.6, 0.45, 2.2, C.wood); }
-  for (const x of xsS) for (const z of [20, 48, 85]) { if (x === 4 && z === 48) continue; if (x === 4 && z === 85) { w.lamp(2.2, 90, 0, Y); continue; } w.lamp(x + 2.4, z + 5.0, 0, Y); }
+  for (const x of xsS) for (const z of [20, 48, 85]) { if (x === 4 && z === 48) continue; w.lamp(x + 2.4, z + 5.0, 0, Y); }
   // Letras del bulevar
   const tex = textTex('URUGUAY', { w: 1024, h: 256, fg: '#ffffff', stroke: '#1d6fb8', size: 210 });
   const let3 = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.2), new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.25 }));
@@ -202,7 +201,7 @@ export function buildCity(w) {
   const let4 = let3.clone(); let4.position.z = 74.85; let4.rotation.y = Math.PI; w.scene.add(let4);
   b.boxB(-33, Y, 74.9, 13.4, 0.18, 0.7, 0xf2efe8);
   logoSign(w, -18.5, Y, 74.7, 0, 7);
-  sign(w, 'BULEVAR', 4.6, Y, 74.9, 0, 4.4, 0.9);
+  sign(w, 'BULEVAR', 14, Y, 74.9, 0, 4.4, 0.9);
 
   // Barrio Sur: viviendas instanciadas al sur del bulevar, sobre la ruta que sale de la ciudad
   const roofs = [0xb5533c, 0xa9462f, 0xc86a4a, 0x8f9aa3], DX = -33, DZ = 73;
@@ -252,6 +251,16 @@ function monumentoArtigas(w, cx, cz) {
   for (const sx of [-3.0, -1.4, 1.4, 3.0]) w.tree('palm', cx + sx, cz + 3.6 + Math.abs(sx) * 0.12, 0.6, Y);   // las palmeras de la Redota, detrás del prócer
   w.addInter('mon:artigas', cx, cz + 2.75, { console: false, y: Y, h: 7.2, r: 2.6 });
 }
+// Cartel de esquina: un poste con dos chapas, una por calle
+const PLATE = new THREE.PlaneGeometry(2.3, 0.44);
+function streetSign(w, x, z, ew, ns) {
+  w.batch.cyl(x, 2.2, z, 0.05, 0.06, 3.0, C.steelD, 6); w.addCircle(x, z, 0.12);
+  [[ew, 0, 4.85, 1.2, 0], [ns, Math.PI / 2, 4.35, 0, 1.2]].forEach(([t, ry, y, ox, oz]) => {
+    const tex = textTex(t, { w: 512, h: 98, bg: '#1d4f8a', fg: '#ffffff', border: '#ffffff', size: 64 });
+    const mat = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.25, roughness: 0.8 });
+    for (const k of [0, 1]) { const m = new THREE.Mesh(PLATE, mat); m.position.set(x + ox * Math.sign(-44 - x), y, z + oz * Math.sign(41 - z)); m.rotation.y = ry + k * Math.PI; w.scene.add(m); }
+  });
+}
 // Plazoletas de manzana: canteros, senderos en cruz, bancos, faroles y, si tiene nombre, su cartel
 function plazoleta(w, cx, cz, name) {
   const b = w.batch, Y = 2.2, R = w.rand;
@@ -295,6 +304,8 @@ function plaza(w) {
   for (const sx of [-1, 1]) for (const z of [38.4, 44, 49.4]) b.boxB(cx + sx * 4.6, Y, z, 0.6, 0.45, 2.2, C.wood);
   for (const [x, z, a] of [[-57.6, 29.4, 0.8], [-30.4, 29.4, -0.8], [-57.6, 52.6, 2.3], [-30.4, 52.6, -2.3], [-57.6, 41, 1.57], [-30.4, 41, -1.57], [-51, 52.6, 3.14], [-37, 29.4, 0]]) w.lamp(x, z, a, Y);
   sign(w, 'PLAZA ARTIGAS', -51.5, Y, 52.9, 0, 5.2, 1.0);
+  // nombres de las calles en las esquinas: la plaza está entre Uruguay, Artigas, 25 de Agosto (la de la catedral) y 18 de Julio
+  for (const [x, z, ew, ns] of [[-58.9, 28.9, 'CALLE ARTIGAS', '18 DE JULIO'], [-29.1, 28.9, 'CALLE ARTIGAS', '25 DE AGOSTO'], [-58.9, 53.1, 'CALLE URUGUAY', '18 DE JULIO'], [-29.1, 53.1, 'CALLE URUGUAY', '25 DE AGOSTO']]) streetSign(w, x, z, ew, ns);
   logoSign(w, -37, Y, 52.9, 0, 6.4);
   w.addInter('fest', POS.fest[0], POS.fest[1], { console: false, y: CITY_Y, h: 4 });
 }
@@ -803,7 +814,7 @@ export function buildStops(w) {
 }
 
 // ================= FLORA Y DETALLES RURALES =================
-const FLORA_KEEP = [[-24, 71.8], [-44, 52.3], [-66, -103.6], [37.5, 24.2], [28, -56.2], [40.5, 60], [-79.5, -55.6], [-46, -45]];
+const FLORA_KEEP = [[-24, 73.4], [-44, 52.3], [-66, -103.6], [37.5, 24.2], [28, -56.2], [40.5, 60], [-79.5, -55.6], [-46, -45]];
 export function buildFlora(w) {
   const R = w.rand, b = w.batch;
   // Rancho de Don Mateo con ombú

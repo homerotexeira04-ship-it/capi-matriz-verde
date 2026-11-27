@@ -162,21 +162,23 @@ export function buildCity(w) {
   const dummy = { rand: R, cityBatch: new Batch(), batch: new Batch(), winBatch: [new Batch(), new Batch(), new Batch()], addSolid() {}, addOcc() {} };
   const block = (i, j) => {
     const cx = xs[i], cz = zs[j], key = i + ',' + j, barrio = i === 0 ? 0 : i >= 3 ? 2 : 1;
-    if ((i === 1 || i === 2) && (j === 1 || j === 2)) return;   // las cuatro manzanas centrales son la Plaza Matriz
-    if (key === '4,2') return;                                    // Plaza Artigas, frente al teatro
-    b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, C.sidewalk);
+    if ((i === 1 || i === 2) && (j === 1 || j === 2)) return;   // las cuatro manzanas centrales son la Plaza Artigas, la principal
+    if (key === '4,2') return;                                    // plazoleta (se arma después)
+    const rail = i === 5 && j >= 1 && j <= 4;                     // área ferroviaria: la estación, la chimenea y los galpones (pradera.js)
+    if (!rail) b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, C.sidewalk);
     if (key === '3,0') { substation(w, cx, cz); return; }
     if (key === '3,3') { terminal(w, cx, cz); return; }
     if (key === '2,0') { tower(w, cx, cz); return; }
-    // El teatro y la catedral ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
-    const land = key === '4,1' || key === '2,3', bw0 = land ? dummy : w;
+    // El teatro, la catedral, la Plaza 33 y la estación ocupan su manzana: igual se "tiran los dados" para que el resto de la ciudad no cambie
+    const land = key === '0,1' || key === '3,2' || key === '0,2' || rail, bw0 = land ? dummy : w;
     const n = R() < 0.45 ? 2 : 3, total = 10.6, gap = 0.5, bw = (total - gap * (n - 1)) / n;
     for (let k = 0; k < n; k++) {
       const x = cx - total / 2 + bw / 2 + k * (bw + gap), tall = (i === 1 || i === 2) && j < 4 ? 6.5 + R() * 6.5 : 4.2 + R() * 4;
       building(bw0, x, cz + (R() - 0.5) * 0.6, bw, 7 + R() * 1.0, tall, PAL[Math.floor(R() * PAL.length)], barrio, Math.floor(R() * 4));
     }
-    if (key === '4,1') return;
-    w.tree(R() < 0.5 ? 'jaca' : 'native', cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y);
+    if (key === '4,1') { w.tree('jaca', cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y); return; }
+    const tt = R() < 0.5 ? 'jaca' : 'native'; if (key === '0,1' || key === '0,2' || rail) return;
+    w.tree(tt, cx - 5.85, cz + 4.85, 0.7, Y); w.tree('jaca', cx + 5.85, cz - 4.85, 0.65, Y);
   };
   // primero las 16 manzanas de siempre (mismo orden de dados), después el ensanche
   for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) block(i, j);
@@ -184,14 +186,15 @@ export function buildCity(w) {
   for (let i = 0; i < 6; i++) block(i, 4);
 
   plaza(w);
-  plazaArtigas(w);
+  plazoleta(w, POS.plazoleta[0], POS.plazoleta[1], null);
+  plazoleta(w, POS.plaza33[0], POS.plaza33[1], 'PLAZA 33 ORIENTALES');
 
   // Farolas, palmeras y bancos del bulevar (el tramo de x -68 a -48 queda libre para las llamadas)
-  for (let x = -80; x <= 20; x += 8) { if (x > -68 && x < -48) continue; w.lamp(x, 75.1, Math.PI, Y); }
+  for (let x = -80; x <= 20; x += 8) { if ((x > -68 && x < -48) || Math.abs(x - 15.8) < 3) continue; w.lamp(x, 75.1, Math.PI, Y); }
   for (let z = 16; z <= 92; z += 8) { if (inGap(z)) continue; w.lamp(-82.5, z, Math.PI / 2, Y); }
   for (let x = -76; x <= 8; x += 12) { if (x > -68 && x < -48) continue; w.tree('palm', x + 4, 72.2, 0.95 + R() * 0.2, Y); if (x !== -4) b.boxB(x, Y, 74.6, 2.2, 0.45, 0.6, C.wood); }   // en x -4 está el puesto de la feria
   for (let z = 20; z <= 86; z += 11) { w.tree('palm', -79.4, z, 1, Y); if (!inGap(z + 4)) b.boxB(-82.1, Y, z + 4, 0.6, 0.45, 2.2, C.wood); }
-  for (const x of xsS) for (const z of [20, 48, 85]) { if (x === 4 && z === 48) continue; w.lamp(x + 2.4, z + 5.0, 0, Y); }
+  for (const x of xsS) for (const z of [20, 48, 85]) { if (x === 4 && z === 48) continue; if (x === 4 && z === 85) { w.lamp(2.2, 90, 0, Y); continue; } w.lamp(x + 2.4, z + 5.0, 0, Y); }
   // Letras del bulevar
   const tex = textTex('URUGUAY', { w: 1024, h: 256, fg: '#ffffff', stroke: '#1d6fb8', size: 210 });
   const let3 = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.2), new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.25 }));
@@ -199,7 +202,7 @@ export function buildCity(w) {
   const let4 = let3.clone(); let4.position.z = 74.85; let4.rotation.y = Math.PI; w.scene.add(let4);
   b.boxB(-33, Y, 74.9, 13.4, 0.18, 0.7, 0xf2efe8);
   logoSign(w, -18.5, Y, 74.7, 0, 7);
-  sign(w, 'BULEVAR', 14, Y, 74.9, 0, 4.4, 0.9);
+  sign(w, 'BULEVAR', 4.6, Y, 74.9, 0, 4.4, 0.9);
 
   // Barrio Sur: viviendas instanciadas al sur del bulevar, sobre la ruta que sale de la ciudad
   const roofs = [0xb5533c, 0xa9462f, 0xc86a4a, 0x8f9aa3], DX = -33, DZ = 73;
@@ -218,12 +221,9 @@ export function buildCity(w) {
   sign(w, 'BARRIO SUR', -42, w.groundAt(-42, 100.6), 100.6, 0, 4.6, 0.9);
 }
 
-// Plaza Artigas: frente al Teatro Larrañaga, con el monumento a Artigas, canteros, bancos y faroles
-function plazaArtigas(w) {
-  const b = w.batch, Y = 2.2, R = w.rand, [cx, cz] = POS.artigas;
-  b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, 0xdcd1b8);
-  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.boxB(cx + sx * 3.7, Y, cz + sz * 2.9, 4.2, 0.07, 3.4, 0x6dbb52);
-  b.boxB(cx, Y, cz, 12.6, 0.012, 1.4, 0xc9bca0); b.boxB(cx, Y, cz, 1.4, 0.012, 10.6, 0xc9bca0);
+// Monumento a Artigas, en el centro de la Plaza Artigas (la plaza principal de Salto, frente a la catedral)
+function monumentoArtigas(w, cx, cz) {
+  const b = w.batch, Y = 2.2;
   // Monumento a Artigas (Edmundo Prati, 1940): el prócer a caballo sobre un pedestal de granito, el ciudadano y el gaucho
   // a los lados y palmeras detrás, que representan al pueblo de la Redota marchando hacia el norte. Versión estilizada, mirando al norte.
   const GR = 0xbcb0a3, GL = 0xd6ccbf, BRZ = 0x5b4a33, BRH = 0x4f4936;
@@ -251,8 +251,17 @@ function plazaArtigas(w) {
   plaqueSign(w, 'PLAZA ARTIGAS', cx, Y + 1.95, cz + 1.52, 0, 1.5, 0.34);
   for (const sx of [-3.0, -1.4, 1.4, 3.0]) w.tree('palm', cx + sx, cz + 3.6 + Math.abs(sx) * 0.12, 0.6, Y);   // las palmeras de la Redota, detrás del prócer
   w.addInter('mon:artigas', cx, cz + 2.75, { console: false, y: Y, h: 7.2, r: 2.6 });
+}
+// Plazoletas de manzana: canteros, senderos en cruz, bancos, faroles y, si tiene nombre, su cartel
+function plazoleta(w, cx, cz, name) {
+  const b = w.batch, Y = 2.2, R = w.rand;
+  b.boxB(cx, 1.3, cz, 12.8, 0.9, 10.8, 0xdcd1b8);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.boxB(cx + sx * 3.7, Y, cz + sz * 2.9, 4.2, 0.07, 3.4, 0x6dbb52);
+  b.boxB(cx, Y, cz, 12.6, 0.012, 1.4, 0xc9bca0); b.boxB(cx, Y, cz, 1.4, 0.012, 10.6, 0xc9bca0);
+  b.cyl(cx, Y, cz, 1.1, 1.25, 0.45, 0xd6ccbf, 12); b.cyl(cx, Y + 0.45, cz, 0.35, 0.5, 2.6, 0xd6ccbf, 4); b.cyl(cx, Y + 3.05, cz, 0.06, 0.35, 0.6, 0xd6ccbf, 4); w.addCircle(cx, cz, 1.3);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { w.tree(R() < 0.5 ? 'jaca' : 'native', cx + sx * 5.6, cz + sz * 4.4, 0.75, Y); b.boxB(cx + sx * 3.7, Y, cz + sz * 0.9, 2.2, 0.45, 0.6, C.wood); }
   for (const [x, z] of [[cx - 6, cz], [cx + 6, cz], [cx, cz + 5.1]]) w.lamp(x, z, 0, Y);
+  if (name) plaqueSign(w, name, cx, Y + 1.1, cz - 1.27, Math.PI, 2.3, 0.34);
 }
 function plaqueSign(w, text, x, y, z, ry, sw, sh) {
   const t = textTex(text, { w: 512, h: Math.round(512 * sh / sw), bg: '#3a3226', fg: '#f3e2b0', border: '#cfa24a', size: 64 });
@@ -265,11 +274,8 @@ function plaza(w) {
   b.boxB(cx, 1.3, cz, 28.8, 0.9, 24.8, 0xdcd1b8);
   for (const sx of [-1, 1]) { b.boxB(cx + sx * 8.7, Y, 39.2, 10.2, 0.07, 6.2, 0x6dbb52); b.boxB(cx + sx * 8.7, Y, 48.6, 10.2, 0.07, 6.6, 0x6dbb52); }
   for (let z = 30; z <= 52; z += 2.2) b.boxB(cx, Y, z, 6.6, 0.015, 0.1, 0xc9bca0);
-  // Fuente central
-  b.cyl(fx, Y, fz, 3.4, 3.55, 0.5, C.concrete, 16); b.cyl(fx, Y + 0.5, fz, 3.05, 3.05, 0.05, 0x58b9e6, 16);
-  b.cyl(fx, Y, fz, 0.5, 0.75, 2.2, 0xd8d2c2, 8); b.cyl(fx, Y + 2.2, fz, 1.2, 0.5, 0.25, 0xd8d2c2, 10); b.sph(fx, Y + 2.9, fz, 0.42, 0xcfa24a);
-  w.addCircle(fx, fz, 3.5);
-  w.updaters.push((dt, st) => { if (Math.random() < 30 * dt) { const a = Math.random() * 6.283; st.fx.soft.emit(fx, Y + 2.6, fz, Math.cos(a) * 1.6, 3.2 + Math.random(), Math.sin(a) * 1.6, 0.9, 0.22, 0.12, 0xdff4ff, 0.8, 9, 0.2); } });
+  // En el centro, el monumento ecuestre a Artigas
+  monumentoArtigas(w, fx, fz);
   // Mosaico con el isotipo del museo
   b.cyl(cx, Y, 38.4, 3.2, 3.2, 0.03, 0xf3ecdc, 24);
   if (w.isoTex) { const g = new THREE.PlaneGeometry(5.4, 5.4); g.rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: w.isoTex, transparent: true, alphaTest: 0.25, roughness: 0.9 })); m.position.set(cx, Y + 0.05, 38.4); m.receiveShadow = true; w.scene.add(m); }
@@ -288,7 +294,7 @@ function plaza(w) {
   for (const sx of [-1, 1]) { w.tree('jaca', cx + sx * 10.5, 39.2, 0.85, Y); w.tree('jaca', cx + sx * 10.5, 48.8, 0.85, Y); w.tree('butia', cx + sx * 6.2, 50.6, 0.9, Y); }
   for (const sx of [-1, 1]) for (const z of [38.4, 44, 49.4]) b.boxB(cx + sx * 4.6, Y, z, 0.6, 0.45, 2.2, C.wood);
   for (const [x, z, a] of [[-57.6, 29.4, 0.8], [-30.4, 29.4, -0.8], [-57.6, 52.6, 2.3], [-30.4, 52.6, -2.3], [-57.6, 41, 1.57], [-30.4, 41, -1.57], [-51, 52.6, 3.14], [-37, 29.4, 0]]) w.lamp(x, z, a, Y);
-  sign(w, 'PLAZA MATRIZ', -51.5, Y, 52.9, 0, 5.2, 1.0);
+  sign(w, 'PLAZA ARTIGAS', -51.5, Y, 52.9, 0, 5.2, 1.0);
   logoSign(w, -37, Y, 52.9, 0, 6.4);
   w.addInter('fest', POS.fest[0], POS.fest[1], { console: false, y: CITY_Y, h: 4 });
 }

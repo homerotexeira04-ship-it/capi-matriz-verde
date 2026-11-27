@@ -50,7 +50,7 @@ export function buildBarrios(w) {
   M.flood = new THREE.MeshStandardMaterial({ color: 0xfffbe8, emissive: 0xfff4d0, emissiveIntensity: 0, roughness: 0.4 });
   M.wallbox = new THREE.MeshStandardMaterial({ color: 0x1b3a2a, emissive: 0x4dffa0, emissiveIntensity: 0.9 });
   w.nightBatch = new Batch(); w.floodBatch = new Batch(); w.ledBatch = new Batch();
-  norte(w, R); teatro(w); catedral(w); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
+  norte(w, R); teatro(w); catedral(rotWorld(w, POS.catedral[0], POS.catedral[1], Math.PI / 2)); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
   const s = w.scene, nb = w.nightBatch.mesh(M.nightWin); if (nb) s.add(nb);
   const fl = w.floodBatch.mesh(M.flood); if (fl) s.add(fl);
   const lb = w.ledBatch.mesh(M.wallbox); if (lb) s.add(lb);
@@ -193,6 +193,18 @@ function teatro(w) {
   w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 4.2); w.addOcc(cx - 6.2, cx + 6.2, zp - 1.4, zp + 0.9, Y + 10.2);
 }
 
+// La misma construcción girada alrededor de (cx, cz): la catedral real mira al oeste, a la Plaza Artigas
+function rotWorld(w, cx, cz, th) {
+  const c = Math.cos(th), sn = Math.sin(th), q0 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), th), q = new THREE.Quaternion(), e = new THREE.Euler();
+  const P = (x, z) => { const dx = x - cx, dz = z - cz; return [cx + dx * c + dz * sn, cz - dx * sn + dz * c]; };
+  const wrap = bt => { const o = { add(geo, color, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0, jitter) { const [X, Z] = P(x, z); q.setFromEuler(e.set(rx, ry, rz)).premultiply(q0); e.setFromQuaternion(q); bt.add(geo, color, X, y, Z, sx, sy, sz, e.x, e.y, e.z, jitter); return o; } };
+    for (const k of ['box', 'boxB', 'cyl', 'sph']) o[k] = (...a) => Batch.prototype[k].apply(o, a); return o; };
+  const rect = (x0, x1, z0, z1) => { const [ax, az] = P(x0, z0), [bx, bz] = P(x1, z1); return [Math.min(ax, bx), Math.max(ax, bx), Math.min(az, bz), Math.max(az, bz)]; };
+  return { cityBatch: wrap(w.cityBatch), batch: wrap(w.batch), winBatch: w.winBatch.map(wrap), rand: w.rand,
+    addSolid: (x0, x1, z0, z1, top, walk) => w.addSolid(...rect(x0, x1, z0, z1), top, walk), addOcc: (x0, x1, z0, z1, y1) => w.addOcc(...rect(x0, x1, z0, z1), y1),
+    addCircle: (x, z, r) => w.addCircle(...P(x, z), r), terrainAt: (x, z) => w.terrainAt(...P(x, z)), groundAt: (x, z) => w.groundAt(...P(x, z)),
+    scene: { add: m => { const [X, Z] = P(m.position.x, m.position.z); m.position.x = X; m.position.z = Z; m.rotation.y += th; w.scene.add(m); } } };
+}
 function catedral(w) {
   const [cx, cz] = POS.catedral, cb = w.cityBatch, b = w.batch, col = 0xecdcb5, trim = 0xfaf4e6, dome = 0x7fb3a8, H = 7.0;
   const zf = cz - 4.6;   // fachada sobre la calle de la plaza

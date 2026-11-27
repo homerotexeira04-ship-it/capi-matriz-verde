@@ -2,6 +2,7 @@
 // mercado, huerta, pescadores, kayaks, lancha a la otra orilla, faro y ambulancia.
 import * as THREE from 'three';
 import { POS, CITY_Y } from './terrain.js';
+import { RX, RZ0, S_CITY } from './rail.js';
 import { Batch } from './world.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { makePerson } from './actors.js';
@@ -86,7 +87,9 @@ export class Urbano {
         const onZ = sg.dz === 0 && Math.abs(sg.a[1] - cz) < 0.8 && (cx - sg.a[0]) * sg.dx > 0 && (cx - sg.a[0]) * sg.dx < sg.len;
         if (onX) cross.push({ s: sg.s0 + Math.abs(cz - sg.a[1]), grp: 0, k }); if (onZ) cross.push({ s: sg.s0 + Math.abs(cx - sg.a[0]), grp: 1, k });
       });
-      return { segs, L, cross };
+      // paso a nivel: donde el recorrido cruza la vía del tren, entre manzanas
+      const rail = []; for (const sg of segs) if (sg.dz === 0 && sg.a[1] > RZ0 && sg.a[1] < RZ0 + S_CITY && (RX - sg.a[0]) * sg.dx > 0 && (RX - sg.a[0]) * sg.dx < sg.len) rail.push({ s: sg.s0 + Math.abs(RX - sg.a[0]), sr: sg.a[1] - RZ0 });
+      return { segs, L, cross, rail };
     });
     this.cars = []; let ci = 0;
     this.routes.forEach((rt, ri) => { for (let i = 0; i < ROUTES[ri].n; i++) { const grp = carMesh(CAR_COLS[ci++ % CAR_COLS.length]); sc.add(grp); this.cars.push({ g: grp, rt, s: (i + 0.3 * ri) * rt.L / ROUTES[ri].n, v: 0, vmax: 5.2 + R() * 1.6, x: 0, z: 0, h: 0, wait: 0, ghost: 0, honk: 0 }); } });
@@ -257,6 +260,7 @@ export class Urbano {
     for (const c of this.cars) {
       let v = c.vmax;
       for (const cr of c.rt.cross) { const d = ((cr.s - c.s) % c.rt.L + c.rt.L) % c.rt.L; if (d > 1.2 && d < 7 && !this.green(cr.grp, d)) v = Math.min(v, Math.max(0, (d - 2.6) * 2.2)); }
+      const T = this.g.campo && this.g.campo.tr; if (T && T.state !== 'parado' && T.state !== 'fuera') for (const cr of c.rt.rail) { const d = ((cr.s - c.s) % c.rt.L + c.rt.L) % c.rt.L; if (d > 1.2 && d < 9 && Math.abs(T.s - cr.sr) < 24) v = Math.min(v, Math.max(0, (d - 3.4) * 2.2)); }   // pasa el tren: esperan en el paso a nivel
       if (c.ghost > 0) c.ghost -= dt;
       else {
         const a = this.ahead(c.x, c.z, c.h, c, 1.35, obs); if (a.d < 9) v = Math.min(v, Math.max(0, (a.d - 2.6) * 1.6));

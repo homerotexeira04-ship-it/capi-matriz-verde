@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, lerp, smooth, clamp, damp, angDiff, distPoly } from './util.js';
 import { RAIL, ESTACION, ARROYO, TAJAMAR, MESAS, terrainH } from './terrain.js';
-import { railY, ESTANCIA, BIOLOGA, CAMS, NESTS, CUEVAS } from './pradera.js';
+import { ESTANCIA, BIOLOGA, CAMS, NESTS, CUEVAS } from './pradera.js';
+import { RAIL_L, S_HOME, railXZ, railY, railNear, railRot } from './rail.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
 import { animalParts } from './animales.js';
@@ -103,10 +104,11 @@ export class Campo {
     const VC = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
     this.mat = VC;
     // --- tren ---
-    const cabG = trainCar(true), midG = trainCar(false);
-    this.train = new THREE.Group(); const cars = [new THREE.Mesh(cabG, VC), new THREE.Mesh(midG, VC), new THREE.Mesh(cabG, VC)];
-    cars[0].position.x = 12.2; cars[2].position.x = -12.2; cars[2].rotation.y = Math.PI; cars.forEach(c => { c.castShadow = true; this.train.add(c); });
-    sc.add(this.train); this.tr = { x: ESTACION[0], v: 0, state: 'parado', t: 18, dir: 1 }; this.placeTrain();
+    // dos coches con cabina en las puntas: el tren sigue la vía (rail.js), entre manzanas y en curva
+    const cabG = trainCar(true);
+    this.train = new THREE.Group(); this.cars = [new THREE.Mesh(cabG, VC), new THREE.Mesh(cabG, VC)];
+    this.cars.forEach(c => { c.castShadow = true; c.rotation.order = 'YXZ'; this.train.add(c); });
+    sc.add(this.train); this.tr = { s: S_HOME, v: 0, state: 'parado', t: 18, dir: 1 }; this.placeTrain();
     // --- fauna ---
     this.sp = {}; this.ani = [];
     const kinds = ['venado', 'nandu', 'aguara', 'zorro', 'mulita', 'hornero', 'lechucita', 'chaja', 'carancho', 'garza', 'vaca'];
@@ -135,7 +137,7 @@ export class Campo {
       const cx = lerp(134, 286, R()), cz = lerp(-120, 290, R()), c = COL[Math.floor(R() * COL.length)];
       for (let k = 0, n = 3 + Math.floor(R() * 6); k < n; k++) {
         const x = cx + (R() - 0.5) * 5, z = cz + (R() - 0.5) * 5, h = terrainH(x, z);
-        if (h < 1 || distPoly(x, z, ARROYO) < 6 || Math.abs(z - RAIL.z) < 4 || MESAS.some(([mx, mz, r]) => { const d = Math.hypot(x - mx, z - mz); return d > r - 2 && d < r + 8; })) continue;
+        if (h < 1 || distPoly(x, z, ARROYO) < 6 || railNear(x, z).d < 4 || MESAS.some(([mx, mz, r]) => { const d = Math.hypot(x - mx, z - mz); return d > r - 2 && d < r + 8; })) continue;
         fl.push([x, h + 0.12, z, c]);
       }
     }
@@ -366,16 +368,21 @@ export class Campo {
   }
 
   // ---------- Tren ----------
-  placeTrain() { const x = this.tr.x; this.train.position.set(x, railY(x) - 0.05, RAIL.z); this.train.visible = x < 300 && x > RAIL.x0 - 30; }
+  placeTrain() {
+    const s = this.tr.s, P = this._tp || (this._tp = {});
+    this.cars.forEach((c, i) => { const sc = s + (i ? -6.1 : 6.1); railXZ(sc, P); c.position.set(P.x, railY(sc) - 0.05, P.z); c.rotation.y = railRot(P) + (i ? Math.PI : 0); });
+    this.train.visible = s < RAIL_L - 12;
+  }
   depart(cb) { const T = this.tr; if (T.state === 'parado' || T.state === 'llega') { T.state = 'sale'; T.cb = cb; T.v = Math.max(T.v, 0); } }
   updateTrain(dt) {
-    const T = this.tr, home = ESTACION[0];
+    const T = this.tr, home = S_HOME;
     if (T.state === 'parado') { T.v = 0; T.t -= dt; if (T.t <= 0 && !this.hold) this.depart(); }
-    else if (T.state === 'sale') { T.v = Math.min(14, T.v + 2.2 * dt); T.x += T.v * dt; if (T.x > 330) { T.state = 'fuera'; T.t = 28; const cb = T.cb; T.cb = null; if (cb) cb(); } }
-    else if (T.state === 'fuera') { T.t -= dt; if (T.t <= 0 && !this.holdOut) { T.state = 'llega'; T.x = 330; T.v = 14; } }
-    else if (T.state === 'llega') { const d = T.x - home; T.v = Math.max(1.2, Math.min(14, Math.sqrt(2 * 2.2 * Math.max(0, d)))); T.x -= T.v * dt; if (T.x <= home) { T.x = home; T.state = 'parado'; T.t = 25; this.g.audio.bell && this.g.audio.bell(0.5); } }
+    else if (T.state === 'sale') { T.v = Math.min(14, T.v + 2.2 * dt); T.s += T.v * dt; if (T.s > RAIL_L) { T.state = 'fuera'; T.t = 28; const cb = T.cb; T.cb = null; if (cb) cb(); } }
+    else if (T.state === 'fuera') { T.t -= dt; if (T.t <= 0 && !this.holdOut) { T.state = 'llega'; T.s = RAIL_L; T.v = 14; } }
+    else if (T.state === 'llega') { const d = T.s - home; T.v = Math.max(1.2, Math.min(14, Math.sqrt(2 * 2.2 * Math.max(0, d)))); T.s -= T.v * dt; if (T.s <= home) { T.s = home; T.state = 'parado'; T.t = 25; this.g.audio.bell && this.g.audio.bell(0.5); } }
     this.placeTrain();
-    const c = this.g.capi.pos; if (T.state !== 'parado' && T.state !== 'fuera' && Math.abs(c.z - RAIL.z) < 1.9 && Math.abs(c.x - T.x) < 18.5 && c.y < railY(c.x) + 3) { c.z = RAIL.z + (c.z < RAIL.z ? -2.1 : 2.1); }   // no se puede quedar parado en la vía
+    const c = this.g.capi.pos, rn = railNear(c.x, c.z, this._rn || (this._rn = {}));   // no se puede quedar parado en la vía
+    if (T.state !== 'parado' && T.state !== 'fuera' && rn.d < 1.9 && Math.abs(rn.s - T.s) < 13 && c.y < railY(rn.s) + 3) { const P = railXZ(rn.s, this._tq || (this._tq = {})), nx = -P.dz, nz = P.dx, sd = (c.x - P.x) * nx + (c.z - P.z) * nz < 0 ? -1 : 1; c.x = P.x + nx * sd * 2.1; c.z = P.z + nz * sd * 2.1; }
   }
 
   // ---------- Animación de la fauna ----------
@@ -407,7 +414,7 @@ export class Campo {
           const sp = a.st === 'flee' ? (a.k === 'nandu' ? 9 : a.k === 'venado' ? 8 : 4) : a.st === 'trot' ? 2.6 : a.st === 'walk' ? (a.tropa ? 1.6 : a.slow ? 0.5 : a.bird ? 0.8 : 1.1) : 0;
           if (sp > 0) {
             const tx = a.tx - a.x, tz = a.tz - a.z, d = Math.hypot(tx, tz);
-            if (d > 0.4) { const nx = a.x + tx / d * sp * dt, nz = a.z + tz / d * sp * dt, ny = terrainH(nx, nz); if (ny > 0.6 && !(Math.abs(nz - RAIL.z) < 2 && this.tr.state !== 'fuera' && Math.abs(nx - this.tr.x) < 20)) { a.x = nx; a.z = nz; } else a.st = 'idle'; a.h += angDiff(a.h, Math.atan2(tx, tz)) * Math.min(1, 6 * dt); }
+            if (d > 0.4) { const nx = a.x + tx / d * sp * dt, nz = a.z + tz / d * sp * dt, ny = terrainH(nx, nz); if (ny > 0.6 && !(this.tr.state !== 'fuera' && railNear(nx, nz, this._ra || (this._ra = {})).d < 2 && Math.abs(this._ra.s - this.tr.s) < 16)) { a.x = nx; a.z = nz; } else a.st = 'idle'; a.h += angDiff(a.h, Math.atan2(tx, tz)) * Math.min(1, 6 * dt); }
             else if (a.st !== 'flee') a.st = 'idle';
           }
           if (a.look && dc < 14) a.h += angDiff(a.h, Math.atan2(dx, dz)) * Math.min(1, 3 * dt);

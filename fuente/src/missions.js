@@ -218,7 +218,7 @@ export class Missions {
       }
       case 'pico': {
         const m = this.m5;
-        if (this.ceremony) return [{ text: 'Ir al escenario de la Plaza Matriz para la ceremonia', targets: ['fest'], done: this.flag('cer') }];
+        if (this.ceremony) return [{ text: 'Ir al escenario de la Plaza Artigas para la ceremonia', targets: ['fest'], done: this.flag('cer') }];
         return [
           { text: 'Hablar con la Ing. Valeria en el Centro de Control', targets: ['npc:valeria'], done: !!m },
           { text: 'Pasar las baterías a Automático en el panel de red (Tab)', targets: [], done: !!m && G.bat.mode === 'auto' },
@@ -509,7 +509,7 @@ export class Missions {
         this.clearFaults(); G.energyRate = 1 / 20; G.gustiness = 0.1;
         if (this.school) { this.schoolDone = true; setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Así se maneja una red 100 % renovable.')], () => g.escuela.complete('pico')), 4200); return; }
         this.ceremony = true; g.actors.gather(true);
-        setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Vení a la Plaza Matriz: te armamos un escenario y te estamos esperando todos.')]), 4200);
+        setTimeout(() => U.dialog([L('valeria', '¡Lo logramos! Pasó el pico sin quemar una gota de combustible. Vení a la Plaza Artigas: te armamos un escenario y te estamos esperando todos.')]), 4200);
       }
       return;
     }

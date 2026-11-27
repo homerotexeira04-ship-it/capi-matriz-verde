@@ -28,7 +28,7 @@ export const OUTFITS = [
 
 // [x, z, altura extra, pista del lugar, dato]
 const SPARKS = [
-  [-39.4, 44, 0, 'la fuente de la Plaza Matriz', 'La red eléctrica del Uruguay trabaja a 50 Hz: la corriente va y viene 50 veces por segundo, y todas las centrales tienen que ir al mismo compás.'],
+  [-30.4, 41, 0, 'un farol de la Plaza Artigas', 'La red eléctrica del Uruguay trabaja a 50 Hz: la corriente va y viene 50 veces por segundo, y todas las centrales tienen que ir al mismo compás.'],
   [-104.6, 73.3, 0, 'la punta del puerto deportivo', 'El carpincho es el roedor más grande del mundo y un gran nadador. Por eso Capi cruza ríos y embalses sin problema.'],
   [-102, -93, 0, 'el techo de la sala de máquinas uruguaya', 'Salto Grande, sobre el río Uruguay, es una represa binacional: la comparten Uruguay y Argentina, y tiene 14 turbinas.'],
   [-128, -126, 0.4, 'el medio del lago de Salto Grande', 'Sobre el río Negro hay tres represas en cadena: Rincón del Bonete, Baygorria y Palmar. El agua que turbina una la vuelve a aprovechar la siguiente.'],
@@ -40,7 +40,7 @@ const SPARKS = [
   [-46, -27, 0, 'lo más alto del puente', 'El ceibo, de flores rojas, es la flor nacional del Uruguay. Crece a orillas de ríos y arroyos, como los que se ven desde este puente.'],
   // Ciudad ampliada
   [-20, 55.4, 0, 'la vereda de la terminal de bóvedas', 'Eladio Dieste fue un ingeniero uruguayo que inventó la cerámica armada: bóvedas finísimas de ladrillo. En Salto hizo la Terminal de Ómnibus de 1974, con voladizos de 14 metros, y la de la empresa Turlit.'],
-  [-4, 39.3, 0, 'las escalinatas del Teatro Larrañaga', 'El Teatro Larrañaga de Salto se inauguró el 6 de octubre de 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Hoy es Monumento Histórico Nacional.'],
+  [-68, 39.6, 0, 'las escalinatas del Teatro Larrañaga', 'El Teatro Larrañaga de Salto se inauguró el 6 de octubre de 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Hoy es Monumento Histórico Nacional.'],
   [-116.2, 47.5, 0, 'la punta del muelle de pasajeros', 'Entre Salto y Concordia, en Argentina, cruza una lancha de pasajeros: el viaje por el río Uruguay dura unos 15 o 20 minutos. El servicio volvió en 2025.'],
   [24.5, -2.1, 0, 'la calle del Barrio Jardín', 'Desde 2010 una casa uruguaya puede poner paneles solares, conectarse a la red de UTE y venderle la energía que le sobra. Se llama microgeneración.'],
   [-46.8, 9.4, 0, 'el patio de la escuela', 'En 2007 Uruguay empezó el Plan Ceibal: una computadora portátil para cada niño y cada maestro de las escuelas públicas del país.'],
@@ -54,7 +54,7 @@ const SPARKS = [
   [-56.4, -66.4, 0, 'las bicicletas del escenario', 'En el escenario a pedal de Energimundo el público pedalea bicicletas generadoras: con las piernas se produce la electricidad del espectáculo.'],
   [-64.8, -89.2, 0, 'el sendero de las estaciones', 'El sendero de Energimundo muestra seis energías renovables: solar, eólica, hidráulica, biomasa, mareomotriz y geotérmica. En Uruguay las dos últimas no se usan para generar electricidad.'],
   // Geografía nueva: plaza, lago y naranjales
-  [-1.6, 50.6, 0, 'el monumento de la Plaza Artigas', 'El monumento a Artigas de la plaza que lleva su nombre, en Salto, es obra del escultor Edmundo Prati y se inauguró el 29 de septiembre de 1940.'],
+  [-40.2, 47.2, 0, 'el monumento de la Plaza Artigas', 'El monumento a Artigas de la plaza que lleva su nombre, en Salto, es obra del escultor Edmundo Prati y se inauguró el 29 de septiembre de 1940.'],
   [-85, -118, 0, 'la orilla del lago de Salto Grande', 'Al cerrar la represa se formó el lago de Salto Grande: ocupa 783 km² y se estira unos 140 km río arriba.'],
   [33.5, 125, 0, 'los cajones del packing de citrus', 'Salto y Paysandú dan alrededor del 90 % de los cítricos que exporta el Uruguay, y lo que más se produce son mandarinas sin semilla.']
 ];

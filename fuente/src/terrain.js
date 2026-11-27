@@ -1,5 +1,7 @@
 // Relieve analítico del diorama y posiciones clave de los cinco sectores.
 import { clamp, lerp, smooth, fbm, distPoly } from './util.js';
+import { RX, RZ0, S_CITY, railNear, railY } from './rail.js';
+const _rn = {};
 
 // Diorama "como en la realidad": el río Uruguay corre de norte a sur por el oeste; la represa de Salto Grande lo cruza
 // al norte (lago arriba), Salto queda en la orilla oriental y Concordia (Argentina) enfrente, en la occidental.
@@ -12,8 +14,8 @@ export const MESAS = [[198, -106, 22, 11], [254, -56, 18, 9], [240, -128, 13, 7]
 export const ARROYO = [[288, -86], [262, -40], [226, -14], [196, 22], [186, 62], [198, 106], [218, 148], [210, 196], [184, 236], [166, 272], [150, 300]];
 export const DAYMAN = [[300, 324], [262, 312], [220, 318], [176, 304], [130, 314], [84, 326], [36, 318], [-10, 330], [-52, 326], [-100, 334]];
 export const TAJAMAR = [160, 122, 9];
-export const RAIL = { z: 247, x0: -44, x1: 300 };
-export const ESTACION = [-24, 238];
+export const RAIL = { z: 247, x0: 66.8, x1: 300 };   // tramo recto hacia el este (la vía completa está en rail.js)
+export const ESTACION = [13.1, 42];                  // andén de la estación de Salto, en la ciudad
 export const newMask = (x, z) => Math.max(smooth(124, 140, x), smooth(204, 218, z));
 // Área original: se usa para sembrar la flora de siempre en los mismos lugares
 export const B0 = { minX: -125, maxX: 110, minZ: -110, maxZ: 125 };
@@ -35,11 +37,12 @@ export const POS = {
   inverter: [13.5, -77.5], batYard: [37, -69], batConsole: [37, -60.2],
   boiler: [60, 63], chips: [48, 58], bioSub: [73, 56],
   bridge: { x: -46, z0: -42, z1: -12 },
-  stops: [[-24, 71.8, 'Terminal del Bulevar'], [-44, 52.3, 'Plaza Matriz'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
+  stops: [[-24, 71.8, 'Terminal del Bulevar'], [-44, 52.3, 'Plaza Artigas'], [-66, -103.6, 'Represa de Salto Grande'], [38.5, 13.5, 'Parque Eólico'], [28, -56.2, 'Parque Solar'], [40.5, 60, 'Planta de Biomasa'],
     [-56, -3.2, 'Barrio Norte'], [-86.4, 52.6, 'Puerto'], [12, 0.4, 'Barrio Jardín'], [-79.5, -55.6, 'Energimundo']],
   // Ciudad ampliada
   norte: { z: 6, xs: [-68, -52, -36, -20] }, hospital: [-68, 6], escuela: [-52, 6], mercado: [-36, 6],
-  teatro: [-4, 34], artigas: [-4, 48], catedral: [-36, 62], cancha: [-6, -15],
+  // Centro según el plano real: el teatro al oeste, cerca de la Plaza 33; la Plaza Artigas (la principal) con la catedral al este
+  teatro: [-68, 34], plaza33: [-68, 48], artigas: [-44, 44], catedral: [-20, 48], plazoleta: [-4, 48], cancha: [-6, -15],
   // Puerto de Salto en la costanera oeste: muelle hacia el oeste, escollera con faro y, enfrente, el muelle de Concordia
   puerto: [-89.5, 41.2], muelle: { z: 47.5, x0: -96, x1: -117 }, faro: [-107.5, 62.5], orilla: { z: 47.5, x0: -149, x1: -164 },
   startCapi: [-31.2, 31.4],
@@ -87,6 +90,7 @@ export function terrainH(x, z) {
   }
   if (z < DAM_Z - 2 && d < 3 && fd < 3) h = Math.max(h, 1.0);   // fondo del lago (arriba de la represa)
   const nm = newMask(x, z); if (nm > 0 && d > -6) h = ampliacion(x, z, h, nm);
+  if (x > RX - 6 && z > RZ0 + 50 && h > 0.5) { const rn = railNear(x, z, _rn); if (rn.d < 4 && rn.s > S_CITY - 2) h = lerp(h, railY(rn.s) - 0.3, smooth(4, 1.6, rn.d)); }   // terraplén de la vía
   const dc = channelD(x, z), hw = lerp(3.5, 7.5, smooth(12, -12, x)) + 1.5 * smooth(-50, -100, x);   // angosto en la naciente, ancho en la desembocadura
   if (dc < hw + 4.5 && z > -60) h = Math.min(h, lerp(-2.6, h, smooth(hw, hw + 4.5, dc)));
   return h;
@@ -100,7 +104,6 @@ export function ampliacion(x, z, h, nm) {
       add += a * smooth(r + 8, r, d) + 0.6 * smooth(r, r - 6, d) * (fbm(x * 0.2, z * 0.2) - 0.5);
     }
     h += add * nm;
-    if (Math.abs(z - RAIL.z) < 4 && x > RAIL.x0 - 6) h = lerp(h, 2.6 + smooth(-40, 140, x) * 1.2, smooth(4, 1.6, Math.abs(z - RAIL.z)) * nm);   // terraplén de la vía
   }
   // arroyo: angosto, encajonado entre piedras arriba (quebrada) y más abierto en la pradera
   const da = distPoly(x, z, ARROYO), q = smooth(40, -60, z), aw = 2.2 + 1.3 * smooth(-40, 300, z);
@@ -120,14 +123,15 @@ export function waterAt(x, z) { if (x > 1000 && DEST.water) return DEST.water(x,
 export const ZONES = [
   { id: 'haedo', area: true, name: 'Cuchilla de Haedo · cerros chatos', x: 210, z: -80, color: '#c9a27a', rect: [132, 290, -150, 0] },
   { id: 'arerungua', area: true, name: 'Potreros de Arerunguá', x: 220, z: 120, color: '#d4c36a', rect: [132, 290, 0, 236] },
-  { id: 'estacion', name: 'Estación del ferrocarril', x: -24, z: 234, color: '#ff8f5a', rect: [-46, 0, 222, 256] },
+  { id: 'estacion', name: 'Estación del ferrocarril', x: 10, z: 42, color: '#ff8f5a', rect: [4.5, 19, 28.6, 54] },
+  { id: 'termas', name: 'Termas del Daymán', x: 30, z: 287, color: '#35c9d2', rect: [16, 46, 276, 300] },
   { id: 'dayman', area: true, name: 'Río Daymán', x: 90, z: 330, color: '#4cc9f0', rect: [-90, 290, 290, 370] },
   { id: 'rio', area: true, name: 'Río Uruguay', x: -124, z: 40, color: '#4cc9f0', rect: [-150, -90, -84, 370] },
   { id: 'campo', area: true, name: 'Campo salteño y naranjales', x: 40, z: 150, color: '#ff9f2a', rect: [-86, 130, 102, 210] },
   { id: 'ciudad', name: 'Ciudad de Salto', x: -36, z: 50, color: '#ffd166', rect: [-86, 22, 12, 102] },
   { id: 'hidro', name: 'Represa de Salto Grande', x: -124, z: -100, color: '#4cc9f0', rect: [-166, -56, -112, -84] },
   { id: 'lago', area: true, name: 'Lago de Salto Grande', x: -150, z: -128, color: '#4cc9f0', rect: [-230, -56, -150, -112] },
-  { id: 'eolica', name: 'Parque Eólico de las Cuchillas', x: 70, z: -12, color: '#e8f1f2' },
+  { id: 'eolica', name: 'Parque Eólico', x: 70, z: -12, color: '#e8f1f2' },
   { id: 'solar', name: 'Parque Solar y Baterías', x: 18, z: -80, color: '#ffb703', rect: [-18, 50, -112, -54] },
   { id: 'biomasa', name: 'Planta de Biomasa', x: 60, z: 62, color: '#90be6d' },
   { id: 'hidrogeno', name: 'Planta de Hidrógeno Verde', x: 64, z: 86, color: '#57e389', rect: [50, 78, 77, 96] },

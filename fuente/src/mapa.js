@@ -2,6 +2,7 @@
 // el objetivo de la misión, el favor en curso, las paradas y los vehículos. Al tocar un lugar se ve qué hay y cómo llegar:
 // caminando, en ómnibus eléctrico, en el ómnibus internacional o en la lancha. Se puede acercar con la rueda o con dos dedos.
 import { B, ZONES, POS } from './terrain.js';
+import { RAIL_L, railXZ } from './rail.js';
 import { mapColor } from './ui.js';
 import { INTL_STOPS } from './intl.js';
 import { clamp } from './util.js';
@@ -12,9 +13,10 @@ const sideOf = x => (x < AR ? 'ar' : 'uy');
 const zc = id => ZONES.find(z => z.id === id) || {};
 // Lugares: nombre, nombre corto para el mapa, posición del cartel, parada de ómnibus más cercana y una línea de qué hay
 const PLACES = [
-  { id: 'ciudad', name: 'Ciudad de Salto', x: -40, z: 62, stop: 0, pri: 1, d: 'El centro: la Plaza Matriz con la catedral, el bulevar y la Terminal del Bulevar, de donde salen los ómnibus eléctricos y el internacional.' },
-  { id: 'teatro', name: 'Teatro Larrañaga', short: 'Teatro', x: -4, z: 34, stop: 1, pri: 2, d: 'Se inauguró en 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Es Monumento Histórico Nacional.' },
-  { id: 'artigas', name: 'Plaza Artigas', x: -4, z: 48, stop: 0, pri: 2, d: 'Con el monumento ecuestre a José Gervasio Artigas, obra de Edmundo Prati, inaugurado en 1940. Al pie está la placa con su historia.' },
+  { id: 'ciudad', name: 'Ciudad de Salto', x: -40, z: 62, stop: 0, pri: 1, d: 'El centro: la Plaza Artigas con la catedral, el bulevar y la Terminal del Bulevar, de donde salen los ómnibus eléctricos y el internacional.' },
+  { id: 'teatro', name: 'Teatro Larrañaga', short: 'Teatro', x: -68, z: 34, stop: 1, pri: 2, d: 'Se inauguró en 1882 y lleva el nombre de Dámaso Antonio Larrañaga. Es Monumento Histórico Nacional.' },
+  { id: 'artigas', name: 'Plaza Artigas', x: -44, z: 44, stop: 1, pri: 2, d: 'La plaza principal de Salto, con la catedral enfrente y el monumento ecuestre a José Gervasio Artigas, obra de Edmundo Prati, inaugurado en 1940. Al pie está la placa con su historia.' },
+  { id: 'plaza33', name: 'Plaza 33 Orientales', short: 'Plaza 33', x: -68, z: 48, stop: 7, pri: 2, d: 'Cerca del puerto y frente al Teatro Larrañaga.' },
   { id: 'puerto', name: 'Puerto de Salto', short: 'Puerto', x: -100, z: 54, stop: 7, pri: 1, d: 'Muelle, faro, puerto deportivo, la feria de la mañana y la lancha a Concordia.' },
   { id: 'norte', name: 'Barrio Norte y Costanera', short: 'Barrio Norte', x: -50, z: -2, stop: 6, pri: 1, d: 'Hospital, escuela, mercado, bicisenda y cancha de fútbol, entre la ciudad y el arroyo.' },
   { id: 'sur', name: 'Barrio Sur', x: -26, z: 120, stop: 0, pri: 1, d: 'Casitas del sur del bulevar, donde se cambian las lamparitas viejas por LED y tres autos eléctricos cargan en casa.' },
@@ -22,14 +24,14 @@ const PLACES = [
   { id: 'museo', name: 'Energimundo', x: -66, z: -66, stop: 9, pri: 1, col: '#e6007e', d: 'El museo de las energías renovables: Cronomundo, domo geodésico, escenario a pedal y el sendero de las seis energías.' },
   { id: 'hidro', name: 'Represa de Salto Grande', short: 'Represa', x: -124, z: -92, stop: 2, pri: 1, both: true, d: 'Binacional: la comparten Uruguay y Argentina, que se reparten su energía. Por arriba pasan la ruta y el tren.' },
   { id: 'lago', name: 'Lago de Salto Grande', short: 'Lago', x: -176, z: -132, water: true, pri: 1, d: 'El embalse que forma la represa: unos 783 km² y 140 km de largo.' },
-  { id: 'solar', name: 'Parque Solar y Baterías', short: 'Parque Solar', x: 16, z: -96, stop: 4, pri: 1, d: 'Paneles que siguen al sol y un banco de baterías que guarda la energía del mediodía para la noche.' },
-  { id: 'eolica', name: 'Parque Eólico de las Cuchillas', short: 'Parque Eólico', x: 80, z: -24, stop: 3, pri: 1, d: 'Molinos en las lomas, donde el viento corre parejo y sin obstáculos.' },
+  { id: 'solar', name: 'Parque Solar y Baterías', short: 'Parque Solar', x: 16, z: -96, stop: 4, pri: 1, d: 'Paneles que siguen al sol y un banco de baterías. Junto a la represa real está la planta Asahi (2013), la primera planta solar del país.' },
+  { id: 'eolica', name: 'Parque Eólico', short: 'Parque Eólico', x: 80, z: -24, stop: 3, pri: 1, d: 'Molinos en las lomas, donde el viento corre parejo. El real de Salto es Campo Palomas: 35 aerogeneradores y 70 MW, a unos 50 km al noreste de la ciudad.' },
   { id: 'biomasa', name: 'Planta de Biomasa', short: 'Biomasa', x: 62, z: 70, stop: 5, pri: 1, d: 'Usa los restos de los montes de eucalipto para dar energía firme, aunque no haya viento ni sol.' },
   { id: 'hidrogeno', name: 'Planta de Hidrógeno Verde', short: 'Hidrógeno', x: 64, z: 92, stop: 5, pri: 2, d: 'Un electrolizador separa el agua en hidrógeno y oxígeno con el viento que sobra de noche. La hidrolinera carga un camión forestal.' },
-  { id: 'termas', name: 'Termas', x: 92, z: -62, stop: 4, pri: 2, d: 'Agua caliente del Acuífero Guaraní: calor de la Tierra para bañarse todo el año.' },
+  { id: 'termas', name: 'Termas del Daymán', short: 'Termas', x: 30, z: 287, stop: null, pri: 2, d: 'Junto al río Daymán, al sur de la ciudad y sobre la ruta 3: agua caliente del Acuífero Guaraní para bañarse todo el año.' },
   { id: 'campo', name: 'Campo y naranjales', x: 44, z: 164, stop: null, pri: 1, d: 'Chacras, un tambo, un packing de citrus y naranjales: Salto es tierra de citrus.' },
   { id: 'concordia', name: 'Concordia (Argentina)', short: 'Concordia', x: -194, z: 30, stop: null, pri: 1, col: '#9be7ff', d: 'Capital Nacional del Citrus, en la otra orilla. Se llega en la lancha o en el ómnibus internacional.' },
-  { id: 'estacion', name: 'Estación del ferrocarril', short: 'Estación', x: -24, z: 238, stop: null, pri: 1, d: 'De acá sale el tren de la Gira por el Uruguay, hacia Rincón del Bonete, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.' },
+  { id: 'estacion', name: 'Estación del ferrocarril', short: 'Estación', x: 10, z: 42, stop: 1, pri: 1, d: 'La estación de Salto (ex Midland), en la ciudad, al este del centro. Es Monumento Histórico Nacional junto con sus galpones y su chimenea. De acá sale el tren de la Gira por el Uruguay, hacia Rincón del Bonete, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.' },
   { id: 'arerungua', name: 'Potreros de Arerunguá', short: 'Pradera', x: 214, z: 150, stop: null, pri: 1, d: 'Pradera natural con venados de campo, ñandúes y mulitas, un arroyo con monte de quebrada, la Estancia La Cuchilla y Ana, la bióloga de las cámaras trampa.' },
   { id: 'haedo', name: 'Cuchilla de Haedo', short: 'Cerros chatos', x: 214, z: -86, stop: null, pri: 1, d: 'Cerros chatos de basalto, con laderas de piedra y un mirador en la cima del más alto.' },
   { id: 'dayman', name: 'Río Daymán', x: 90, z: 318, water: true, pri: 2, river: true, d: 'Corre de este a oeste y desemboca en el río Uruguay, al sur de Salto. Lo cruza el puente de la ruta 3.' },
@@ -83,10 +85,12 @@ export class Mapa {
     for (let i = 0; i < 6; i++) for (let j = 0; j < 5; j++) {
       if ((i === 1 || i === 2) && (j === 1 || j === 2)) continue; const cx = xs[i], cz = zs[j];
       x.fillStyle = '#d8d0bf'; x.fillRect(X(cx - 6.4), Z(cz - 5.4), 12.8 * k, 10.8 * k);
-      x.fillStyle = i === 4 && j === 2 ? '#7cc06a' : i === 4 && j === 1 ? '#e2a77e' : i === 3 && j === 3 ? '#c06a42' : '#efe9dc'; const m = i === 4 && j === 2 ? 0.6 : 1.2; x.fillRect(X(cx - 6.4 + m), Z(cz - 5.4 + m), (12.8 - 2 * m) * k, (10.8 - 2 * m) * k);
+      const green = (i === 4 || i === 0) && j === 2, railB = i === 5 && j >= 1 && j <= 4;
+      x.fillStyle = green ? '#7cc06a' : i === 0 && j === 1 ? '#e2a77e' : i === 3 && j === 2 ? '#e8d3a2' : i === 3 && j === 3 ? '#c06a42' : railB ? (j === 2 || j === 3 ? '#cfc6b4' : '#c9a48c') : '#efe9dc'; const m = green ? 0.6 : 1.2; x.fillRect(X(cx - 6.4 + m), Z(cz - 5.4 + m), (12.8 - 2 * m) * k, (10.8 - 2 * m) * k);
     }
-    x.fillStyle = '#d8d0bf'; x.fillRect(X(-58.4), Z(27.6), 28.8 * k, 26.8 * k); x.fillStyle = '#7cc06a'; x.fillRect(X(-57.6), Z(28.4), 27.2 * k, 25.2 * k); x.fillStyle = '#58b9e6'; x.beginPath(); x.arc(X(POS.plaza[0]), Z(POS.plaza[1]), 3.2 * k, 0, 7); x.fill();
-    x.fillStyle = '#b39e86'; x.fillRect(X(-4 - 2.4), Z(48 - 2.2), 4.8 * k, 4.4 * k);   // monumento a Artigas
+    x.fillStyle = '#d8d0bf'; x.fillRect(X(-58.4), Z(27.6), 28.8 * k, 26.8 * k); x.fillStyle = '#7cc06a'; x.fillRect(X(-57.6), Z(28.4), 27.2 * k, 25.2 * k); x.fillStyle = '#b39e86'; x.fillRect(X(POS.artigas[0] - 2.4), Z(POS.artigas[1] - 2.2), 4.8 * k, 4.4 * k);   // monumento a Artigas
+    // vía del ferrocarril, desde la estación
+    { const P = {}; x.strokeStyle = '#4a4440'; x.lineWidth = 1.4 * k; x.setLineDash([2.2 * k, 1.2 * k]); x.beginPath(); for (let s = 0; s <= RAIL_L; s += 3) { railXZ(s, P); s ? x.lineTo(X(P.x), Z(P.z)) : x.moveTo(X(P.x), Z(P.z)); } x.stroke(); x.setLineDash([]); }
     x.fillStyle = '#c8bfae'; x.fillRect(X(-83), Z(11), 4.8 * k, 83 * k);   // costanera
     // casas y árboles
     for (const h of w.houses) { x.save(); x.translate(X(h.x), Z(h.z)); x.rotate(-(h.ry || 0)); x.fillStyle = '#' + (h.rc || 0xb5533c).toString(16).padStart(6, '0'); x.fillRect(-h.w / 2 * k, -h.d / 2 * k, h.w * k, h.d * k); x.restore(); }

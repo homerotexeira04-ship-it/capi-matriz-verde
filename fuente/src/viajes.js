@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { lerp, rng } from './util.js';
 import { B, BND, ESTACION, RAIL } from './terrain.js';
 import { DESTINOS } from './destinos.js';
-import { railY } from './pradera.js';
+import { RAIL_L, S_HOME, railXZ, railY } from './rail.js';
 import { makePerson } from './actors.js';
 import { NAMES } from './ui.js';
 import { loboGeo } from './animales.js';
@@ -59,7 +59,7 @@ export class Viajes {
     }
     // jefa de estación en el andén de Salto
     const [sx, sz] = ESTACION, jp = makePerson({ skin: 0xd9a17a, shirt: 0x1d4f8a, jacket: 0x1d4f8a, pants: 0x2b2d42, hair: 0x2a1c12, hat: 'gorra', hatColor: 0x1d4f8a, pony: true });
-    jp.group.position.set(sx - 4, w.groundAt(sx - 4, sz + 5), sz + 5); jp.group.rotation.y = 0.3; g.scene.add(jp.group); w.addInter('npc:jefa', sx - 4, sz + 5, { console: false, h: 3.6 });
+    jp.group.position.set(sx - 0.4, w.groundAt(sx - 0.4, sz + 6.5), sz + 6.5); jp.group.rotation.y = Math.PI * 0.85; g.scene.add(jp.group); w.addInter('npc:jefa', sx - 0.4, sz + 6.5, { console: false, h: 3.6 });
     // destellos de los destinos: vapor de la central de Fray Bentos, haz del faro, ballena y lobos marinos
     const pol = DESTINOS[3], beam = new THREE.Mesh(new THREE.ConeGeometry(4, 40, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff3c4, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide, fog: false }));
     beam.geometry.translate(0, -20, 0); beam.geometry.rotateZ(Math.PI / 2); beam.position.set(...pol.beam); pol.group.add(beam); this.beam = beam;
@@ -183,10 +183,10 @@ export class Viajes {
       if (tok !== this.tok) return;
       DESTINOS.forEach(x => { x.group.visible = false; });
       Object.assign(BND, { minX: B.minX, maxX: B.maxX, minZ: B.minZ, maxZ: B.maxZ });
-      const [sx, sz] = ESTACION; g.capi.teleport(sx + 4, sz + 4.6); g.capi.heading = Math.PI; g.cam.distT = 40;
+      const [sx, sz] = ESTACION; g.capi.teleport(sx - 0.4, sz + 3); g.capi.heading = Math.PI / 2; g.cam.distT = 40;
       if (this.clock) { G.clockRate = this.clock.rate; G.holdAt = this.clock.hold; this.clock = null; }
       this.cur = null; document.body.classList.remove('viaje');
-      const T = g.campo.tr; T.x = ESTACION[0]; T.state = 'parado'; T.t = 25; g.campo.placeTrain();
+      const T = g.campo.tr; T.s = S_HOME; T.state = 'parado'; T.t = 25; g.campo.placeTrain();
       setTimeout(() => { if (tok !== this.tok) return; $('fade').classList.remove('on'); g.extras.fading = false; if (this.count() >= 4 && g.missions.mode !== 'gira' && !this.toldAll) { this.toldAll = true; this.openPasaporte(); } }, 600);
     }, 1200);
   }
@@ -226,7 +226,7 @@ export class Viajes {
   update(dt, st) {
     this.t += dt; const g = this.g;
     if (this.cine && this.cine.phase === 'viaja' && g.cam.follow) {   // unos segundos mirando cómo sale el tren y, tras el telón, el destino
-      const T = g.campo.tr; g.cam.follow.set(Math.min(T.x, 260), railY(Math.min(T.x, 260)) + 2, RAIL.z); this.cine.t += dt;
+      const T = g.campo.tr, s = Math.min(T.s, RAIL_L - 70), P = railXZ(s, this._fp || (this._fp = {})); g.cam.follow.set(P.x, railY(s) + 2, P.z); this.cine.t += dt;
       if (this.cine.t > 5.5) { this.cine.phase = 'llega'; this.arrive(this.cine.d); }
     }
     const c = this.cur; if (!c) return;

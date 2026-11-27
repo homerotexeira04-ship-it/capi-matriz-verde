@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, lerp, damp, smooth, rng, fbm, noise2, keyAt, distPoly } from './util.js';
 import { B, LAND, RES, DAM_Z, POS, terrainH, waterAt, coastD, channelD, CHANNEL, westD, eastBank, westBank, newMask, RAIL } from './terrain.js';
+import { RX, RZ0, S_CITY, railNear } from './rail.js';
+const _rnC = {};
 
 export const C = {
   cream: 0xf2e4c4, terra: 0xc8674a, ochre: 0xe2b25c, rose: 0xe9bba6, white: 0xf5f1e8, celeste: 0x8fcdea, concrete: 0xbdb5a8, concreteD: 0x9c958a,
@@ -242,7 +244,7 @@ export class World {
   nightLights() {
     const Y = 2.2, [tx, tz] = POS.teatro, [cx, cz] = POS.catedral, [ax, az] = POS.artigas, D = POS.dam;
     this.wash(tx, Y + 0.9, tz + 3.2 + 0.07, 11.4, 8.6, 0);                 // Teatro: mira al sur, a la Plaza Artigas
-    this.wash(cx, Y, cz - 4.6 - 0.07, 7.4, 10.2, Math.PI);                  // Catedral: mira al norte, a la Plaza Matriz
+    this.wash(cx - 4.6 - 0.07, Y, cz, 7.4, 10.2, -Math.PI / 2);             // Catedral: mira al oeste, a la Plaza Artigas
     for (let x = D.x0 + 9; x < D.x1 - 4; x += 8.5) this.wash(x, 0.1, D.z1 + 0.08, 8, D.top + 0.4, 0);   // represa, aguas abajo
     const ring = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), this.mats.pool); ring.rotation.x = -Math.PI / 2; ring.position.set(ax, Y + 0.32, az + 0.6); ring.renderOrder = 7; this.scene.add(ring);
   }
@@ -535,6 +537,8 @@ export class World {
     const gl = this.glassBatch.mesh(M.glass); if (gl) { gl.renderOrder = 6; s.add(gl); }
     const sc = this.screenBatch.mesh(M.screen); if (sc) s.add(sc);
 
+    // Nada de árboles ni obstáculos sueltos sobre la vía
+    { const rn = {}, on = (x, z, m) => railNear(x, z, rn).d < m; this.trees = this.trees.filter(t => !on(t.x, t.z, 3)); if (this.treesNew) this.treesNew = this.treesNew.filter(t => !on(t.x, t.z, 3)); this.circles = this.circles.filter(c => !on(c.x, c.z, 2.2)); }
     // Árboles (InstancedMesh): troncos, copas y penachos de palmera
     this.plantTrees(this.trees);
     if (this.treesNew) { const cells = new Map(); for (const t of this.treesNew) { const k = Math.floor(t.x / 90) + ',' + Math.floor(t.z / 90); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(t); }
@@ -771,7 +775,7 @@ export function groundColor(c, x, z, h, ny) {
     c.lerp(cA.set(p < 0.5 ? 0x93b057 : 0xb9b163), nm * 0.5 * smooth(0.15, 0.85, p));
     if (h > 9) c.lerp(cA.set(0xa79d6c), smooth(9, 12.5, h) * 0.55 * nm);
     if (ny < 0.8) c.lerp(cA.set(0x6b5444), smooth(0.8, 0.5, ny) * nm);
-    if (Math.abs(z - RAIL.z) < 2.6 && x > RAIL.x0 - 4) c.lerp(cA.set(0x8a8076), smooth(2.6, 1.8, Math.abs(z - RAIL.z)));   // balasto de la vía
+    if (x > RX - 4 && z > RZ0 + 55) { const rn = railNear(x, z, _rnC); if (rn.d < 2.6 && rn.s > S_CITY - 2) c.lerp(cA.set(0x8a8076), smooth(2.6, 1.8, rn.d)); }   // balasto de la vía
   }
   if (ny < 0.82) c.lerp(cA.set(0x9c8a66), smooth(0.82, 0.6, ny));
 }

@@ -4,10 +4,10 @@
 import * as THREE from 'three';
 import { rng, lerp, smooth, distPoly } from './util.js';
 import { RAIL, ESTACION, ARROYO, DAYMAN, TAJAMAR, MESAS, terrainH } from './terrain.js';
-import { C, Batch } from './world.js';
+import { C, Batch, textTex } from './world.js';
+import { RX, RZ0, RAIL_L, S_CITY, railXZ, railY, railNear, railRot } from './rail.js';
 import { sign } from './sectors.js';
 
-export const railY = x => 2.6 + smooth(-40, 140, x) * 1.2 + 0.3;   // altura del riel (sobre el terraplén)
 export const ESTANCIA = [150, 182];
 export const BIOLOGA = [192, 96];
 // Lugares para las cámaras trampa: borde del monte de la quebrada, orilla del arroyo y la pradera abierta
@@ -25,7 +25,6 @@ export function buildPradera(w) {
   // ---------- Caminos: la ruta sigue al sur hasta el puente del Daymán; ramal a la estación y camino de tierra a la estancia ----------
   w.road([[0, 208], [2, 226], [4, 246], [6, 270], [8, 300], [10, 312]], 3.4, ASPH);
   w.road([[10, 338], [11, 352], [12, 369]], 3.4, ASPH);
-  w.road([[2, 226], [-8, 230], [-18, 232.5]], 3.0, ASPH);
   w.road([[5, 258], [40, 257], [90, 256.5], [128, 256], [144, 250], [149, 230], [151, 200], [151, 190]], 2.4, GRAVEL);
   // puente de la ruta 3 sobre el río Daymán
   { const x = 10, z0 = 310, z1 = 340, y = 3.1;
@@ -37,45 +36,16 @@ export function buildPradera(w) {
     sign(w, 'RUTA 3 · A PAYSANDÚ', x + 4.6, gy(x + 4.6, 352), 352, 0, 6.6, 1.0, { bg: '#2e7d32', border: '#ffffff' });
   }
 
-  // ---------- Vía del ferrocarril: durmientes, rieles y puente de hierro sobre el arroyo ----------
+  // ---------- Vía del ferrocarril (ver rail.js): durmientes, rieles, pasos a nivel y puente de hierro sobre el arroyo ----------
   const bx = PUENTE_ARROYO;
-  for (let x = RAIL.x0; x <= RAIL.x1; x += 1.1) b.boxB(x, railY(x) - 0.3, RAIL.z, 0.32, 0.16, 2.4, 0x6a5038);
-  for (let x = RAIL.x0; x < RAIL.x1; x += 6) for (const s of [-0.72, 0.72]) b.box(x + 3, railY(x + 3) - 0.08, RAIL.z + s, 6.05, 0.14, 0.12, 0x8f969c, 0, 0, Math.atan2(railY(x + 6) - railY(x), 6) );
-  { const x0 = bx - 9, x1 = bx + 9, y = railY(bx) - 0.34;
+  buildVia(w, b);
+  { const x0 = bx - 9, x1 = bx + 9, y = railY(railNear(bx, RAIL.z).s) - 0.34;
     b.boxB(bx, y - 0.6, RAIL.z, x1 - x0, 0.6, 3.4, 0x5d6268);
     for (const s of [-1.6, 1.6]) { b.boxB(bx, y + 2.4, RAIL.z + s, x1 - x0, 0.22, 0.22, 0x4e555c); b.boxB(bx, y, RAIL.z + s, x1 - x0, 0.22, 0.22, 0x4e555c);
       for (let k = 0; k < 6; k++) { const xa = x0 + k * 3; b.add(new THREE.BoxGeometry(0.16, 3.6, 0.16), 0x4e555c, xa + 1.5, y + 1.2, RAIL.z + s, 1, 1, 1, 0, 0, (k % 2 ? 1 : -1) * 0.69); b.boxB(xa, y, RAIL.z + s, 0.2, 2.6, 0.2, 0x4e555c); } }
     for (const xa of [x0 + 2, x1 - 2]) b.boxB(xa, -2, RAIL.z, 1.6, y - 0.6 + 2, 3.2, 0x9c8f7f);
   }
-  // paso a nivel de la ruta con la cruz de San Andrés
-  for (const s of [-1, 1]) { const x = 4 + s * 3.4, z = RAIL.z - s * 4; b.boxB(x, gy(x, z), z, 0.16, 3.2, 0.16, 0xf4f4f4); b.box(x, gy(x, z) + 2.8, z, 1.5, 0.18, 0.06, 0xf4f4f4, 0, 0, 0.7); b.box(x, gy(x, z) + 2.8, z, 1.5, 0.18, 0.06, 0xd62828, 0, 0, -0.7); }
-
-  // ---------- Estación del ferrocarril (ladrillo, alero de madera sobre el andén y carteles «SALTO») ----------
-  { const [sx, sz] = ESTACION, y = gy(sx, sz) + 0.05, wall = 0xa65a3f, trim = 0xf2ead8;
-    b.boxB(sx, y - 0.6, sz + 5.1, 34, 1.4, 4.6, 0xc9c0ad);                          // andén
-    w.addPlatform(sx - 17, sx + 17, sz + 2.8, sz + 7.4, y + 0.8);
-    b.boxB(sx, y + 0.8, sz + 7.15, 34, 0.02, 0.18, 0xffd23f);                         // línea amarilla de seguridad
-    b.boxB(sx, y, sz - 0.4, 15, 4.6, 5.6, wall); b.boxB(sx, y, sz - 0.4, 15.4, 0.6, 6, 0x7b6a5a);
-    b.boxB(sx, y + 4.6, sz - 0.4, 15.6, 0.35, 6.2, trim);
-    gable(b, sx, y + 4.95, sz - 0.4, 15.8, 2.0, 6.8, 0x5f6a73);
-    for (let k = -3; k <= 3; k++) { const x = sx + k * 2.05; b.boxB(x, y + 1.1, sz + 2.42, 1.0, 2.2, 0.08, 0x2d4a5e); b.boxB(x, y + 3.3, sz + 2.42, 1.2, 0.18, 0.12, trim); b.boxB(x, y + 1.05, sz - 3.22, 1.0, 2.2, 0.08, k === 0 ? 0x5b4636 : 0x2d4a5e); }
-    for (const k of [-1, 1]) b.boxB(sx + k * 7.7, y, sz - 0.4, 0.4, 4.6, 6.0, trim);
-    // alero sobre el andén con columnas de hierro
-    b.box(sx, y + 4.4, sz + 4.9, 30, 0.14, 5.4, 0x7a5a3c, 0, -0.12);
-    for (let k = -3; k <= 3; k++) { const x = sx + k * 4.6; b.boxB(x, y + 0.8, sz + 6.5, 0.16, 3.4, 0.16, 0x2f4a3a); b.box(x, y + 4.0, sz + 6.1, 0.1, 0.1, 1.0, 0x2f4a3a, 0, 0.7); }
-    for (let k = -14; k <= 14; k += 2) b.boxB(sx + k, y + 4.05, sz + 7.55, 1.6, 0.3, 0.05, 0xf2ead8);
-    w.addSolid(sx - 7.6, sx + 7.6, sz - 3.3, sz + 2.5); w.addOcc(sx - 7.6, sx + 7.6, sz - 3.3, sz + 2.5, y + 7.2);
-    // bancos, reloj y carteles con el nombre de la estación
-    for (const k of [-11, -5, 5, 11]) { b.boxB(sx + k, y + 0.8, sz + 4.2, 2.2, 0.45, 0.6, C.wood); b.boxB(sx + k, y + 1.25, sz + 3.9, 2.2, 0.5, 0.08, C.wood); }
-    b.cyl(sx, y + 4.9, sz + 2.6, 0.62, 0.62, 0.12, 0xf4f1ea, 16, Math.PI / 2); b.cyl(sx, y + 4.9, sz + 2.54, 0.7, 0.7, 0.1, 0x2b2d33, 16, Math.PI / 2);
-    for (const k of [-15.5, 15.5]) { b.boxB(sx + k, y + 0.8, sz + 6.4, 0.14, 2.2, 0.14, 0x2b2d33); }
-    sign(w, 'SALTO', sx - 15.5, y + 0.35, sz + 6.4, 0, 3.4, 0.9, { bg: '#1c1c1e', fg: '#ffffff', border: '#ffffff' });
-    sign(w, 'SALTO', sx + 15.5, y + 0.35, sz + 6.4, 0, 3.4, 0.9, { bg: '#1c1c1e', fg: '#ffffff', border: '#ffffff' });
-    sign(w, 'ESTACIÓN DEL FERROCARRIL', sx - 1, gy(sx - 1, sz - 8.5), sz - 8.5, 0, 8.2, 1.1, { bg: '#7a2e1d', border: '#ffd23f' });
-    for (const k of [-12, 0, 12]) w.lamp(sx + k, sz - 6, 0);
-    w.tree('palm', sx - 11, sz - 6.5, 0.9); w.tree('palm', sx + 11, sz - 6.5, 0.9); w.tree('jaca', sx + 18, sz - 3, 0.75);
-    w.addInter('v:estacion', sx + 3, sz + 5.4, { console: false, h: 3.6, y: y + 0.8, r: 3.6 });
-  }
+  buildEstacion(w);
 
   // ---------- Cerros chatos: piedras de basalto en las laderas y un mirador en la cima del más alto ----------
   for (const [mx, mz, r, a] of MESAS) {
@@ -93,8 +63,8 @@ export function buildPradera(w) {
   sign(w, 'CERROS CHATOS', 160, terrainH(160, -12), -12, 0.4, 5.2, 1.0, { bg: '#5c4a3e', border: '#ffd23f' });
 
   // ---------- Monte de quebrada a lo largo del arroyo y monte ribereño del Daymán ----------
-  const nearRail = (x, z, d) => Math.abs(z - RAIL.z) < d && x > RAIL.x0 - 4;
-  const avoid = (x, z) => nearRail(x, z, 5) || w.nearRoad(x, z, 3.5) || Math.hypot(x - ESTANCIA[0], z - ESTANCIA[1]) < 16 || Math.hypot(x - TAJAMAR[0], z - TAJAMAR[1]) < 13 || CAMS.some(c => Math.hypot(c[0] - x, c[1] - z) < 3.2) || Math.hypot(x - BIOLOGA[0], z - BIOLOGA[1]) < 4;
+  const nearRail = (x, z, d) => railNear(x, z).d < d;
+  const avoid = (x, z) => nearRail(x, z, 5) || (x > 14 && x < 48 && z > 274 && z < 302) || w.nearRoad(x, z, 3.5) || Math.hypot(x - ESTANCIA[0], z - ESTANCIA[1]) < 16 || Math.hypot(x - TAJAMAR[0], z - TAJAMAR[1]) < 13 || CAMS.some(c => Math.hypot(c[0] - x, c[1] - z) < 3.2) || Math.hypot(x - BIOLOGA[0], z - BIOLOGA[1]) < 4;
   const strip = (pts, w0, w1, step, types) => {
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, az] = pts[i], [cx, cz] = pts[i + 1], L = Math.hypot(cx - ax, cz - az), nx = -(cz - az) / L, nz = (cx - ax) / L;
@@ -180,3 +150,95 @@ export function buildPradera(w) {
   fence([[-40, 262], [130, 262]]);
   w.treesNew = w.trees.splice(t0);   // los árboles de la ampliación van en mallas aparte: así no se dibujan cuando la cámara mira a la ciudad
 }
+
+// ---------- Vía: durmientes y rieles a lo largo del recorrido; en la ciudad, a nivel de la calle con balasto y tablones ----------
+const CALLES = [[53.4, 56.6], [67.4, 79.6], [90.4, 93.6]];   // calles que cruza la vía entre las manzanas (z)
+function buildVia(w, bp) {
+  const P = {}, Q = {}, enCalle = z => CALLES.some(([a, c]) => z > a - 0.2 && z < c + 0.2);
+  const pick = s => s < S_CITY + 2 ? w.batch : bp;
+  for (let s = 0.5; s <= RAIL_L; s += 1.1) { railXZ(s, P); if (s < S_CITY + 2 && enCalle(P.z)) continue; pick(s).box(P.x, railY(s) - 0.22, P.z, 0.32, 0.16, 2.4, 0x6a5038, railRot(P)); }
+  for (let s = 0; s < RAIL_L; s += 3) {
+    const s1 = Math.min(RAIL_L, s + 3); railXZ(s, P); railXZ(s1, Q);
+    const ux = Q.x - P.x, uz = Q.z - P.z, L = Math.hypot(ux, uz), nx = -uz / L, nz = ux / L, y0 = railY(s), y1 = railY(s1), ry = -Math.atan2(uz, ux), rz = Math.atan2(y1 - y0, L);
+    for (const o of [-0.72, 0.72]) pick(s).box((P.x + Q.x) / 2 + nx * o, (y0 + y1) / 2 - 0.08, (P.z + Q.z) / 2 + nz * o, L + 0.06, 0.14, 0.12, 0x8f969c, ry, 0, rz);
+  }
+  // en la ciudad: balasto entre calles y tablones en los cruces
+  let z0 = RZ0 - 0.8;
+  for (const [a, c] of CALLES) { w.batch.boxB(RX, 2.18, (z0 + a) / 2, 3.6, 0.08, a - z0, 0x8a8076); w.batch.boxB(RX, 2.2, (a + c) / 2, 2.2, 0.2, c - a, 0x5a4636); z0 = c; }
+  // tope al final de la vía, al norte del andén
+  { const y = 2.2, z = RZ0 - 0.6; for (const o of [-0.72, 0.72]) w.batch.boxB(RX + o, y, z, 0.3, 1.0, 0.3, 0x3a3f46); w.batch.boxB(RX, y + 0.7, z - 0.1, 2.6, 0.45, 0.35, 0xd62828); for (let k = -1; k <= 1; k += 2) w.batch.boxB(RX + k * 0.6, y + 0.7, z - 0.29, 0.5, 0.45, 0.02, 0xf4f4f4); w.addSolid(RX - 1.3, RX + 1.3, z - 0.3, z + 0.2, y + 1.2); }
+  // pasos a nivel con los caminos de afuera: tablones y cruces de San Andrés
+  const seen = [], rn = {};
+  for (const line of w.roads) for (let i = 0; i < line.length - 1; i++) { const [ax, az] = line[i], [bx, bz] = line[i + 1], Lr = Math.hypot(bx - ax, bz - az);
+    for (let t = 0; t <= Lr; t += 0.5) { const x = ax + (bx - ax) * t / Lr, z = az + (bz - az) * t / Lr; railNear(x, z, rn);
+      if (rn.d > 0.5 || rn.s < S_CITY + 4 || seen.some(q => Math.abs(q - rn.s) < 12)) continue; seen.push(rn.s);
+      railXZ(rn.s, P); const ry = railRot(P), y = railY(rn.s), nx = -P.dz, nz = P.dx;
+      bp.box(P.x, y - 0.1, P.z, 4.2, 0.14, 2.0, 0x5a4636, ry);
+      for (const sd of [-1, 1]) { const px = P.x + nx * sd * 3.4 - P.dx * sd * 2.6, pz = P.z + nz * sd * 3.4 - P.dz * sd * 2.6, py = w.groundAt(px, pz);
+        bp.boxB(px, py, pz, 0.16, 3.2, 0.16, 0xf4f4f4); bp.box(px, py + 2.8, pz, 1.5, 0.18, 0.06, 0xf4f4f4, ry + Math.PI / 2, 0, 0.7); bp.box(px, py + 2.8, pz, 1.5, 0.18, 0.06, 0xd62828, ry + Math.PI / 2, 0, -0.7); }
+    } }
+}
+
+// ---------- Estación de Salto (ex Midland, Monumento Histórico Nacional): en la ciudad, al este del centro ----------
+// Armada a partir de fotos: dos plantas revocadas en gris arena, planta baja con buñas, ventanas altas arriba, cornisa
+// gruesa, un ala baja con terraza y toldo celeste, el alero del andén sobre columnas de hierro verdes y el cartel «SALTO».
+// Al lado, el edificio de dos plantas lindero; más al sur, la chimenea y los dos galpones contiguos.
+function plaqueMesh(w, text, x, y, z, ry, sw, sh, o = {}) {
+  const t = textTex(text, { w: 512, h: Math.max(64, Math.round(512 * sh / sw)), bg: o.bg || '#f4f4f4', fg: o.fg || '#1c1c1e', border: o.border || '#1c1c1e', size: 80 });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: o.glow != null ? o.glow : 0.25, roughness: 0.8 }));
+  m.position.set(x, y, z); m.rotation.y = ry; w.scene.add(m); if (o.both) { const m2 = m.clone(); m2.rotation.y = ry + Math.PI; w.scene.add(m2); } return m;
+}
+export function buildEstacion(w) {
+  const b = w.batch, Y = 2.2, STU = 0xc8c0ae, STUd = 0xb1a995, TRIM = 0xe6e0d0, WIN = 0x2d3a44, DOOR = 0x4a3426, GREEN = 0x2f5a3a;
+  const box = (x0, x1, y0, y1, z0, z1, c) => b.boxB((x0 + x1) / 2, y0, (z0 + z1) / 2, x1 - x0, y1 - y0, z1 - z0, c);
+  // suelo de la manzana de la estación y de las de los galpones
+  for (const [z0, z1] of [[28.6, 53.4], [56.6, 67.4], [79.6, 90.4]]) box(5.6, 18.4, 1.3, 2.2, z0, z1, C.sidewalk);
+  // edificio principal
+  const x0 = 5.8, x1 = 11.8, z0 = 31.5, z1 = 50.5, H1 = 3.6, H2 = 7.0;
+  box(x0, x1, Y, Y + H2, z0, z1, STU);
+  for (let k = 1; k <= 5; k++) box(x0 - 0.03, x1 + 0.03, Y + k * 0.6 - 0.03, Y + k * 0.6 + 0.03, z0 - 0.03, z1 + 0.03, STUd);   // buñas de la planta baja
+  box(x0 - 0.12, x1 + 0.12, Y + H1, Y + H1 + 0.3, z0 - 0.12, z1 + 0.12, TRIM);                                                     // faja entre pisos
+  box(x0 - 0.25, x1 + 0.25, Y + H2, Y + H2 + 0.45, z0 - 0.25, z1 + 0.25, TRIM); box(x0, x1, Y + H2 + 0.45, Y + H2 + 0.95, z0, z1, STU);   // cornisa y pretil
+  for (const xf of [x0 - 0.05, x1 + 0.05]) {
+    for (let z = z0 + 1.2; z < z1 - 0.6; z += 2.1) { box(xf - 0.04, xf + 0.04, Y + 4.2, Y + 6.4, z - 0.6, z + 0.6, TRIM); box(xf - 0.06, xf + 0.06, Y + 4.35, Y + 6.25, z - 0.45, z + 0.45, WIN); box(xf - 0.1, xf + 0.1, Y + 6.45, Y + 6.6, z - 0.7, z + 0.7, TRIM);
+      w.winBatch[1].add(new THREE.PlaneGeometry(0.85, 1.8), 0xffffff, xf + (xf > 9 ? 0.08 : -0.08), Y + 5.3, z, 1, 1, 1, 0, xf > 9 ? Math.PI / 2 : -Math.PI / 2, 0, 0); }
+    for (let z = z0 + 2.25; z < z1 - 1; z += 4.2) box(xf - 0.07, xf + 0.07, Y + H1 + 0.3, Y + H2, z - 0.22, z + 0.22, TRIM);   // pilastras
+  }
+  for (let z = z0 + 1.5; z < z1 - 1; z += 3) { const door = Math.round((z - z0) / 3) % 2 === 0; box(x1 + 0.02, x1 + 0.08, Y, Y + (door ? 2.8 : 2.2), z - 0.6, z + 0.6, door ? DOOR : WIN); if (!door) box(x1 + 0.02, x1 + 0.06, Y, Y + 0.9, z - 0.6, z + 0.6, STU); }   // andén
+  for (const z of [36, 38.5, 43.5, 46]) box(x0 - 0.08, x0 - 0.02, Y + 0.9, Y + 2.9, z - 0.55, z + 0.55, WIN);   // calle
+  box(x0 - 0.1, x0 - 0.02, Y, Y + 3.0, 40, 42, DOOR); box(x0 - 0.5, x0, Y, Y + 0.15, 39.2, 42.8, 0xe6dccb); box(x0 - 0.3, x0 - 0.02, Y + 3.05, Y + 3.25, 39.6, 42.4, TRIM);
+  plaqueMesh(w, 'ESTACIÓN SALTO', x0 - 0.1, Y + 3.9, 41, -Math.PI / 2, 3.6, 0.6, { bg: '#2f3a33', fg: '#f3e2b0', border: '#cfa24a', glow: 0.35 });
+  plaqueMesh(w, 'MONUMENTO HISTÓRICO NACIONAL', x0 - 0.06, Y + 2.0, 38.0, -Math.PI / 2, 1.2, 0.36, { bg: '#3a3226', fg: '#f3e2b0', border: '#cfa24a' });
+  b.cyl(x1 + 0.1, Y + 3.1, 41, 0.55, 0.55, 0.1, 0xf4f1ea, 16, 0, 0, Math.PI / 2); b.cyl(x1 + 0.06, Y + 3.1, 41, 0.62, 0.62, 0.08, 0x2b2d33, 16, 0, 0, Math.PI / 2);   // reloj
+  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H2 + 1);
+  // ala baja al norte, con terraza, baranda y el toldo celeste
+  box(x0, x1, Y, Y + 3.2, 28.9, z0, STU); box(x0 - 0.1, x1 + 0.1, Y + 3.2, Y + 3.4, 28.8, z0, TRIM);
+  for (let z = 29.1; z < z0; z += 0.5) box(x1 - 0.06, x1 + 0.06, Y + 3.4, Y + 4.2, z - 0.05, z + 0.05, TRIM); box(x1 - 0.1, x1 + 0.1, Y + 4.2, Y + 4.32, 28.9, z0, TRIM);
+  for (let x = x0 + 0.3; x < x1; x += 0.5) box(x - 0.05, x + 0.05, Y + 3.4, Y + 4.2, 28.95, 29.05, TRIM); box(x0, x1, Y + 4.2, Y + 4.32, 28.9, 29.1, TRIM);
+  for (const [xx, zz] of [[7.2, 30], [9.4, 29.6], [10.8, 30.4]]) { box(xx - 0.25, xx + 0.25, Y + 3.4, Y + 3.9, zz - 0.25, zz + 0.25, 0x9a6b4b); b.sph(xx, Y + 4.15, zz, 0.32, 0x4f9a3f); }   // macetas
+  b.box(x1 - 1.6, Y + 5.0, (28.9 + z0) / 2 + 0.6, 3.4, 0.08, 2.6, 0x2a8bd8, 0, 0, -0.32);
+  w.addSolid(x0, x1, 28.9, z0); w.addOcc(x0, x1, 28.9, z0, Y + 4.4);
+  // edificio de dos plantas lindero, al sur
+  box(x0, 11.2, Y, Y + 6.6, 51.1, 53.2, 0xd6a99a); box(x0 - 0.15, 11.35, Y + 6.6, Y + 6.95, 51, 53.3, TRIM);
+  for (const xf of [x0 - 0.05, 11.25]) for (const z of [51.8, 52.6]) for (const yy of [0.9, 4.2]) box(xf - 0.03, xf + 0.03, Y + yy, Y + yy + 1.7, z - 0.28, z + 0.28, WIN);
+  w.addSolid(x0, 11.2, 51.1, 53.2); w.addOcc(x0, 11.2, 51.1, 53.2, Y + 7);
+  // andén con su alero sobre columnas de hierro verdes
+  const PY = 2.95, AX0 = x1, AX1 = 14.35, AZ0 = 29.8, AZ1 = 54;
+  box(AX0, AX1, Y - 0.9, PY, AZ0, AZ1, 0xbdb4a2); box(AX1 - 0.3, AX1, PY, PY + 0.01, AZ0, AZ1, 0xffd23f); w.addPlatform(AX0, AX1, AZ0, AZ1, PY);
+  for (let z = AZ0 + 1.6; z < AZ1; z += 3.6) { box(13.75, 13.95, PY, PY + 2.9, z - 0.1, z + 0.1, GREEN); b.box(13.3, PY + 2.75, z, 1.0, 0.08, 0.08, GREEN, 0, 0, 0.5); }
+  b.box(12.95, PY + 3.05, (AZ0 + AZ1) / 2, 3.1, 0.1, AZ1 - AZ0, 0x7d858c, 0, 0, -0.12); box(14.45, 14.52, PY + 2.55, PY + 2.95, AZ0, AZ1, 0xe8e0cc);
+  for (const z of [34, 39, 45, 49]) { box(12.2, 12.7, PY, PY + 0.45, z - 1, z + 1, C.wood); box(11.92, 12.0, PY + 0.45, PY + 0.95, z - 1, z + 1, C.wood); }
+  for (const z of [30.6, 53.2]) { for (const o of [-0.95, 0.95]) box(12.9 - 0.05, 12.9 + 0.05, PY, PY + 2.2, z + o - 0.05, z + o + 0.05, 0x2b2d33); plaqueMesh(w, 'SALTO', 12.9, PY + 2.0, z, Math.PI / 2, 2.2, 0.55, { both: true }); }
+  w.addInter('v:estacion', 13.1, 42, { console: false, h: 3.6, y: PY, r: 3.4 });
+  // chimenea de ladrillo y casa de calderas, en la manzana siguiente
+  box(5.8, 10.4, Y, Y + 3.6, 58, 63.5, 0xa65a3f); gableZ(b, 8.1, Y + 3.6, 60.75, 5.9, 1.3, 4.9, 0x8a4b33); w.addSolid(5.8, 10.4, 58, 63.5); w.addOcc(5.8, 10.4, 58, 63.5, Y + 5);
+  box(10.8, 12.6, Y, Y + 1.6, 64.2, 66, 0x963f2b); b.cyl(11.7, Y + 1.6, 65.1, 0.5, 0.8, 11, 0x963f2b, 10); b.cyl(11.7, Y + 12.6, 65.1, 0.62, 0.55, 0.5, 0x6e2c1e, 10); w.addSolid(10.8, 12.6, 64.2, 66, Y + 13);
+  for (let k = 0; k < 4; k++) box(6.4, 9.8, Y + k * 0.18, Y + k * 0.18 + 0.16, 64.6 + (k % 2) * 0.2, 65.8 + (k % 2) * 0.2, 0x6a5038);   // durmientes apilados
+  // los dos galpones contiguos
+  for (const [gx0, gx1, roof] of [[5.8, 9.6, 0x8a4b33], [9.7, 13.5, 0x9aa0a4]]) { box(gx0, gx1, Y, Y + 4.2, 80.2, 89.8, 0xa65a3f); gableZ(b, (gx0 + gx1) / 2, Y + 4.2, 85, 9.9, 1.6, gx1 - gx0 + 0.4, roof);
+    box((gx0 + gx1) / 2 - 1.1, (gx0 + gx1) / 2 + 1.1, Y, Y + 3.2, 80.12, 80.2, 0x3a2e26); for (const z of [82.5, 85, 87.5]) box(gx1 - 0.04 + 0.08, gx1 + 0.06, Y + 2.2, Y + 3.2, z - 0.4, z + 0.4, WIN); }
+  w.addSolid(5.8, 13.5, 80.2, 89.8); w.addOcc(5.8, 13.5, 80.2, 89.8, Y + 6);
+  plaqueMesh(w, 'GALPONES DEL FERROCARRIL', 9.6, Y + 4.9, 80.0, Math.PI, 3.2, 0.42, { bg: '#3a3226', fg: '#f3e2b0', border: '#cfa24a' });
+}
+const gableZ = (b, x, y0, z, len, h, wid, color) => { const sy = h / 1.5; b.add(TRI_Z, color, x, y0 + 0.5 * sy, z, wid / 1.732, sy, len); };
+const TRI_Z = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2);

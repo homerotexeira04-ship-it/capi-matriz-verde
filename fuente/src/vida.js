@@ -5,9 +5,9 @@ import { RES, CHANNEL } from './terrain.js';
 import { rng, smooth, clamp, lerp, damp } from './util.js';
 import { sign } from './sectors.js';
 
-const NAR = [73, -76], TER = [91.5, -73], TERMICA = [33, 52], FAM = [-34, -18.5];
+const NAR = [73, -76], TER = [30, 287], TERMICA = [33, 52], FAM = [-34, -18.5];   // las termas, junto al río Daymán como las reales
 // Claros donde no se plantan árboles del monte (naranjal, termas, central térmica)
-export const CLEAR = [[61, 86, -89, -62], [79, 104, -85, -61], [24, 42, 42, 62]];
+export const CLEAR = [[61, 86, -89, -62], [16, 46, 276, 300], [24, 42, 42, 62]];
 
 const slab = (w, cx, cz, sx, sz, color) => {
   let lo = 1e9, hi = -1e9;
@@ -31,7 +31,9 @@ export function buildSalto(w) {
   [[tx - 7.2, tz - 4.2, 0xff6b6b], [tx - 2.4, tz - 5, 0xffd23f], [tx + 7.6, tz - 0.6, 0x4fc3f7]].forEach(([ux, uz, col]) => {
     b.cyl(ux, ty, uz, 0.06, 0.06, 2.2, 0xdddddd, 5); b.add(new THREE.ConeGeometry(1.35, 0.55, 8), col, ux, ty + 2.4, uz); b.boxB(ux + 1.1, ty, uz + 0.3, 0.7, 0.28, 1.7, 0xffffff); w.addCircle(ux, uz, 0.2);
   });
-  sign(w, 'TERMAS', tx - 4.5, ty, tz + 6.2, 0, 5, 1.3, { bg: '#0d5c6b', border: '#9be7ff' });
+  sign(w, 'TERMAS DEL DAYMÁN', tx - 4.5, ty, tz - 6.9, 0, 7.4, 1.3, { bg: '#0d5c6b', border: '#9be7ff' });
+  { const px = tx - 0.4, pz = tz + 4.6; b.boxB(px, ty, pz, 9.6, 0.42, 3.6, 0xd7dde0); b.boxB(px, ty + 0.36, pz, 9.0, 0.08, 3.0, 0x35c9d2); w.addSolid(px - 4.8, px + 4.8, pz - 1.8, pz + 1.8, ty + 0.5); }   // pileta rectangular
+  for (const [px, pz] of [[tx - 8.6, tz + 5.2], [tx + 8.4, tz + 5.4], [tx + 8.6, tz - 5.6]]) w.tree('palm', px, pz, 0.9);
   w.updaters.push((dt, st) => {
     if (Math.random() < 16 * dt) { const p = pools[Math.random() < 0.62 ? 0 : 1], a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * p[2] * 0.9; st.fx.soft.emit(p[0] + Math.cos(a) * r, ty + 0.5, p[1] + Math.sin(a) * r, (Math.random() - 0.5) * 0.3, 0.7 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3, 2.2 + Math.random(), 0.5, 1.9, 0xffffff, 0.32, -0.25, 0.5); }
   });
@@ -55,6 +57,9 @@ export function buildSalto(w) {
   });
   // ---------- Casas del barrio donde Capi cambia lamparitas por LED ----------
   [[-28, 114], [-20, 122], [-36, 130]].forEach(([hx, hz], i) => { const h = w.houses.find(q => Math.abs(q.x - hx) < 2 && Math.abs(q.z - hz) < 2); if (h) w.addInter('led:' + i, h.x, h.z + h.d / 2 + 1.3, { console: false, h: 4.3, r: 3 }); });
+  // ---------- Los parques reales de Salto, con su distancia: esta maqueta junta en pocos metros lo que en Salto está repartido ----------
+  sign(w, 'JUNTO A LA REPRESA REAL: PLANTA SOLAR ASAHI (2013), LA PRIMERA DEL PAÍS', 33, w.groundAt(33, -51), -51, 0.2, 11.6, 1.2, { bg: '#7a5a12', border: '#ffd23f' });
+  sign(w, 'EL PARQUE EÓLICO REAL: CAMPO PALOMAS · 35 MOLINOS · 70 MW · A 50 KM AL NORESTE', 53, w.groundAt(53, 17.5), 17.5, 0.62, 12.4, 1.2, { bg: '#1d4f8a', border: '#ffffff' });
   // ---------- Homenaje junto a la represa ----------
   sign(w, 'HOMENAJE A SALTO GRANDE', -55, w.groundAt(-55, -107.5), -107.5, 0, 7.6, 1.2, { bg: '#12325a', border: '#5ad1ff' });
 }

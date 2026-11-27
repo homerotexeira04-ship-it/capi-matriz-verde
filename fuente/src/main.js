@@ -242,7 +242,7 @@ class Game {
     this.missions.start(mode, phase, true, tut);
     if (tut) this.tut.start();
     if (mode === 'gira') {   // la Gira arranca en el andén de la estación, frente a la jefa
-      const [sx, sz] = ESTACION, x = sx, z = sz + 4.2; this.capi.teleport(x, z); this.capi.heading = -Math.PI / 2;
+      const [sx, sz] = ESTACION, x = sx - 0.4, z = sz + 3; this.capi.teleport(x, z); this.capi.heading = Math.PI / 2;
       this.cam.target.set(x, this.world.groundAt(x, z) + 1.5, z); this.cam.yawT = this.cam.yaw = 0.6; this.cam.distT = this.cam.dist = 34;
     }
     if (mode === 'rapida') {   // la visita rápida arranca al lado del molino frenado, mirándolo

@@ -24,6 +24,7 @@ import { buildPradera } from './pradera.js';
 import { Campo } from './campo.js';
 import { buildDestinos } from './destinos.js';
 import { Viajes } from './viajes.js';
+import { Detalle } from './detalle.js';
 import { Stats, Guide, Settings } from './guia.js';
 import { Tutorial } from './tutorial.js';
 import { Vecinos } from './vecinos.js';
@@ -99,6 +100,7 @@ class Game {
     await L.step('flora', () => { buildFlora(w); buildSur(w); buildSalto(w); buildSocial(w); buildPradera(w); });
     await L.step('unir', () => { w.finalize(); });
     await L.step('luces', () => { w.nightLights(); w.groundShadows(); w.buildPuddles(); });
+    await L.step('detalle', () => { this.detalle = new Detalle(w); });
     await L.step('capi', () => { this.capi = new Capi(this.scene, w, this.fx, this.audio); this.actors = new Actors(w, this.scene); });
     await L.step('caminos', () => { this.capi.nav = new NavGrid(w); });
     await L.step('viajes', () => { buildDestinos(w); });
@@ -530,7 +532,7 @@ class Game {
     if (this.cine) { this.capiLight.position.set(c.pos.x, c.pos.y + 3.4, c.pos.z + 2.6); this.capiLight.intensity = night * 40; } else { this.capiLight.position.set(c.pos.x, c.pos.y + 4.6, c.pos.z); this.capiLight.intensity = night * 16; }
     if (c.rimU) c.rimU.uRim.value = lerp(0.14, 0.3, night); this.fx.setLight(lerp(1, 0.4, night) * (1 - 0.25 * (w.storm || 0)));   // halo suave: con la noche oscura y el resplandor, más quemaba
     for (const it of needs) if (Math.random() < 5 * dt) this.fx.sparks(it.x + (Math.random() - 0.5), it.y + 1.6, it.z + (Math.random() - 0.5), 3, 0xffb020);
-    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.campo.update(dt, st); this.viajes.update(dt, st); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.corte.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
+    this.extras.update(dt, { fx: this.fx, play: play && !this.cine && !this.riding }); this.vida.update(dt, st); this.campo.update(dt, st); this.viajes.update(dt, st); this.detalle.update(dt, this.cam.target, this.cam.dist, !!this.viajes.cur); this.social.update(dt, st); this.vecinos.update(dt, st); this.fiestas.update(dt, st); this.intl.update(dt, st); this.corte.update(dt, st); this.urbano.update(dt, st); this.museo.update(dt, st); this.escuela.update();
     this.fx.update(dt);
     // --- Audio y HUD ---
     const near = (x, z, r) => clamp(1 - Math.hypot(c.pos.x - x, c.pos.z - z) / r, 0, 1);
@@ -586,6 +588,7 @@ const STEPS = [
   { id: 'flora', label: 'Plantando ceibos, palmeras y naranjos…', ms: 300 },
   { id: 'unir', label: 'Uniendo las piezas de la maqueta…', ms: 260 },
   { id: 'luces', label: 'Ventanas, sombras y charcos…', ms: 160 },
+  { id: 'detalle', label: 'Sembrando pasto, flores silvestres y piedritas…', ms: 700 },
   { id: 'capi', label: 'Despertando a Capi y a los vecinos…', ms: 140 },
   { id: 'caminos', label: 'Calculando caminos para caminar…', ms: 150 },
   { id: 'viajes', label: 'Armando los destinos de la Gira por el Uruguay…', ms: 300 },

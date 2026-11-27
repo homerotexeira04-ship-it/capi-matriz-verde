@@ -572,7 +572,10 @@ export class World {
     }
     const { fl, flC, flF } = this.treeMats;
     out.push(this.instanced(new THREE.CylinderGeometry(0.75, 1, 1, 5), fl, trunk));
-    const cm = this.instanced(new THREE.IcosahedronGeometry(1, 1), flC, crown, 0.08); out.push(cm);
+    if (!this.crownGeo) { const cg = new THREE.IcosahedronGeometry(1, 1), p = cg.attributes.position, h = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return v - Math.floor(v); };
+      for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 1 + (h(Math.round(x * 50), Math.round(y * 50), Math.round(z * 50)) - 0.5) * 0.34; p.setXYZ(i, x * k, y * k * (y < -0.5 ? 0.8 : 1), z * k); }
+      cg.computeVertexNormals(); this.crownGeo = cg; }
+    const cm = this.instanced(this.crownGeo, flC, crown, 0.08); out.push(cm);
     if (cm) { this.bloom = this.bloom || []; crown.forEach((o, i) => { if (o.c === 0xe2383f || o.c === 0x8f7fd6) { const c0 = new THREE.Color(); cm.getColorAt(i, c0); this.bloom.push({ m: cm, i, c0, jaca: o.c === 0x8f7fd6 }); } }); }
     const fg = [];
     for (let k = 0; k < 8; k++) { const g = new THREE.BoxGeometry(0.26, 0.05, 1); g.translate(0, 0, 0.5); g.rotateX(0.42 + (k % 2) * 0.3); g.rotateY(k * Math.PI / 4); fg.push(g); }
@@ -684,7 +687,7 @@ export function offsetWorld(w, dx, dz) {
 // Color del suelo por zona, altura y pendiente.
 const cA = new THREE.Color(), cB = new THREE.Color();
 // Viento visible: las copas y las hojas de palmera se mecen; arriba más que abajo, cada árbol a su ritmo y con ráfagas
-function windSway(m, U, amp, radial) {
+export function windSway(m, U, amp, radial) {
   m.onBeforeCompile = sh => {
     sh.uniforms.uWind = U.uWind; sh.uniforms.uWindDir = U.uWindDir; sh.uniforms.uTime = U.uTime;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWind; uniform vec2 uWindDir; uniform float uTime;').replace('#include <project_vertex>', `vec4 mvPosition = vec4(transformed, 1.0);
@@ -733,7 +736,7 @@ function winLife(m, U) {
   m.customProgramCacheKey = () => 'winLife'; return m;
 }
 
-function groundColor(c, x, z, h, ny) {
+export function groundColor(c, x, z, h, ny) {
   const wl = waterAt(x, z), ar = westD(x, z), d = Math.max(coastD(x, z), ar);   // distancia a la orilla más cercana (positiva en tierra)
   // bajo el agua: las playas suaves pasan de arena a hondo; las barrancas empinadas se oscurecen enseguida (si no, se transparentan como una pared clara)
   if (h < wl - 0.15) { c.set(0x24495e).lerp(cA.set(0xcdbb8c), smooth(wl - 2.6, wl - 0.1, h) * smooth(0.55, 0.85, ny)); return; }

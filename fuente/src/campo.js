@@ -255,24 +255,82 @@ export class Campo {
     setTimeout(() => { $('fade').classList.remove('on'); g.extras.fading = false; this.photos(); }, 2600);
   }
   photos() {
-    const g = this.g, R = Math.random, shots = [];
+    const g = this.g, R = Math.random, shots = []; this.photoBegin();
     SPOT.forEach((tab, i) => {
       // en la primera noche, al menos una foto rara no está garantizada: es azar de verdad (pero el puma es muy difícil)
       const tot = Object.values(tab).reduce((a, b) => a + b, 0); let r = R() * tot, k = 'zorro'; for (const [kk, p] of Object.entries(tab)) { r -= p; if (r <= 0) { k = kk; break; } }
-      const hh = 20 + Math.floor(R() * 10), hour = hh % 24, min = Math.floor(R() * 60);
-      shots.push({ k, i, cam: CAMS[i][2], time: `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`, temp: 9 + Math.floor(R() * 12), night: hour < 6 || hour >= 20 });
+      const day = R() < 0.45, hour = day ? 7 + Math.floor(R() * 11) : (20 + Math.floor(R() * 10)) % 24, min = Math.floor(R() * 60);
+      shots.push({ k, i, cam: CAMS[i][2], hourNum: hour + min / 60, night: !day, time: `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`, temp: 9 + Math.floor(R() * 12) });
     });
     const box = $('fpList'); box.textContent = '';
     for (const s of shots) {
       const f = FBY[s.k], card = document.createElement('div'); card.className = 'fpCard' + (f.rare ? ' rare' : '');
-      const cv = document.createElement('canvas'); cv.width = 320; cv.height = 200; this.drawPhoto(cv, s); card.appendChild(cv);
-      const t = document.createElement('div'); t.innerHTML = `<b>${f.name}</b><small>${s.cam}</small>`; card.appendChild(t); box.appendChild(card);
+      const ph = this.shoot(s), cv = document.createElement('canvas'); cv.width = ph.color.width; cv.height = ph.color.height; const cx = cv.getContext('2d'); cx.drawImage(s.night ? ph.ir : ph.color, 0, 0); card.appendChild(cv);
+      const t = document.createElement('div'); t.innerHTML = `<b>${f.name}</b><small>${s.cam} · ${s.night ? 'infrarroja, de noche' : 'a color, de día'}</small>`; card.appendChild(t);
+      if (s.night) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn ghost fpTog'; bt.textContent = 'Ver a color'; let col = false;
+        bt.onclick = () => { col = !col; cx.drawImage(col ? ph.color : ph.ir, 0, 0); bt.textContent = col ? 'Ver infrarroja' : 'Ver a color'; t.querySelector('small').textContent = `${s.cam} · ${col ? 'a color (así se vería de día)' : 'infrarroja, de noche'}`; this.g.audio.click(); }; t.appendChild(bt); }
+      box.appendChild(card); this.thumbs[s.k] = ph.color;
       this.register(s.k, 'foto');
     }
+    this.photoEnd();
     const rare = shots.find(s => FBY[s.k].rare);
     $('fpMsg').textContent = rare ? (rare.k === 'puma' ? '¡Un puma! Es uno de los registros más raros del país. Ana no lo puede creer.' : '¡Un aguará guazú! Ana dice que cada registro ayuda a cuidarlo.') : 'Cada foto suma datos para cuidar la fauna. Podés volver a revisar las cámaras otra noche.';
     g.extras.open = 'fotos'; $('fotos').classList.remove('hidden'); g.audio.ok();
     if (rare) { g.audio.fanfare(); g.capi.celebrate(2); }
+  }
+  // ---------- Fotos 3D: la escena de verdad, vista desde la cámara trampa, con el animal posando adelante ----------
+  actor(k) {
+    if (!this.actors) this.actors = {};
+    if (this.actors[k]) return this.actors[k];
+    const P = this.sp[k] ? this.sp[k].P : animalParts(k), g = new THREE.Group(), mat = this.mat;
+    const body = new THREE.Mesh(P.body, mat), head = new THREE.Mesh(P.head, mat); head.position.set(...P.pivot); g.add(body, head);
+    const legs = P.hips.map(h => { const m = new THREE.Mesh(P.leg, mat); m.position.set(...h); g.add(m); return m; });
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.visible = false; this.g.scene.add(g);
+    return (this.actors[k] = { g, head, legs, P });
+  }
+  photoBegin() {
+    const r = this.g.renderer;
+    if (!this.prt) { this.prt = new THREE.WebGLRenderTarget(480, 300, { samples: r.capabilities.isWebGL2 ? 4 : 0, colorSpace: THREE.SRGBColorSpace, depthBuffer: true, stencilBuffer: true }); this.pcam = new THREE.PerspectiveCamera(50, 480 / 300, 0.1, 500); this.pbuf = new Uint8Array(480 * 300 * 4); }
+    if (!this.thumbs) this.thumbs = {};
+    this.cams.forEach(c => { c.m.visible = c.post.visible = false; });
+  }
+  photoEnd() { const g = this.g; g.world.setTime(g.grid.hour, g.cam.target); this.cams.forEach(c => { c.m.visible = c.post.visible = c.set; }); }
+  shoot(s) {
+    const g = this.g, w = g.world, r = g.renderer, R = Math.random, [cx, cz] = CAMS[s.i], cy = terrainH(cx, cz);
+    const big = ['venado', 'nandu', 'aguara', 'puma', 'guazubira', 'carpincho'].includes(s.k), small = ['mulita', 'lechucita', 'hornero'].includes(s.k), d = big ? 4.4 : small ? 2.0 : 3.1;
+    // hacia dónde mira la cámara: la dirección con menos troncos en el medio y suelo firme para el animal
+    const trees = (w.treesNew || []).concat(w.trees); let best = null;
+    for (let k = 0; k < 16; k++) {
+      const a = k / 16 * 6.283, ax = cx + Math.sin(a) * d, az = cz + Math.cos(a) * d, ah = terrainH(ax, az); if (ah < 0.3 && !['lobito', 'garza', 'carpincho'].includes(s.k)) continue;
+      let clear = 9; for (const t of trees) { if (Math.abs(t.x - cx) > 14 || Math.abs(t.z - cz) > 14) continue; const dd = distPoly(t.x, t.z, [[cx + Math.sin(a) * 0.8, cz + Math.cos(a) * 0.8], [ax + Math.sin(a) * 1.5, az + Math.cos(a) * 1.5]]); clear = Math.min(clear, dd); }
+      const sc = clear - Math.abs(ah - cy) * 0.5 + R() * 0.5; if (!best || sc > best.sc) best = { a, ax, az, ah: Math.max(ah, 0), sc };
+    }
+    if (!best) best = { a: 0, ax: cx, az: cz + d, ah: cy };
+    const A = this.actor(s.k), P = A.P, hd = best.a + (R() < 0.5 ? 1 : -1) * (Math.PI / 2 + (R() - 0.5) * 0.7);
+    A.g.position.set(best.ax, best.ah, best.az); A.g.rotation.set(0, hd, 0); A.g.visible = true;
+    const look = R() < 0.55, ph = R() * 6, amp = R() < 0.6 ? 0.35 : 0;
+    A.head.rotation.set(look ? -0.1 : P.graze * 0.8, look ? clamp(Math.atan2(Math.sin(best.a + Math.PI - hd), Math.cos(best.a + Math.PI - hd)), -0.9, 0.9) : 0, 0);
+    A.legs.forEach((m, j) => { m.rotation.x = Math.sin(ph + P.gait[j]) * amp; });
+    const camY = cy + 0.75, tgtY = best.ah + (big ? 0.7 : small ? 0.15 : 0.35);
+    this.pcam.position.set(cx, camY, cz); this.pcam.lookAt(best.ax, tgtY, best.az); this.pcam.updateMatrixWorld();
+    // luz de día para la foto (la de noche se convierte después a infrarroja, como con el flash de la cámara)
+    w.setTime(s.night ? 12 : s.hourNum, new THREE.Vector3(best.ax, best.ah, best.az));
+    const prev = r.getRenderTarget(); r.setRenderTarget(this.prt); r.clear(); r.render(g.scene, this.pcam); r.setRenderTarget(prev);
+    r.readRenderTargetPixels(this.prt, 0, 0, 480, 300, this.pbuf); A.g.visible = false;
+    const mk = () => { const c = document.createElement('canvas'); c.width = 480; c.height = 300; return c; };
+    const color = mk(), ir = mk(), gc = color.getContext('2d'), gi = ir.getContext('2d'), img = gc.createImageData(480, 300), im2 = gi.createImageData(480, 300), b = this.pbuf;
+    for (let y = 0; y < 300; y++) for (let x = 0; x < 480; x++) {
+      const si = ((299 - y) * 480 + x) * 4, di = (y * 480 + x) * 4, n = (R() - 0.5) * 10;
+      let rr = b[si], gg = b[si + 1], bb = b[si + 2]; const l = 0.3 * rr + 0.59 * gg + 0.11 * bb;
+      rr = clamp((rr - l) * 1.12 + l * 1.04 + n, 0, 255); gg = clamp((gg - l) * 1.12 + l * 1.04 + n, 0, 255); bb = clamp((bb - l) * 1.12 + l * 1.04 + n, 0, 255);   // un poco más de color y grano de cámara
+      img.data[di] = rr; img.data[di + 1] = gg; img.data[di + 2] = bb; img.data[di + 3] = 255;
+      const fx = (x - 240) / 240, fy = (y - 170) / 180, fl = clamp(1.25 - Math.sqrt(fx * fx + fy * fy) * 0.95, 0.12, 1.1);   // el flash infrarrojo alumbra el centro
+      const v = clamp(Math.pow(l / 255, 0.85) * 255 * fl * 1.15 + n * 2.4, 0, 255); im2.data[di] = v; im2.data[di + 1] = v * 1.02; im2.data[di + 2] = v * 0.98; im2.data[di + 3] = 255;
+    }
+    gc.putImageData(img, 0, 0); gi.putImageData(im2, 0, 0);
+    const stamp = (c2, night) => { const x = c2.getContext('2d'); x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(0, 280, 480, 20); x.fillStyle = '#fff'; x.font = '13px monospace'; x.textAlign = 'left'; x.fillText(`CAM ${s.i + 1}  ${s.time}  ${s.temp}°C  ${night ? 'IR' : ''}`, 8, 294); x.textAlign = 'right'; x.fillText('ENERGIMUNDO', 472, 294); };
+    stamp(color, false); stamp(ir, true);
+    return { color, ir };
   }
   closePhotos() { $('fotos').classList.add('hidden'); if (this.g.extras.open === 'fotos') this.g.extras.open = null; this.g.ui.note('Las fotos quedaron en el álbum de fauna.', 3.5); }
   drawPhoto(cv, s) {
@@ -298,7 +356,7 @@ export class Campo {
       const cv = document.createElement('canvas'); cv.width = 120; cv.height = 90; const cg = cv.getContext('2d');
       cg.fillStyle = seen || ft ? '#e8efe0' : '#2a3a55'; cg.fillRect(0, 0, 120, 90);
       const sc2 = ['venado', 'nandu', 'aguara', 'garza', 'guazubira'].includes(f.k) ? 46 : ['puma', 'carpincho'].includes(f.k) ? 60 : 78;
-      drawAnimal(cg, f.k, 56, 82, sc2, seen || ft ? { main: '#4a3a2a', light: '#ffffff' } : { main: '#11192b', light: '#11192b' });
+      const th = this.thumbs && this.thumbs[f.k]; if (th) cg.drawImage(th, 40, 0, 400, 300, 0, 0, 120, 90); else drawAnimal(cg, f.k, 56, 82, sc2, seen || ft ? { main: '#4a3a2a', light: '#ffffff' } : { main: '#11192b', light: '#11192b' });
       card.appendChild(cv);
       const t = document.createElement('div'); t.innerHTML = seen || ft ? `<b>${f.name}</b><small>${[seen ? 'Visto' : '', ft ? `${ft} foto${ft > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}</small><p>${f.fact}</p>` : `<b>?</b><small>${f.rare ? 'Muy raro: quizá en una cámara trampa' : 'Todavía no lo encontraste'}</small>`;
       card.appendChild(t); box.appendChild(card);

@@ -30,7 +30,7 @@ export const missionTitle = k => (DEF[k] || {}).title;   // el nombre de cada mi
 
 const INTRO = {
   gira: [L('jefa', '¡Bienvenido a la estación de Salto, Capi! Hoy sale el tren de la Gira por el Uruguay.'),
-    L('jefa', 'Vamos a recorrer cuatro lugares donde el país produce, cuida y ahorra energía: las represas del río Negro, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.'),
+    L('jefa', 'Vamos a recorrer cuatro lugares donde el país produce, cuida y ahorra energía: la represa de Rincón del Bonete, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.'),
     L('jefa', 'En cada uno te espera alguien con una tarea. Al terminarla, te ponen un sello en el pasaporte. Subí al tren desde el andén: te marqué el lugar con la flecha amarilla.')],
   rapida: [
     L('valeria', '¡Hola, Capi! Soy Valeria, del Centro de Control. Está cayendo la tarde y la ciudad gasta mucho respaldo fósil.'),
@@ -71,7 +71,7 @@ const INTRO = {
     L('valeria', 'Queda la prueba grande: la hora pico nocturna, sin sol. Cuando estés listo, vení a verme al Centro de Control, en la subestación de la ciudad.')]
 };
 const OUTRO = {
-  gira: [L('jefa', '¡Pasaporte completo, Capi! Conociste las represas del río Negro, Fray Bentos, el Lunarejo y Cabo Polonio.'),
+  gira: [L('jefa', '¡Pasaporte completo, Capi! Conociste Rincón del Bonete, Fray Bentos, el Lunarejo y Cabo Polonio.'),
     L('jefa', 'La energía del Uruguay sale de muchos lugares distintos, y en todos hay gente que la cuida. ¡Gracias por viajar con nosotros!')],
   rapida: [L('valeria', '¡Eso es! La energía del viento ya llega a la ciudad. En Uruguay, el viento da un tercio de la electricidad: en 2025 fue el 34 %.')],
   ahorro: [L('valeria', `La demanda de la ciudad bajó un 6${N}% y los ómnibus cargaron con sol del mediodía. La energía más limpia es la que no hace falta generar.`), L('capi', 'Ahorrar también es generar. ¡Anotado!')],
@@ -159,7 +159,7 @@ export class Missions {
     switch (this.key) {
       case 'gira': { const V = this.g.viajes; return [
         { text: 'Hablar con Inés, la jefa de estación', targets: ['npc:jefa'], done: this.flag('jefa') || V.count() > 0 },
-        ...[['negro', 'Represas del río Negro'], ['fray', 'Fray Bentos'], ['lunarejo', 'Valle del Lunarejo'], ['polonio', 'Cabo Polonio']].map(([k, n]) => ({ text: 'Sello: ' + n, targets: ['v:estacion'], done: !!V.sellos[k] }))]; }
+        ...[['negro', 'Rincón del Bonete'], ['fray', 'Fray Bentos'], ['lunarejo', 'Valle del Lunarejo'], ['polonio', 'Cabo Polonio']].map(([k, n]) => ({ text: 'Sello: ' + n, targets: ['v:estacion'], done: !!V.sellos[k] }))]; }
       case 'rapida': return [
         { text: 'Soltar el freno del molino de la luz roja', targets: ['wind:1'], done: !G.windP.t[1].fault },
         { text: 'Conectar el transformador del parque', targets: ['wind:tx'], done: G.windP.tx },

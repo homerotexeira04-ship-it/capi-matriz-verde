@@ -29,7 +29,7 @@ const PLACES = [
   { id: 'termas', name: 'Termas', x: 92, z: -62, stop: 4, pri: 2, d: 'Agua caliente del Acuífero Guaraní: calor de la Tierra para bañarse todo el año.' },
   { id: 'campo', name: 'Campo y naranjales', x: 44, z: 164, stop: null, pri: 1, d: 'Chacras, un tambo, un packing de citrus y naranjales: Salto es tierra de citrus.' },
   { id: 'concordia', name: 'Concordia (Argentina)', short: 'Concordia', x: -194, z: 30, stop: null, pri: 1, col: '#9be7ff', d: 'Capital Nacional del Citrus, en la otra orilla. Se llega en la lancha o en el ómnibus internacional.' },
-  { id: 'estacion', name: 'Estación del ferrocarril', short: 'Estación', x: -24, z: 238, stop: null, pri: 1, d: 'De acá sale el tren de la Gira por el Uruguay, hacia las represas del río Negro, Fray Bentos, el Lunarejo y Cabo Polonio.' },
+  { id: 'estacion', name: 'Estación del ferrocarril', short: 'Estación', x: -24, z: 238, stop: null, pri: 1, d: 'De acá sale el tren de la Gira por el Uruguay, hacia Rincón del Bonete, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.' },
   { id: 'arerungua', name: 'Potreros de Arerunguá', short: 'Pradera', x: 214, z: 150, stop: null, pri: 1, d: 'Pradera natural con venados de campo, ñandúes y mulitas, un arroyo con monte de quebrada, la Estancia La Cuchilla y Ana, la bióloga de las cámaras trampa.' },
   { id: 'haedo', name: 'Cuchilla de Haedo', short: 'Cerros chatos', x: 214, z: -86, stop: null, pri: 1, d: 'Cerros chatos de basalto, con laderas de piedra y un mirador en la cima del más alto.' },
   { id: 'dayman', name: 'Río Daymán', x: 90, z: 318, water: true, pri: 2, river: true, d: 'Corre de este a oeste y desemboca en el río Uruguay, al sur de Salto. Lo cruza el puente de la ruta 3.' },

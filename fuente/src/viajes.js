@@ -16,28 +16,30 @@ const HALF = 90;
 
 // Personajes de cada destino (posición local) y lo que hay que hacer allá
 const GENTE = {
-  negro: { id: 'operadora', name: 'Marta, operadora de UTE', at: [36, -28, 2.6], look: { skin: 0xd9a17a, shirt: 0x1d4f8a, jacket: 0x1d4f8a, pants: 0x2b2d42, hair: 0x3b2314, hat: 'casco', hatColor: 0xf4f4f4 } },
-  fray: { id: 'guiafb', name: 'Nahuel, guía del Anglo', at: [-10, 14, 3.4], look: { skin: 0xc58b62, shirt: 0x7a2e1d, pants: 0x2b2d42, hair: 0x1a1412, hat: 'gorra', hatColor: 0x7a2e1d } },
-  lunarejo: { id: 'guarda', name: 'Rosario, guardaparque', at: null, look: { skin: 0xe0ac86, shirt: 0x6b8f4e, jacket: 0x4a5a3a, pants: 0x5a4a3a, hair: 0x2a1c12, hat: 'gorra', hatColor: 0x4a5a3a, pony: true } },
-  polonio: { id: 'elsa', name: 'Doña Elsa, vecina del Cabo', at: [8, 16, 0.4], look: { skin: 0xd9a17a, shirt: 0x2a9d8f, pants: 0x5a4636, hair: 0xd8d8d8, hat: 'boina', hatColor: 0xe9dcc0 } }
+  negro: { id: 'operadora', name: 'Marta, operadora de UTE', look: { skin: 0xd9a17a, shirt: 0x1d4f8a, jacket: 0x1d4f8a, pants: 0x2b2d42, hair: 0x3b2314, hat: 'casco', hatColor: 0xf4f4f4 } },
+  fray: { id: 'guiafb', name: 'Nahuel, guía del Anglo', look: { skin: 0xc58b62, shirt: 0x7a2e1d, pants: 0x2b2d42, hair: 0x1a1412, hat: 'gorra', hatColor: 0x7a2e1d } },
+  lunarejo: { id: 'guarda', name: 'Rosario, guardaparque', look: { skin: 0xe0ac86, shirt: 0x6b8f4e, jacket: 0x4a5a3a, pants: 0x5a4a3a, hair: 0x2a1c12, hat: 'gorra', hatColor: 0x4a5a3a, pony: true } },
+  polonio: { id: 'elsa', name: 'Doña Elsa, vecina del Cabo', look: { skin: 0xd9a17a, shirt: 0x2a9d8f, pants: 0x5a4636, hair: 0xd8d8d8, hat: 'boina', hatColor: 0xe9dcc0 } }
 };
 const PASOS = {
-  negro: [['npc', 'Hablar con Marta, la operadora de Rincón del Bonete'], ['d1:placa', 'Leer la placa histórica de Bonete'], ['d1:mando', 'Coordinar las tres represas en cadena']],
-  fray: [['npc', 'Hablar con Nahuel, el guía del Anglo'], ['d2:sala', 'Entrar a la sala de máquinas del Anglo'], ['d2:caldera', 'Encender la caldera de la central de biomasa'], ['d2:h2', 'Cargar el camión forestal con hidrógeno verde']],
-  lunarejo: [['npc', 'Hablar con Rosario, la guardaparque'], ['d3:m', 'Tomar 3 muestras de agua del arroyo'], ['d3:mirador', 'Subir al mirador del valle']],
-  polonio: [['npc', 'Hablar con Doña Elsa'], ['d4:casa', 'Ayudar a la casa a pasar la noche sin cables'], ['d4:faro', 'Subir al faro'], ['d4:lobos', 'Mirar los lobos marinos']]
+  negro: [['npc', 'Hablar con Marta, la operadora de la central'], ['d1:placa', 'Leer la placa del IEEE en la sala de máquinas'], ['d1:mando', 'Coordinar las tres represas desde la sala de mando']],
+  fray: [['npc', 'Hablar con Nahuel, el guía del Anglo'], ['d2:sala', 'Entrar a la sala de máquinas del Anglo'], ['d2:caldera', 'Arrancar la caldera de biomasa de UPM'], ['d2:h2', 'Cargar el camión de Kahirós con hidrógeno verde']],
+  lunarejo: [['npc', 'Hablar con Rosario, la guardaparque'], ['d3:m', 'Tomar 3 muestras de agua (una en la cascada)'], ['d3:mirador', 'Asomarse al mirador del valle']],
+  polonio: [['npc', 'Hablar con Doña Elsa'], ['d4:casa', 'Ayudar a la casa a pasar la noche sin cables'], ['d4:faro', 'Visitar el faro'], ['d4:lobos', 'Mirar los lobos desde la cuerda']]
 };
 const CHARLA = {
-  negro: [L('operadora', '¡Bienvenido al río Negro, Capi! Acá está Rincón del Bonete, la primera gran represa del país: empezó a generar en diciembre de 1945.'),
-    L('operadora', 'Las turbinas venían de Alemania y la Segunda Guerra Mundial las demoró. Hoy tiene cuatro generadores de 38 MW: 152 MW en total.'),
-    L('operadora', 'Su lago es el cuerpo de agua dulce más grande de Uruguay. Río abajo están Baygorria, de 1960, y Palmar, de 1982.'),
-    L('operadora', 'El agua que pasa por una turbina sigue río abajo y vuelve a generar en la siguiente. ¿Me ayudás a coordinarlas desde la consola?')],
-  fray: [L('guiafb', '¡Hola, Capi! Bienvenido a Fray Bentos. Este era el frigorífico Anglo: le decían «la cocina del mundo» porque mandaba carne enlatada a todo el planeta.'),
-    L('guiafb', 'Cerró en 1979, y en 2015 la UNESCO declaró este lugar Patrimonio Mundial: el Paisaje Industrial Fray Bentos.'),
-    L('guiafb', 'Y la energía tiene mucho que ver con esta historia. Entrá a la sala de máquinas y te cuento.')],
-  lunarejo: [L('guarda', '¡Bienvenido al Valle del Lunarejo! Es Paisaje Protegido desde 2009 y forma parte de las Quebradas del Norte, en la cuesta basáltica.'),
-    L('guarda', 'Acá nace el arroyo Lunarejo. Su agua va al río Tacuarembó, y el Tacuarembó desemboca en el río Negro.'),
-    L('guarda', 'Medimos cómo está el agua para cuidarla. ¿Me traés tres muestras del arroyo? Hay una al lado de la cascada.')],
+  negro: [L('operadora', '¡Bienvenido a Rincón del Bonete, Capi! Esta central empezó a mandar energía el 21 de diciembre de 1945: fue la primera gran hidroeléctrica del país.'),
+    L('operadora', 'La proyectó el ingeniero alemán Adolfo Ludin. La Segunda Guerra Mundial frenó la obra de las empresas alemanas, y los ingenieros uruguayos la terminaron con equipos de Estados Unidos.'),
+    L('operadora', 'Atrás del muro está el lago: 1.070 km², el cuerpo de agua dulce más grande de Uruguay. Funciona como una gran batería: guarda agua para generar cuando más falta hace.'),
+    L('operadora', 'Hoy tiene cuatro generadores y 152 MW. Río abajo están Baygorria, de 1960, y Palmar, de 1982. ¿Me ayudás a coordinar las tres desde la sala de mando?')],
+  fray: [L('guiafb', '¡Hola, Capi! Bienvenido al Paisaje Industrial Fray Bentos. Acá trabajó desde 1865 la Liebig, que hacía extracto de carne; en 1924 pasó a ser el frigorífico Anglo.'),
+    L('guiafb', 'Le decían «la cocina del mundo»: sus latas de corned beef llegaban a los cinco continentes. Cerró en 1979, y en 2015 la UNESCO lo declaró Patrimonio Mundial.'),
+    L('guiafb', 'Ese edificio enorme junto al río es la cámara de frío: siete pisos para guardar hasta 18.000 toneladas de carne. Y la chimenea de ladrillo, de 1906, mide 43 metros.'),
+    L('guiafb', 'Pero lo que más nos importa a nosotros pasó en la sala de máquinas. Vení, que te cuento.')],
+  lunarejo: [L('guarda', '¡Bienvenido al Valle del Lunarejo! Es Paisaje Protegido desde 2009, y desde 2014 forma parte de la Reserva de Biosfera Bioma Pampa–Quebradas del Norte, de la UNESCO.'),
+    L('guarda', 'Mirá los cerros chatos: son de basalto. El agua fue cavando quebradas con paredones, cuevas y cascadas, y adentro crece un monte casi selvático.'),
+    L('guarda', 'Por la Cuchilla de Haedo llegan plantas y animales del sur de Brasil: acá viven el coatí, el guazubirá y más de 150 especies de aves.'),
+    L('guarda', 'El arroyo Lunarejo va al río Tacuarembó, y de ahí al río Negro. Medimos cómo está el agua para cuidarla: ¿me traés tres muestras? Una es al pie de la cascada, en la quebrada del oeste.')],
   polonio: [L('elsa', '¡Hola, Capi! Bienvenido al Cabo. Acá no llega la red eléctrica: cada casa tiene sus paneles solares, algún molinito y una batería.'),
     L('elsa', 'Vivimos todo el año unas setenta personas. En verano viene muchísima gente, y hay que cuidar la energía.'),
     L('elsa', 'Mi casa es la de la puerta celeste. ¿Me ayudás a que la batería aguante toda la noche?')]
@@ -49,10 +51,9 @@ export class Viajes {
     this.cur = null; this.cine = null; this.t = 0; this.tok = 0; this.load();
     NAMES.jefa = 'Inés, jefa de estación';
     for (const k in GENTE) NAMES[GENTE[k].id] = GENTE[k].name;
-    GENTE.lunarejo.at = [this.lunU(), 46, -1.6];   // la guardaparque espera junto al centro de visitantes
     this.people = {};
     for (const d of DESTINOS) {
-      const G = GENTE[d.k], [u, v, ry] = G.at, x = d.ox + u, p = makePerson(G.look);
+      const G = GENTE[d.k], [u, v, ry] = d.npc, x = d.ox + u, p = makePerson(G.look);
       p.group.position.set(x, w.groundAt(x, v), v); p.group.rotation.y = ry; d.group.add(p.group); this.people[d.k] = p;
       w.addInter('npc:' + G.id, x, v, { console: false, h: 3.6 }).group && d.group.add(w.inter['npc:' + G.id].group);
     }
@@ -61,19 +62,18 @@ export class Viajes {
     jp.group.position.set(sx - 4, w.groundAt(sx - 4, sz + 5), sz + 5); jp.group.rotation.y = 0.3; g.scene.add(jp.group); w.addInter('npc:jefa', sx - 4, sz + 5, { console: false, h: 3.6 });
     // destellos de los destinos: vapor de la central de Fray Bentos, haz del faro, ballena y lobos marinos
     const pol = DESTINOS[3], beam = new THREE.Mesh(new THREE.ConeGeometry(4, 40, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff3c4, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide, fog: false }));
-    beam.geometry.translate(0, -20, 0); beam.geometry.rotateZ(Math.PI / 2); beam.position.set(pol.ox + 58, 23, 38); pol.group.add(beam); this.beam = beam;
+    beam.geometry.translate(0, -20, 0); beam.geometry.rotateZ(Math.PI / 2); beam.position.set(...pol.beam); pol.group.add(beam); this.beam = beam;
     const whale = new THREE.Group(), wm = new THREE.MeshStandardMaterial({ color: 0x2b3038, roughness: 0.6, flatShading: true });
     const wb = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), wm); wb.scale.set(1.6, 0.9, 5.2); whale.add(wb);
     const tail = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.2, 1.2), wm); tail.position.z = -5.4; whale.add(tail);
-    whale.position.set(pol.ox + 40, -0.6, 84); pol.group.add(whale); this.whale = whale;
+    whale.position.set(pol.ox, -0.6, -76); pol.group.add(whale); this.whale = whale;
     this.lobos = []; const R = rng(55), spots = [];
-    for (const [cu, cv, n] of [[64, 50, 9], [70, 74, 10], [48, 80, 6]]) for (let i = 0; i < n; i++) { const u = cu + (R() - 0.5) * 9, v = cv + (R() - 0.5) * 7; spots.push({ x: pol.ox + u, y: Math.max(pol.h(u, v), 0) - 0.02, z: v, ry: R() * 6, s: 1.3 + R() * 0.6, ph: R() * 6 }); }
+    for (const [u, v] of pol.lobos) spots.push({ x: pol.ox + u, y: Math.max(pol.h(u, v), 0) - 0.02, z: v, ry: R() * 6, s: 1.3 + R() * 0.6, ph: R() * 6 });
     const lob = new THREE.InstancedMesh(loboGeo(), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }), spots.length); lob.castShadow = true; lob.frustumCulled = false; pol.group.add(lob);
     this.lobosM = lob; this.lobos = spots;
     // interfaz
     $('giClose').onclick = () => this.closePanel(); $('paClose').onclick = () => { $('pasaporte').classList.add('hidden'); if (g.extras.open === 'pasaporte') g.extras.open = null; };
   }
-  lunU() { const v = 46; return 8 * Math.sin(v * 0.05 + 0.5) + 4 * Math.sin(v * 0.13) + 8; }
 
   // ---------- Sellos del pasaporte (en el kiosco no quedan guardados entre visitantes) ----------
   load() { try { const s = JSON.parse(localStorage.getItem(GKEY) || 'null'); this.sellos = (s && s.sellos) || {}; } catch (e) { this.sellos = {}; } }
@@ -86,7 +86,7 @@ export class Viajes {
     const c = this.cur;
     if (id === 'v:estacion') return this.g.campo && this.g.campo.tr.state === 'parado' ? { state: 'ok', label: 'Subir al tren de la Gira por el Uruguay' } : { state: 'off', label: 'El tren llega en un ratito: esperalo en el andén' };
     if (id === 'npc:jefa') return { state: 'ok', label: 'Hablar con Inés, la jefa de estación' };
-    if (id === 'v:volver') return c ? { state: c.done ? 'need' : 'ok', label: 'Tomar el tren de vuelta a Salto' } : { state: 'hidden' };
+    if (id === 'v:volver') return c ? { state: c.done ? 'need' : 'ok', label: c.k === 'polonio' ? 'Subir al camión 4×4 (y al tren de vuelta a Salto)' : 'Tomar el tren de vuelta a Salto' } : { state: 'hidden' };
     const k = Object.keys(GENTE).find(k => 'npc:' + GENTE[k].id === id);
     if (k) return { state: c && c.k === k && !c.st.npc ? 'need' : 'ok', label: 'Hablar con ' + GENTE[k].name.split(',')[0] };
     if (/^d[1-4]:/.test(id)) {
@@ -107,15 +107,15 @@ export class Viajes {
     if (!/^d[1-4]:/.test(id) || !c) return false;
     if (!c.st.npc) { U.note('Primero hablá con ' + GENTE[c.k].name.split(',')[0] + '.', 3.5); return true; }
     switch (id) {
-      case 'd1:placa': U.dialog([L('placa', 'Rincón del Bonete y su sistema de trasmisión, 1945. En 2012, el IEEE, la mayor asociación de ingenieros del mundo, lo reconoció como un hito de la historia de la ingeniería eléctrica.'), L('placa', 'Desde aquí la energía viajó por líneas de alta tensión hasta Montevideo, a más de 200 kilómetros.')], () => this.mark('d1:placa')); break;
+      case 'd1:placa': U.dialog([L('placa', 'Central hidroeléctrica y sistema de trasmisión de Rincón del Bonete, 1945. En 2012 el IEEE, la mayor asociación de ingenieros del mundo, la reconoció como un hito de la historia de la ingeniería eléctrica.'), L('placa', 'Desde aquí la energía viajó 230 km por la primera línea de alta tensión del país hasta Montevideo. Los ingenieros uruguayos la levantaron entre 1944 y 1945.'), L('operadora', 'Y la placa de abajo, de 2009, recuerda a quienes volvieron a poner en marcha los generadores después de la gran crecida de 1959, cuando el agua inundó esta sala.')], () => this.mark('d1:placa')); break;
       case 'd1:mando': if (c.st['d1:mando']) { U.note('Las tres represas trabajan en cadena.', 3); break; } g.minigame('cascada', { title: 'Represas en cadena del río Negro' }, () => U.dialog([L('operadora', '¡Así se trabaja en cadena! Bonete guarda agua y ayuda a regular las crecidas para las de abajo; Baygorria y Palmar vuelven a usar esa misma agua.'), L('operadora', 'Entre las tres suman casi 600 MW. Y todo empezó acá, en 1945.')], () => this.mark('d1:mando'))); break;
-      case 'd2:sala': U.dialog([L('guiafb', 'Esta es la sala de máquinas. Según la historia del Anglo, en 1883 se instaló aquí la primera red eléctrica del país, para hacer andar la fábrica.'), L('guiafb', 'Las calderas quemaban leña y carbón. Hoy, a pocos kilómetros, se genera electricidad con biomasa: andá a la central y lo vas a ver.')], () => this.mark('d2:sala')); break;
-      case 'd2:caldera': if (c.st['d2:caldera']) { U.note('La caldera ya está generando.', 3); break; } g.minigame('seq', { title: 'Caldera de la central de biomasa' }, () => U.dialog([L('guiafb', 'La planta de celulosa usa la biomasa que le sobra del proceso para hacer vapor y generar electricidad: su central tiene unos 160 MW.'), L('guiafb', 'Lo que no usa la fábrica va a la red de todo el país. Es energía renovable que sale de la madera.')], () => this.mark('d2:caldera'))); break;
-      case 'd2:h2': if (c.st['d2:h2']) { U.note('El camión ya salió con el tanque lleno.', 3); break; } g.capi.work(1.6); g.audio.power(); U.dialog([L('guiafb', 'En Fray Bentos empezó el primer proyecto de hidrógeno verde del país: un camión forestal que anda con hidrógeno hecho con energía renovable.'), L('guiafb', 'Carga 68 kilos de hidrógeno en menos de media hora y le alcanzan para más de 700 kilómetros. ¡Y por el caño de escape sale solo vapor de agua!')], () => this.mark('d2:h2')); break;
-      case 'd3:mirador': U.dialog([L('guarda', 'Desde acá se ve todo el valle: las laderas de basalto, el monte de quebrada y el arroyo allá abajo.'), L('guarda', 'Esa agua limpia baja al río Tacuarembó y termina en el río Negro, el de las represas de Bonete, Baygorria y Palmar. Cuidar el monte también es cuidar la energía.')], () => this.mark('d3:mirador')); g.cam.inspect = new THREE.Vector3(DESTINOS[2].ox, 8, -20); g.cam.inspectT = 7; break;
+      case 'd2:sala': U.dialog([L('guiafb', 'Esta es la sala de máquinas. En 1883 se encendieron acá las primeras lamparitas eléctricas del Uruguay: iluminaban la playa de faena, la fábrica, la escuela y el club.'), L('guiafb', 'Las calderas quemaban leña y carbón. Hoy, a 5 km de la ciudad, la planta de celulosa de UPM hace electricidad con biomasa. Seguí el camino hacia el norte y lo vas a ver.')], () => this.mark('d2:sala')); break;
+      case 'd2:caldera': if (c.st['d2:caldera']) { U.note('La caldera ya está generando.', 3); break; } g.minigame('seq', { title: 'Caldera de la central de biomasa' }, () => U.dialog([L('guiafb', 'La planta quema el licor negro: lo que queda de la madera después de sacarle la celulosa. Con ese vapor genera toda la electricidad que usa.'), L('guiafb', 'Lo que le sobra va a la red de UTE. Es energía renovable que sale de los eucaliptos, de día y de noche, con o sin viento.')], () => this.mark('d2:caldera'))); break;
+      case 'd2:h2': if (c.st['d2:h2']) { U.note('El camión ya salió con el tanque lleno.', 3); break; } g.capi.work(1.6); g.audio.power(); U.dialog([L('guiafb', 'Esto es Kahirós, el primer proyecto de hidrógeno verde del país, a las afueras de Fray Bentos sobre la ruta 2. Un parque solar de 4,8 MW, con más de 8.000 paneles, da la electricidad para separar el hidrógeno del agua.'), L('guiafb', 'Con ese hidrógeno andan seis camiones que llevan madera. Adentro, una pila de combustible lo convierte en electricidad, ¡y por el caño de escape sale solo vapor de agua!')], () => this.mark('d2:h2')); break;
+      case 'd3:mirador': U.dialog([L('guarda', 'Desde acá se ve el valle entero: los cerros chatos, los paredones de basalto, el monte en las quebradas y el ganado pastando abajo. La ganadería de siempre también es parte de lo que se protege.'), L('guarda', 'Estas tierras ayudan a recargar el Acuífero Guaraní, una de las mayores reservas de agua dulce del mundo. Y el agua del arroyo termina en el río Negro, el de Bonete, Baygorria y Palmar: cuidar el monte también es cuidar la energía.')], () => this.mark('d3:mirador')); { const vv = DESTINOS[2].vista; g.cam.inspect = new THREE.Vector3(DESTINOS[2].ox + vv[0], vv[1], vv[2]); g.cam.inspectT = 7; } break;
       case 'd4:casa': if (c.st['d4:casa']) { U.note('La casa de Elsa ya está lista para la noche.', 3); break; } g.minigame('polonio', { title: 'Una noche sin cables' }, () => U.dialog([L('elsa', '¡Gracias, Capi! Sin red, cada casa aprende a usar la energía con cuidado: luces LED, nada de estufas ni termos eléctricos de noche.')], () => this.mark('d4:casa'))); break;
-      case 'd4:faro': g.cam.inspect = new THREE.Vector3(DESTINOS[3].ox + 58, 14, 38); g.cam.inspectT = 6; U.dialog([L('elsa', 'El faro es de 1881 y es el más oriental de la costa uruguaya. Desde arriba se ven las dunas, las islas y, con suerte, alguna ballena.'), L('elsa', 'Entre el invierno y la primavera pasan ballenas francas australes frente a la costa.')], () => this.mark('d4:faro')); break;
-      case 'd4:lobos': g.audio.bark && g.audio.bark(0.4); U.dialog([L('elsa', 'En las rocas de la punta y en las islas Rasa, Encantada y El Islote vive una de las colonias de lobos marinos más importantes de la región.'), L('elsa', 'Durante muchos años los cazaron. Hoy están protegidos, y hay que mirarlos de lejos, sin molestarlos.')], () => this.mark('d4:lobos')); break;
+      case 'd4:faro': g.cam.inspect = new THREE.Vector3(...DESTINOS[3].faro); g.cam.inspectT = 6; U.dialog([L('elsa', 'El faro es de 1881, de ladrillo, y mide unos 26 metros. Se sube por 132 escalones y su luz da un destello blanco cada 12 segundos: así los barcos saben que es este y no otro.'), L('elsa', 'Lo hicieron por los naufragios que había en esta costa. Desde arriba se ven las dunas, las islas y, entre el invierno y la primavera, alguna ballena franca austral.')], () => this.mark('d4:faro')); break;
+      case 'd4:lobos': g.audio.bark && g.audio.bark(0.4); U.dialog([L('elsa', 'En estas rocas está la única colonia de lobos finos del país en tierra firme. Y en las islas de Torres (Rasa, Encantada e Islote) vive casi la mitad de los lobos finos y leones marinos del Uruguay.'), L('elsa', 'Durante muchos años los cazaron. Hoy es Parque Nacional y están protegidos: se miran de lejos, detrás de la cuerda, sin molestarlos.')], () => this.mark('d4:lobos')); break;
       default:
         if (id.startsWith('d3:m')) { const i = id.slice(4); if (c.st['m' + i]) { U.note('Esa muestra ya está tomada.', 2.5); break; } c.st['m' + i] = true; g.capi.work(1.2); g.audio.splash && g.audio.splash(0.4);
           const n = [0, 1, 2].filter(j => c.st['m' + j]).length; U.note(n < 3 ? `Muestra ${n} de 3: agua clara y fresca, con larvas de insectos que solo viven en agua limpia.` : '¡Las tres muestras están! Agua limpia en todo el arroyo.', 4.5); if (n >= 3) this.mark('d3:m'); }
@@ -126,7 +126,7 @@ export class Viajes {
     const g = this.g, n = this.count();
     if (g.missions.mode === 'gira') g.missions.flags.jefa = true;
     g.extras.choose(NAMES.jefa, n >= 4 ? '¡Capi, completaste la Gira por el Uruguay! El tren te espera para volver cuando quieras.' : '¡Bienvenido a la estación! El tren de la Gira por el Uruguay sale desde este andén.', [['¿Adónde va el tren?', ''], ['Ver mi pasaporte', `${n} de 4 sellos`], ['Nada más, ¡gracias!', '']], i => {
-      if (i === 0) g.ui.dialog([L('jefa', 'Hace cuatro viajes: a las represas del río Negro, a Fray Bentos, al Valle del Lunarejo y a Cabo Polonio.'), L('jefa', 'En cada lugar hay alguien que te espera con una tarea. Al terminarla, te ponen un sello en el pasaporte. ¡Juntá los cuatro!')]);
+      if (i === 0) g.ui.dialog([L('jefa', 'Hace cuatro viajes: a Rincón del Bonete, la primera gran represa del río Negro; a Fray Bentos, al Valle del Lunarejo y a Cabo Polonio.'), L('jefa', 'En cada lugar hay alguien que te espera con una tarea. Al terminarla, te ponen un sello en el pasaporte. ¡Juntá los cuatro!')]);
       else if (i === 1) this.openPasaporte();
     });
   }
@@ -155,7 +155,7 @@ export class Viajes {
   }
   arrive(d) {
     const g = this.g, tok = this.tok;
-    $('fade').classList.add('on'); $('fadeTxt').textContent = `Viajando a ${d.name}…`;
+    $('fade').classList.add('on'); $('fadeTxt').textContent = d.via || `Viajando a ${d.name}…`;
     setTimeout(() => {
       if (tok !== this.tok) return;
       DESTINOS.forEach(x => { x.group.visible = x === d; });
@@ -171,7 +171,7 @@ export class Viajes {
     if (!c.done && PASOS[c.k].every(([k]) => c.st[k === 'npc' ? 'npc' : k])) {
       c.done = true; const first = !this.sellos[c.k]; this.sellos[c.k] = 1; this.save();
       g.ui.toast('¡SELLO EN EL PASAPORTE!', c.d.name, 3.5); g.audio.fanfare(); g.capi.celebrate(2.2);
-      setTimeout(() => g.ui.note('Tomá el tren de vuelta a Salto en el andén de la Gira.', 5), 2600);
+      setTimeout(() => g.ui.note(c.k === 'polonio' ? 'Tomá el camión 4×4 en la terminal: te lleva hasta el tren de vuelta a Salto.' : 'Tomá el tren de vuelta a Salto en el andén de la Gira.', 5), 2600);
       if (first && g.missions.mode === 'gira') g.missions.giraStamp(c.k);
     }
   }
@@ -231,12 +231,12 @@ export class Viajes {
     }
     const c = this.cur; if (!c) return;
     if (c.k === 'polonio') {
-      this.beam.rotation.y = this.t * 0.9; this.beam.material.opacity = 0.06 + st.night * 0.22;
-      const k = (this.t % 40) / 40, wv = this.whale; wv.position.x = DESTINOS[3].ox + lerp(-70, 85, k); wv.position.y = -0.7 + Math.max(0, Math.sin(this.t * 0.7)) * 0.5; wv.rotation.y = Math.PI / 2;
+      this.beam.rotation.y = this.t * Math.PI * 2 / 12; this.beam.material.opacity = 0.06 + st.night * 0.22;   // un destello blanco cada 12 segundos, como el faro real
+      const k = (this.t % 40) / 40, wv = this.whale; wv.position.x = DESTINOS[3].ox + lerp(-50, 85, k); wv.position.y = -0.7 + Math.max(0, Math.sin(this.t * 0.7)) * 0.5; wv.rotation.y = Math.PI / 2;
       if (Math.sin(this.t * 0.7) > 0.97 && !this.spout) { this.spout = 1; g.fx.splash(wv.position.x, 1.2, wv.position.z, 10); } else if (Math.sin(this.t * 0.7) < 0.5) this.spout = 0;
       const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), V = new THREE.Vector3(), S = new THREE.Vector3();
       this.lobos.forEach((o, i) => { E.set(-0.04 + Math.max(0, Math.sin(this.t * 0.8 + o.ph)) * 0.1, o.ry, 0); Q.setFromEuler(E); M.compose(V.set(o.x, o.y, o.z), Q, S.setScalar(o.s)); this.lobosM.setMatrixAt(i, M); }); this.lobosM.instanceMatrix.needsUpdate = true;
     }
-    if (c.k === 'fray' && Math.random() < dt * 2.4) { const p = DESTINOS[1]; g.fx.puff(p.ox + 64 + (Math.random() - 0.5), 33, 40 + (Math.random() - 0.5), 2, 0xf4f4f4, 1.2); }
+    if (c.k === 'fray' && Math.random() < dt * 2.4) { const [sx, sy, sz] = DESTINOS[1].steam; g.fx.puff(sx + (Math.random() - 0.5) * 3, sy, sz + (Math.random() - 0.5) * 3, 2, 0xf4f4f4, 1.2); }
   }
 }

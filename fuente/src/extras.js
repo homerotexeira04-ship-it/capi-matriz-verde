@@ -23,7 +23,9 @@ export const OUTFITS = [
   { name: 'Gaucho', kit: 'gaucho', need: 0, favor: 'mateo', helmet: 0x6b4a2f, vest: 0xa5522d, band: 0xe9dcc0, desc: 'Boina, poncho a rayas con flecos y rastra' },
   { name: 'Chofer', kit: 'chofer', need: 0, favor: 'lucia', helmet: 0x1f2f4f, vest: 0x4aa3d8, band: 0xffffff, desc: 'Gorra de chofer, camisa, corbata y charreteras' },
   { name: 'Control', kit: 'control', need: 0, favor: 'valeria', helmet: 0xf4f4f4, vest: 0x23395d, band: 0x9b7fd0, desc: 'Auriculares con micrófono, lentes y credencial' },
-  { name: 'Viajero', kit: 'viajero', need: 0, favor: 'graciela', helmet: 0xffffff, vest: 0x75aadb, band: 0xffffff, desc: 'Piluso con el Sol de Mayo, cámara de fotos y escudos de los dos países' }
+  { name: 'Viajero', kit: 'viajero', need: 0, favor: 'graciela', helmet: 0xffffff, vest: 0x75aadb, band: 0xffffff, desc: 'Piluso con el Sol de Mayo, cámara de fotos y escudos de los dos países' },
+  { name: 'Arqueólogo', kit: 'arqueologo', need: 0, arq: true, helmet: 0xc9b07a, vest: 0xb59a6a, band: 0xf2e6c9, desc: 'Sombrero de ala ancha, chaleco de campo, pincel y libreta' },
+  { name: 'Explorador', kit: 'selva', need: 0, sec: true, helmet: 0xe8d9a8, vest: 0x6b8f4e, band: 0xd62828, desc: 'Sombrero de paja, pañuelo rojo y morral para andar por el monte' }
 ];
 
 // [x, z, altura extra, pista del lugar, dato]
@@ -84,7 +86,7 @@ export class Extras {
   reset() { if (this.g.social) this.g.social.reset(); this.got.clear(); this.setOutfit(0); this.acc.clear(); this.setAcc(null); this.refresh(); }
   restore(s) { this.got = new Set((s && Array.isArray(s.sparks) ? s.sparks : []).filter(i => i >= 0 && i < SPARKS.length)); if (this.g.social) this.g.social.restore(s); const O = s && OUTFITS[s.outfit], o = O && this.unlocked(O) ? s.outfit : 0; this.setOutfit(o); this.acc = new Set((s && Array.isArray(s.acc) ? s.acc : []).filter(k => ACCS[k])); this.setAcc(s && s.accOn); this.refresh(); }
   refresh() { this.sparks.forEach(s => { s.group.visible = !this.got.has(s.i); }); $('sparkCount').textContent = `Chispas de saber: ${this.got.size}/${SPARKS.length}`; }
-  unlocked(o) { return o.favor ? !!(this.g.social && this.g.social.done[o.favor]) : this.got.size >= o.need || !!(o.school && this.g.escuela && this.g.escuela.has(o.school)); }
+  unlocked(o) { if (o.arq) return !!(this.g.arqueo && this.g.arqueo.everAll()); if (o.sec) return !!(this.g.secretos && this.g.secretos.all()); return o.favor ? !!(this.g.social && this.g.social.done[o.favor]) : this.got.size >= o.need || !!(o.school && this.g.escuela && this.g.escuela.has(o.school)); }
   setOutfit(i) { this.outfit = i; this.g.capi.setOutfit(OUTFITS[i]); }
   setAcc(k) { this.accOn = k && this.acc.has(k) ? k : null; this.g.capi.setAccessory(this.accOn); }
   giveAcc(k) { this.acc.add(k); this.setAcc(k); }
@@ -113,7 +115,7 @@ export class Extras {
     const box = $('wList'), h = c => '#' + c.toString(16).padStart(6, '0'); box.textContent = '';
     OUTFITS.forEach((o, i) => {
       const ok = this.unlocked(o), b = document.createElement('button'); b.type = 'button'; b.className = 'wItem' + (i === this.outfit ? ' on' : ''); b.disabled = !ok;
-      b.innerHTML = `<canvas class="wFace" width="24" height="24" aria-hidden="true"></canvas><b>${o.name}</b><small>${o.desc}</small><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.favor ? 'por un favor' : `con ${o.need} chispas` + (o.school ? ' o su medalla' : '')}</em>`;
+      b.innerHTML = `<canvas class="wFace" width="24" height="24" aria-hidden="true"></canvas><b>${o.name}</b><small>${o.desc}</small><em>${ok ? (i === this.outfit ? 'puesto' : 'disponible') : o.arq ? 'en la Expedición arqueológica' : o.sec ? 'con los 7 secretos de Salto' : o.favor ? 'por un favor' : `con ${o.need} chispas` + (o.school ? ' o su medalla' : '')}</em>`;
       drawFace(b.querySelector('canvas').getContext('2d'), 'capi', 1, false, this.colors(i));
       b.onclick = () => { this.setOutfit(i); this.g.audio.ok(); this.g.missions.save(); this.drawWardrobe(); };
       box.appendChild(b);

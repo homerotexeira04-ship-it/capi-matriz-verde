@@ -9,7 +9,7 @@ import { buildIntlConcordia, intlKeep, ROT } from './intl.js';
 
 const Y = 2.2;
 // Rectángulos donde la flora al azar no debe plantar (edificios nuevos)
-export const CLEAR3 = [[-84, -8, -9, 12], [-17, 5, -22, -7], [4, 46, -34, 10], [-38, -16, 98, 134]];
+export const CLEAR3 = [[-84, -8, -9, 12], [-17, 5, -22, -7], [4, 46, -34, 10], [-38, -16, 98, 134], [-39, -11, -67, -39]];
 
 // Prismas y cúpulas ya orientados (se escalan en x, y, z del mundo)
 const TRI_Z = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2);   // techo a dos aguas, cumbrera a lo largo de z
@@ -50,7 +50,7 @@ export function buildBarrios(w) {
   M.flood = new THREE.MeshStandardMaterial({ color: 0xfffbe8, emissive: 0xfff4d0, emissiveIntensity: 0, roughness: 0.4 });
   M.wallbox = new THREE.MeshStandardMaterial({ color: 0x1b3a2a, emissive: 0x4dffa0, emissiveIntensity: 0.9 });
   w.nightBatch = new Batch(); w.floodBatch = new Batch(); w.ledBatch = new Batch();
-  norte(w, R); teatro(w); museoHT(w); catedral(rotWorld(w, POS.catedral[0], POS.catedral[1], Math.PI / 2)); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
+  norte(w, R); teatro(w); museoHT(w); casaQuiroga(w); catedral(rotWorld(w, POS.catedral[0], POS.catedral[1], Math.PI / 2)); cancha(w); puerto(w, R); orilla(w, R); jardin(w, R);
   const s = w.scene, nb = w.nightBatch.mesh(M.nightWin); if (nb) s.add(nb);
   const fl = w.floodBatch.mesh(M.flood); if (fl) s.add(fl);
   const lb = w.ledBatch.mesh(M.wallbox); if (lb) s.add(lb);
@@ -216,6 +216,56 @@ function museoHT(w) {
   gable(cb, cx, Y + H + 2.15, cz - 0.4, 4.6, 1.2, 5.6, 0x9aa0a4, true);
   w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, Y + H + 3.2);
   w.addInter('mon:mhyt', cx + 2.4, z1 + 1.3, { console: false, h: 3.4, r: 2 });
+}
+
+// Casa Quiroga: la casa quinta de la familia de Horacio Quiroga en las afueras, al norte de Salto (hoy avenida Líber
+// Seregni esquina Maciel). Desde 2003 es museo, mausoleo y centro cultural; Monumento Histórico Nacional desde 2009.
+// Una planta con galería de columnas hacia la calle, azotea con balaustrada, jardín con naranjos y palmeras y, en el
+// jardín, el templete con la urna de algarrobo tallada con la forma de su cabeza (obra de Stefan Erzia).
+export const QUIROGA = { x0: -37, x1: -13, z0: -65, z1: -41, gate: [-37, -54] };
+function casaQuiroga(w) {
+  const b = w.batch, cb = w.cityBatch, Q = QUIROGA, col = 0xead9bd, trim = 0xfaf4e6, green = 0x2f5a3a;
+  let lo = 1e9, hi = -1e9; for (let x = Q.x0; x <= Q.x1; x += 1.5) for (let z = Q.z0; z <= Q.z1; z += 1.5) { const h = w.terrainAt(x, z); lo = Math.min(lo, h); hi = Math.max(hi, h); }
+  const y = hi + 0.15; b.boxB((Q.x0 + Q.x1) / 2, lo - 0.6, (Q.z0 + Q.z1) / 2, Q.x1 - Q.x0, y - lo + 0.6, Q.z1 - Q.z0, 0x7fbf5a); w.addPlatform(Q.x0, Q.x1, Q.z0, Q.z1, y);
+  // reja sobre un muro bajo, con portón hacia la calle (oeste)
+  const fence = (x0, x1, z0, z1) => { b.boxB((x0 + x1) / 2, y, (z0 + z1) / 2, Math.max(0.3, x1 - x0), 0.5, Math.max(0.3, z1 - z0), trim); w.addSolid(Math.min(x0, x1) - 0.1, Math.max(x0, x1) + 0.1, Math.min(z0, z1) - 0.1, Math.max(z0, z1) + 0.1, y + 1.4);
+    const L = Math.max(x1 - x0, z1 - z0), n = Math.floor(L / 0.45); for (let i = 0; i <= n; i++) { const t = i / Math.max(1, n); b.boxB(x0 + (x1 - x0) * t, y + 0.5, z0 + (z1 - z0) * t, 0.05, 0.8, 0.05, 0x2b2d33); }
+    b.boxB((x0 + x1) / 2, y + 1.28, (z0 + z1) / 2, Math.max(0.06, x1 - x0), 0.05, Math.max(0.06, z1 - z0), 0x2b2d33); };
+  fence(Q.x0, Q.x1, Q.z0, Q.z0); fence(Q.x0, Q.x1, Q.z1, Q.z1); fence(Q.x1, Q.x1, Q.z0, Q.z1); fence(Q.x0, Q.x0, Q.z0, -55.6); fence(Q.x0, Q.x0, -52.4, Q.z1);
+  for (const z of [-55.6, -52.4]) { b.boxB(Q.x0, y, z, 0.5, 1.7, 0.5, trim); b.sph(Q.x0, y + 1.85, z, 0.2, trim); }
+  // senderos
+  b.boxB(-34.2, y, -54, 5.6, 0.04, 2.2, 0xd8c8a8); b.boxB(-26, y, -46.6, 1.6, 0.04, 6.4, 0xd8c8a8); b.boxB(-29.4, y, -47.4, 6.4, 0.04, 1.4, 0xd8c8a8);
+  // la casa: cuerpo, zócalo, cornisa, azotea con balaustrada
+  const x0 = -31, x1 = -19, z0 = -59, z1 = -49, H = 4.4;
+  cb.boxB((x0 + x1) / 2, y, (z0 + z1) / 2, x1 - x0, H, z1 - z0, col); cb.boxB((x0 + x1) / 2, y, (z0 + z1) / 2, x1 - x0 + 0.16, 0.6, z1 - z0 + 0.16, 0xcdb894);
+  cb.boxB((x0 + x1) / 2, y + H, (z0 + z1) / 2, x1 - x0 + 0.4, 0.3, z1 - z0 + 0.4, trim);
+  for (const [ax, az, bx, bz] of [[x0, z0, x0, z1], [x1, z0, x1, z1], [x0, z0, x1, z0], [x0, z1, x1, z1]]) { const L = Math.hypot(bx - ax, bz - az), n = Math.round(L / 0.42); for (let i = 0; i <= n; i++) { const t = i / n; b.boxB(ax + (bx - ax) * t, y + H + 0.3, az + (bz - az) * t, 0.12, 0.5, 0.12, trim); } }
+  for (const [ax, az, bx, bz] of [[x0, z0, x0, z1], [x1, z0, x1, z1], [x0, z0, x1, z0], [x0, z1, x1, z1]]) b.boxB((ax + bx) / 2, y + H + 0.8, (az + bz) / 2, Math.max(0.2, bx - ax), 0.12, Math.max(0.2, bz - az), trim);
+  // frente (oeste): puerta con persianas verdes y dos ventanas altas
+  b.boxB(x0 - 0.04, y + 0.6, -54, 0.08, 2.8, 1.4, 0x4a3426); plaque(w, 'CASA QUIROGA', x0 - 0.06, y + 3.55, -54, -Math.PI / 2, 2.6, 0.42, { bg: '#2f3a33', fg: '#f3e2b0', border: '#cfa24a', glow: 0.35 });
+  for (const z of [-57.2, -50.8]) { b.boxB(x0 - 0.04, y + 1.0, z, 0.08, 2.2, 1.0, 0x2d3a44); for (const o of [-0.62, 0.62]) b.boxB(x0 - 0.08, y + 1.0, z + o, 0.06, 2.2, 0.26, green); w.winBatch[1].add(new THREE.PlaneGeometry(0.9, 2.0), 0xffffff, x0 - 0.09, y + 2.1, z, 1, 1, 1, 0, -Math.PI / 2, 0, 0); }
+  for (const zf of [z0 - 0.04, z1 + 0.04]) for (let i = 0; i < 3; i++) { const x = x0 + 2.6 + i * 3.4; b.boxB(x, y + 1.0, zf, 1.0, 2.2, 0.08, 0x2d3a44); for (const o of [-0.62, 0.62]) b.boxB(x + o, y + 1.0, zf + Math.sign(zf - (z0 + z1) / 2) * 0.04, 0.26, 2.2, 0.06, green); }
+  // galería de columnas con techo plano y escalones
+  b.boxB(x0 - 1.3, y, (z0 + z1) / 2, 2.6, 0.3, z1 - z0, 0xc9b49a);
+  for (let i = 0; i < 5; i++) { const z = z0 + 0.4 + i * (z1 - z0 - 0.8) / 4; b.cyl(x0 - 2.3, y + 0.3, z, 0.16, 0.2, 3.5, trim, 10); b.boxB(x0 - 2.3, y + 3.8, z, 0.44, 0.2, 0.44, trim); w.addCircle(x0 - 2.3, z, 0.25); }
+  cb.boxB(x0 - 1.3, y + 4.0, (z0 + z1) / 2, 2.9, 0.3, z1 - z0 + 0.3, trim); for (let z = z0; z <= z1; z += 0.42) b.boxB(x0 - 2.7, y + 4.3, z, 0.1, 0.42, 0.1, trim);
+  b.boxB(x0 - 2.9, y, -54, 0.6, 0.15, 2.4, 0xd8c8a8);
+  w.addSolid(x0, x1, z0, z1); w.addOcc(x0, x1, z0, z1, y + H + 1.2);
+  // templete con la urna
+  { const cx = -20.6, cz = -45.2, s = 2.0;
+    b.boxB(cx, y, cz, 4.6, 0.45, 4.6, 0xe6dccb); b.boxB(cx, y + 0.45, cz, 4.0, 0.2, 4.0, 0xd8cbb2);
+    for (const ox of [-s, s]) for (const oz of [-s, s]) { b.cyl(cx + ox * 0.82, y + 0.65, cz + oz * 0.82, 0.16, 0.18, 2.6, trim, 10); w.addCircle(cx + ox * 0.82, cz + oz * 0.82, 0.25); }
+    b.boxB(cx, y + 3.25, cz, 4.2, 0.35, 4.2, trim); b.add(new THREE.ConeGeometry(2.85, 1.3, 4), 0x9aa0a4, cx, y + 4.25, cz, 1, 1, 1, 0, Math.PI / 4, 0);
+    b.boxB(cx, y + 0.65, cz, 0.9, 1.0, 0.9, 0xbdb4a2); b.sph(cx, y + 2.0, cz, 0.36, 0x7a4b23, 1.25, 1); b.boxB(cx, y + 1.65, cz, 0.42, 0.12, 0.42, 0x6b3f1c);   // la urna de algarrobo
+    w.addSolid(cx - 0.5, cx + 0.5, cz - 0.5, cz + 0.5, y + 2.6); w.addInter('mon:urna', cx - 2.9, cz, { console: false, y, h: 3.4, r: 2 });
+  }
+  // jardín: canteros, naranjos y palmeras
+  for (const [x, z, c] of [[-27.5, -44.2, 0xe5484d], [-31.4, -44.6, 0xffd23f], [-17, -51.6, 0xe6007e], [-34.8, -58.8, 0xff8f1f], [-34.8, -49.2, 0xe5484d]]) { b.boxB(x, y, z, 2.2, 0.3, 1.2, 0x6b4a2f); for (let i = 0; i < 5; i++) b.sph(x - 0.85 + i * 0.42, y + 0.42, z + (i % 2 ? 0.25 : -0.25), 0.14, c); }
+  for (const [x, z] of [[-16, -62], [-16, -56.5], [-23.5, -62.6], [-33.5, -62.6]]) plant(w, 'naranjo', x, z, 0.95, y);
+  for (const [x, z] of [[-35.6, -43], [-14.6, -43]]) plant(w, 'palm', x, z, 0.95, y);
+  sign(w, 'CASA QUIROGA · MUSEO Y CENTRO CULTURAL', -38.4, w.groundAt(-38.4, -47.6), -47.6, Math.PI / 2, 7.4, 0.9, { bg: '#2f3a33', border: '#cfa24a' });
+  w.addInter('mon:casaq', -38.6, -56.4, { console: false, h: 3, r: 1.8 });
+  w.road([[-45.2, -54], [-37.6, -54]], 2.2, 0xd8c8a8);
 }
 
 // La misma construcción girada alrededor de (cx, cz): la catedral real mira al oeste, a la Plaza Artigas

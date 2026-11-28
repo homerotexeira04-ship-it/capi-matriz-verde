@@ -543,7 +543,7 @@ export class World {
       this.trees = keep(this.trees); if (this.treesNew) this.treesNew = keep(this.treesNew);
       if (gone.length) this.circles = this.circles.filter(c => !gone.some(t => Math.abs(t.x - c.x) < 1e-6 && Math.abs(t.z - c.z) < 1e-6)); }
     // sin árboles sobre la vía ni en el área de la estación
-    { const rn = {}, on = (x, z, m) => railNear(x, z, rn).d < m || (x > -86 && x < -64 && z > 92 && z < 164); this.trees = this.trees.filter(t => !on(t.x, t.z, 3)); if (this.treesNew) this.treesNew = this.treesNew.filter(t => !on(t.x, t.z, 3)); this.circles = this.circles.filter(c => !on(c.x, c.z, 2.2)); }
+    { const rn = {}, on = (x, z, m) => railNear(x, z, rn).d < m || (x > -86 && x < -64 && z > 92 && z < 164) || !!(this.noTrees && this.noTrees.some(r => x > r[0] && x < r[1] && z > r[2] && z < r[3])); this.trees = this.trees.filter(t => !on(t.x, t.z, 3)); if (this.treesNew) this.treesNew = this.treesNew.filter(t => !on(t.x, t.z, 3)); this.circles = this.circles.filter(c => !on(c.x, c.z, 2.2)); }
     // Árboles (InstancedMesh): troncos, copas y penachos de palmera
     this.plantTrees(this.trees);
     if (this.treesNew) { const cells = new Map(); for (const t of this.treesNew) { const k = Math.floor(t.x / 90) + ',' + Math.floor(t.z / 90); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(t); }

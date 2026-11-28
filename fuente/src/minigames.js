@@ -455,7 +455,66 @@ class Polonio {
   }
 }
 
-export const GAMES = { cascada: Cascada, polonio: Polonio, sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge, bici: Bici };
+// Excavación arqueológica: sacar la tierra con el pincel, capa por capa, hasta dejar a la vista el hallazgo
+class Excavar {
+  constructor(m, o) {
+    this.noEase = true;   // no hay apuro: excavar es de a poco (pasado el minuto, el pincel rinde más)
+    this.m = m; this.title = o.title || 'Excavación'; this.L = o.layers; this.objL = this.L.length - 1; this.t = 0; this.cur = { x: 170, y: 150 }; this.keys = {}; this.down0 = false; this.dust = []; this.rem = 0;
+    this.hint = 'Pasá el pincel arrastrando con el mouse o el dedo: la tierra sale capa por capa, como en una excavación de verdad. Con el teclado: flechas para mover y Espacio para cepillar.';
+    const X0 = this.X0 = 22, Y0 = this.Y0 = 24, CW = this.CW = 6, NX = this.NX = 50, NY = this.NY = 42;
+    const oc = document.createElement('canvas'); oc.width = NX * CW; oc.height = NY * CW; const og = oc.getContext('2d'); o.draw(og, oc.width / 2, oc.height / 2, 1); this.obj = oc;
+    const px = og.getImageData(0, 0, oc.width, oc.height).data, r = rng(Math.floor(Math.random() * 1e6));
+    this.cells = []; this.nObj = 0;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = px[((j * CW + CW / 2) * oc.width + i * CW + CW / 2) * 4 + 3], isO = a > 40; if (isO) this.nObj++; this.cells.push({ d: 0, p: 0, o: isO, n: r() }); }
+    this.pebbles = []; for (let k = 0; k < 90; k++) this.pebbles.push({ x: r() * NX * CW, y: r() * NY * CW, l: Math.floor(r() * this.objL), s: 1 + r() * 2.5 });
+  }
+  exposed() { let n = 0; for (const c of this.cells) if (c.o && c.d >= this.objL) n++; return n / Math.max(1, this.nObj); }
+  brush(x, y, k) {
+    const { X0, Y0, CW, NX, NY } = this, R = 17;
+    for (let j = Math.max(0, Math.floor((y - Y0 - R) / CW)); j <= Math.min(NY - 1, Math.floor((y - Y0 + R) / CW)); j++) for (let i = Math.max(0, Math.floor((x - X0 - R) / CW)); i <= Math.min(NX - 1, Math.floor((x - X0 + R) / CW)); i++) {
+      const c = this.cells[j * NX + i], dd = Math.hypot(X0 + i * CW + CW / 2 - x, Y0 + j * CW + CW / 2 - y); if (dd > R || c.d >= this.objL) continue;
+      c.p += k * (1 - dd / R) * (0.75 + c.n * 0.5);
+      if (c.p >= 1) { c.d++; c.p = 0; this.rem++; if (Math.random() < 0.25) this.dust.push({ x: X0 + i * CW, y: Y0 + j * CW, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 40, t: 0.7, c: this.L[c.d - 1].col }); if (this.rem % 40 === 0) this.m.audio.click(); }
+    }
+  }
+  key(c, d) { this.keys[c] = d; }
+  get boost() { return this.m.time > 60 ? 1.8 : 1; }
+  down(x, y) { this.down0 = true; this.cur = { x, y }; this.brush(x, y, 0.5 * this.boost); }
+  move(x, y) { this.cur = { x, y }; if (this.down0) this.brush(x, y, 0.42 * this.boost); }
+  up() { this.down0 = false; }
+  update(dt) {
+    this.t += dt; const k = this.keys, v = 180 * dt;
+    if (k.ArrowLeft) this.cur.x -= v; if (k.ArrowRight) this.cur.x += v; if (k.ArrowUp) this.cur.y -= v; if (k.ArrowDown) this.cur.y += v;
+    this.cur.x = clamp(this.cur.x, this.X0, this.X0 + this.NX * this.CW); this.cur.y = clamp(this.cur.y, this.Y0, this.Y0 + this.NY * this.CW);
+    if (k.Space || k.KeyE) this.brush(this.cur.x, this.cur.y, 5 * dt * this.boost);
+    for (const d of this.dust) { d.t -= dt; d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 140 * dt; } this.dust = this.dust.filter(d => d.t > 0);
+    if (this.exposed() >= 0.86 && !this.done) this.m.finish(true, '¡HALLAZGO!');
+  }
+  draw(g) {
+    const { X0, Y0, CW, NX, NY, L } = this, Wd = NX * CW, Hd = NY * CW;
+    g.fillStyle = '#3a2a1a'; g.fillRect(X0 - 8, Y0 - 8, Wd + 16, Hd + 16);
+    g.fillStyle = L[this.objL].col; g.fillRect(X0, Y0, Wd, Hd);
+    g.drawImage(this.obj, X0, Y0);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const c = this.cells[j * NX + i]; if (c.d >= this.objL) continue; g.fillStyle = L[c.d].col; g.globalAlpha = 1 - c.p * 0.35; g.fillRect(X0 + i * CW, Y0 + j * CW, CW + 0.5, CW + 0.5); }
+    g.globalAlpha = 1;
+    for (const p of this.pebbles) { const c = this.cells[Math.min(NY - 1, Math.floor(p.y / CW)) * NX + Math.min(NX - 1, Math.floor(p.x / CW))]; if (c.d === p.l && !(c.o && c.d >= this.objL)) { g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(X0 + p.x, Y0 + p.y, p.s, 0, 7); g.fill(); } }
+    // jalones y piolín de la cuadrícula
+    g.strokeStyle = 'rgba(255,240,200,.55)'; g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(X0 + i * Wd / 4, Y0); g.lineTo(X0 + i * Wd / 4, Y0 + Hd); g.stroke(); g.beginPath(); g.moveTo(X0, Y0 + i * Hd / 4); g.lineTo(X0 + Wd, Y0 + i * Hd / 4); g.stroke(); }
+    for (const d of this.dust) { g.globalAlpha = Math.max(0, d.t / 0.7); g.fillStyle = d.c; g.fillRect(d.x, d.y, 4, 4); } g.globalAlpha = 1;
+    // pincel
+    const cx = this.cur.x, cy = this.cur.y; g.strokeStyle = '#ffd23f'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, 17, 0, 7); g.stroke();
+    g.save(); g.translate(cx + 8, cy - 8); g.rotate(-0.7); g.fillStyle = '#c98a3a'; g.fillRect(-2, -34, 4, 28); g.fillStyle = '#2a2420'; g.fillRect(-4, -8, 8, 12); g.restore();
+    // columna estratigráfica
+    const PX = X0 + Wd + 26, PW = 150, ph = (Hd - 40) / L.length, cell = this.cells[clamp(Math.floor((cy - Y0) / CW), 0, NY - 1) * NX + clamp(Math.floor((cx - X0) / CW), 0, NX - 1)];
+    txt(g, 'Capas del suelo', PX, Y0 - 6, 15, '#fff7e6', 'left');
+    L.forEach((l, i) => { const y = Y0 + 8 + i * ph; g.fillStyle = l.col; g.fillRect(PX, y, 26, ph - 4); const here = cell && cell.d === i;
+      txt(g, l.name, PX + 34, y + ph * 0.32, 12.5, here ? '#ffd23f' : '#fff7e6', 'left', 'Nunito,sans-serif'); txt(g, l.age, PX + 34, y + ph * 0.32 + 15, 11.5, here ? '#ffd23f' : '#a9bbd6', 'left', 'Nunito,sans-serif'); });
+    const e = this.exposed(); rr(g, PX, Y0 + Hd - 12, PW + 40, 14, 6); g.fillStyle = '#0f2140'; g.fill(); g.fillStyle = '#57e389'; rr(g, PX + 2, Y0 + Hd - 10, Math.max(4, (PW + 36) * Math.min(1, e / 0.86)), 10, 5); g.fill();
+    txt(g, 'Hallazgo a la vista', PX, Y0 + Hd - 22, 12, '#a9bbd6', 'left', 'Nunito,sans-serif');
+  }
+}
+
+export const GAMES = { excavar: Excavar, cascada: Cascada, polonio: Polonio, sync: Sync, helio: Helio, gates: Gates, route: Route, crank: Crank, seq: Seq, rhythm: Rhythm, led: Led, solar: SunCharge, bici: Bici };
 
 export class Minigames {
   constructor(audio) {

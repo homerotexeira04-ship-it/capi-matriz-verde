@@ -4,7 +4,7 @@ import { B, ZONES, terrainH, waterAt, coastD, westD, POS } from './terrain.js';
 import { CAP } from './grid.js';
 
 const $ = id => document.getElementById(id);
-export const NAMES = { corte: 'Maqueta en corte · una unidad de Salto Grande', capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento', placa2: 'Placa' };
+export const NAMES = { corte: 'Maqueta en corte · una unidad de Salto Grande', capi: 'Capi', valeria: 'Ing. Valeria', mateo: 'Don Mateo', lucia: 'Lucía', rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'El payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', placa: 'Placa del monumento', placa2: 'Placa', quiroga: 'Horacio Quiroga', laura: 'Laura, arqueóloga', secreto: 'Secreto' };
 
 // Retratos pixelados (grilla 24×24) con parpadeo y boca animada
 export function drawFace(g, who, t, talking, col) {
@@ -29,12 +29,19 @@ export function drawFace(g, who, t, talking, col) {
     else if (k === 'guardian') { R(0, 14, 4, 10, '#e6007e'); R(20, 14, 4, 10, '#e6007e'); R(6, 7, 12, 1, '#2ed3c6'); R(10, 19, 4, 3, '#ffd23f'); }
     else if (k === 'viajero') { R(4, 0, 16, 8, '#3f8fd0'); R(6, 1, 12, 5, '#ffffff'); R(6, 5, 12, 1, '#75aadb'); R(3, 6, 18, 2, '#ffffff'); R(11, 5, 2, 1, '#fcd116'); R(7, 19, 4, 3, '#1c1c1e'); R(8, 20, 2, 1, '#5a6070'); R(15, 17, 1, 7, '#2b2d33'); }
     else if (k === 'control') { R(3, 6, 2, 6, '#3a3f4a'); R(19, 6, 2, 6, '#3a3f4a'); R(5, 14, 4, 1, '#3a3f4a'); R(6, 9, 4, 3, 'rgba(207,234,255,.45)'); R(14, 9, 4, 3, 'rgba(207,234,255,.45)'); R(11, 20, 3, 4, '#f4f4f4'); }
+    else if (k === 'arqueologo') { R(1, 5, 22, 2, '#c9b07a'); R(5, 0, 14, 6, '#c9b07a'); R(5, 4, 14, 1, '#5a3a22'); R(9, 17, 6, 3, '#2a9d8f'); R(17, 18, 2, 5, '#c98a3a'); }
+    else if (k === 'selva') { R(0, 5, 24, 2, '#e8d9a8'); R(5, 0, 14, 6, '#e8d9a8'); R(5, 4, 14, 1, '#d62828'); R(9, 17, 6, 3, '#d62828'); R(16, 19, 5, 4, '#9a7a4a'); }
     else if (k === 'clasico' || !k) R(16, 18, 2, 4, '#2b2d33');
     return;
   }
   if (who === 'corte') {   // la unidad generadora en corte: generador arriba, eje y turbina abajo, agua celeste
     R(0, 0, 24, 24, '#1c3d5a'); R(0, 15, 24, 9, '#3f9ad8'); R(4, 4, 16, 5, '#2f6f5f'); R(6, 5, 12, 3, '#b87333'); R(11, 9, 2, 6, '#b8bec6');
     R(6, 15, 12, 2, '#c8913a'); R(4, 17, 4, 1, '#c8913a'); R(16, 17, 4, 1, '#c8913a'); R(10, 17, 4, 3, '#c8913a'); R(1, 20, 4, 1, '#bfe9fb'); R(18, 21, 4, 1, '#bfe9fb');
+    return;
+  }
+  if (who === 'secreto') {   // un signo de pregunta que brilla
+    R(0, 0, 24, 24, '#2a1440'); R(2, 2, 20, 20, '#3d1f5e'); const c = '#ffd23f';
+    R(8, 5, 8, 2, c); R(15, 6, 2, 5, c); R(11, 10, 5, 2, c); R(11, 11, 2, 4, c); R(11, 17, 2, 2, c); R(5, 4, 1, 1, '#fff'); R(19, 16, 1, 1, '#fff'); R(4, 18, 1, 1, '#9be7ff');
     return;
   }
   if (who === 'placa2') {   // placa de bronce con renglones
@@ -62,7 +69,9 @@ export function drawFace(g, who, t, talking, col) {
     graciela: { bg: '#4a8fc8', skin: '#f1c9a5', hair: '#6b4a2a', body: '#f8f8f8', hat: '#6b4a2a' },
     biologa: { bg: '#4a6b3a', skin: '#e0ac86', hair: '#3b2314', body: '#6b8f4e', hat: '#2f5a3a' },
     estanciero: { bg: '#8a5a2b', skin: '#c58b62', hair: '#9a9a9a', body: '#f2efe8', hat: '#1c1c1e' },
-    jefa: { bg: '#7a2e1d', skin: '#d9a17a', hair: '#2a1c12', body: '#1d4f8a', hat: '#1d4f8a' }
+    jefa: { bg: '#7a2e1d', skin: '#d9a17a', hair: '#2a1c12', body: '#1d4f8a', hat: '#1d4f8a' },
+    quiroga: { bg: '#4a5a3a', skin: '#e2b896', hair: '#1a1412', body: '#3a3430', hat: '#1a1412' },
+    laura: { bg: '#8a6a3a', skin: '#e0ac86', hair: '#5a3a22', body: '#b59a6a', hat: '#c9b07a' }
   }[who] || { bg: '#23395d', skin: '#d9a17a', hair: '#2a1c12', body: '#4aa3d8', hat: '#4aa3d8' };
   R(0, 0, 24, 24, P.bg); R(3, 18, 18, 6, P.body); R(10, 16, 4, 3, P.skin);
   R(6, 6, 12, 11, P.skin); R(5, 7, 2, 8, P.hair); R(17, 7, 2, 8, P.hair);
@@ -72,6 +81,8 @@ export function drawFace(g, who, t, talking, col) {
   if (who === 'lucia') { R(5, 2, 14, 5, P.hat); R(5, 6, 16, 1, P.hat); R(19, 8, 2, 9, P.hair); R(9, 19, 6, 1, '#fff'); }
   if (who === 'biologa') { R(5, 3, 14, 4, P.hat); R(12, 6, 8, 1, P.hat); R(19, 8, 2, 8, P.hair); }
   if (who === 'estanciero') { R(3, 3, 18, 4, P.hat); R(9, 2, 6, 1, P.hat); R(8, 13, 8, 2, '#d8d8d8'); }
+  if (who === 'quiroga') { R(5, 4, 14, 3, P.hair); R(6, 12, 12, 8, P.hair); R(8, 20, 8, 4, P.hair); R(9, 13, 6, 1, '#7a5a48'); R(10, 18, 4, 6, '#f2ede2'); }   // barba larga y oscura
+  if (who === 'laura') { R(3, 3, 18, 3, P.hat); R(7, 1, 10, 3, P.hat); R(6, 5, 12, 1, '#5a3a22'); R(18, 8, 3, 9, P.hair); R(9, 19, 6, 5, '#7d6a48'); }
   if (who === 'jefa') { R(5, 3, 14, 4, P.hat); R(4, 6, 16, 1, '#ffd23f'); R(11, 4, 2, 2, '#ffd23f'); }
   if (who === 'guia') { R(5, 3, 14, 4, '#ffc420'); R(12, 6, 8, 1, '#ffc420'); }
   if (who === 'mamavieja') { R(4, 2, 16, 6, P.hat); R(7, 4, 1, 1, '#e6007e'); R(12, 3, 1, 1, '#e6007e'); R(16, 5, 1, 1, '#e6007e'); R(5, 13, 1, 2, '#ffd23f'); R(18, 13, 1, 2, '#ffd23f'); }

@@ -141,4 +141,6 @@ export const ZONES = [
   // al final: ganan sobre las áreas grandes que las rodean (campo, río Daymán, ciudad)
   { id: 'estacion', name: 'Estación del ferrocarril', x: -76, z: 112, color: '#ff8f5a', rect: [-86, -66, 96, 146] },
   { id: 'termas', name: 'Termas del Daymán', x: 40, z: 282, color: '#35c9d2', rect: [6, 100, 256, 301] },
+  { id: 'quiroga', name: 'Casa Quiroga', x: -25, z: -53, color: '#c9a24a', rect: [-39, -11, -67, -39] },
+  { id: 'campamento', name: 'Campamento arqueológico', x: -62, z: -124, color: '#c9a46a', rect: [-72, -50, -132, -116] },
 ];

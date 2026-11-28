@@ -1,6 +1,7 @@
 // MissionManager: historia corta y larga, diálogos, estados de las consolas, fallas, ceremonia final y modo libre.
 import { POS } from './terrain.js';
 import { CAP } from './grid.js';
+import { hWipe } from './arqueo.js';
 
 const L = (who, text, x = 0) => ({ who, text, x });   // x = 1: línea solo de la historia larga
 const KEY = 'capi-matriz-verde';
@@ -10,9 +11,11 @@ export const SEQ = {
   corta: ['viento', 'rio', 'sol', 'urbano', 'pico'],
   larga: ['viento', 'rio', 'sol', 'urbano', 'ahorro', 'tormenta', 'transicion', 'pico'],
   rapida: ['rapida'],   // visita rápida del kiosco: unos 3 minutos
-  gira: ['gira']   // Gira por el Uruguay: cuatro viajes en tren desde la estación de Salto
+  gira: ['gira'],   // Gira por el Uruguay: cuatro viajes en tren desde la estación de Salto
+  arqueo: ['arqueo']   // Expedición arqueológica: excavaciones, una piedra grabada y la luz mala
 };
 const DEF = {
+  arqueo: { title: 'Expedición arqueológica', scn: { hour: 15.5, rate: 1 / 60, hold: 18.4, wind: 0.6, gust: 0.08, extra: 0 } },
   gira: { title: 'Gira por el Uruguay', scn: { hour: 10, rate: 1 / 60, hold: 17, wind: 0.6, gust: 0.08, extra: 0 } },
   rapida: { title: '¡Prendé el viento!', scn: { hour: 18.7, rate: 1 / 60, hold: 19.3, wind: 1, gust: 0.06, extra: -15 } },   // un poco menos de demanda: el primer barrio se prende con margen
   viento: { title: 'Vientos en la Cuchilla', scn: { hour: 9, rate: 1 / 60, hold: 11.5, wind: 0.95, gust: 0.08, extra: 0 } },
@@ -29,6 +32,10 @@ const DEF = {
 export const missionTitle = k => (DEF[k] || {}).title;   // el nombre de cada misión, para certificados
 
 const INTRO = {
+  arqueo: [L('laura', '¡Hola, Capi! Soy Laura, arqueóloga. Este campamento está en la orilla del lago de Salto Grande.'),
+    L('laura', 'Cuando se construyó la represa, el agua iba a tapar muchos sitios arqueológicos. Entre 1976 y 1978 hubo una misión de rescate de la UNESCO para estudiarlos antes de que se llenara el lago.'),
+    L('laura', 'Hoy vamos a excavar en varios lugares del departamento. Con el pincel, despacio, capa por capa: cuanto más abajo, más antiguo.'),
+    L('laura', 'Empecemos acá, junto al lago. Los otros sitios están marcados en el mapa (tecla N). Y si ves algo raro… avisame.')],
   gira: [L('jefa', '¡Bienvenido a la estación de Salto, Capi! Hoy sale el tren de la Gira por el Uruguay.'),
     L('jefa', 'Vamos a recorrer cuatro lugares donde el país produce, cuida y ahorra energía: la represa de Rincón del Bonete, Fray Bentos, el Valle del Lunarejo y Cabo Polonio.'),
     L('jefa', 'En cada uno te espera alguien con una tarea. Al terminarla, te ponen un sello en el pasaporte. Subí al tren desde el andén: te marqué el lugar con la flecha amarilla.')],
@@ -71,6 +78,10 @@ const INTRO = {
     L('valeria', 'Queda la prueba grande: la hora pico nocturna, sin sol. Cuando estés listo, vení a verme al Centro de Control, en la subestación de la ciudad.')]
 };
 const OUTRO = {
+  arqueo: [L('laura', '¡Qué expedición, Capi! Puntas, huesos, piedras grabadas y cerámica: miles de años de historia debajo de nuestros pies.'),
+    L('laura', 'Y la luz mala nos llevó justo a la cerámica… ¿casualidad? Las leyendas también son parte del patrimonio.'),
+    L('laura', 'Algo importante: si un día encontrás algo así, no lo saques ni te lo lleves. Sacá una foto, marcá el lugar y avisá a un museo. Fuera de su lugar, un objeto pierde casi toda la historia que cuenta.'),
+    L('laura', 'Te ganaste el atuendo de Arqueólogo, y todo lo que encontraste quedó en la vitrina.')],
   gira: [L('jefa', '¡Pasaporte completo, Capi! Conociste Rincón del Bonete, Fray Bentos, el Lunarejo y Cabo Polonio.'),
     L('jefa', 'La energía del Uruguay sale de muchos lugares distintos, y en todos hay gente que la cuida. ¡Gracias por viajar con nosotros!')],
   rapida: [L('valeria', '¡Eso es! La energía del viento ya llega a la ciudad. En Uruguay, el viento da un tercio de la electricidad: en 2025 fue el 34 %.')],
@@ -109,15 +120,15 @@ export class Missions {
   get title() { return DEF[this.key].title; }
   lines(arr) { return arr.filter(l => !l.x || (!this.short && !(l.x === 3 && this.swap))); }
   load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!s || typeof s.phase !== 'number') return null; const mode = s.mode === 'corta' ? 'corta' : 'larga'; let ph = s.phase; if (mode === 'larga' && !s.v && ph >= 4) ph++; if (mode === 'larga' && (s.v || 1) < 3 && ph >= 6) ph++; return { mode, phase: Math.max(0, Math.min(SEQ[mode].length, ph)), sparks: s.sparks, outfit: s.outfit, favors: s.favors, level: s.level === 'explorador' ? 'explorador' : 'ingeniero', swap: !!s.swap }; } catch (e) { return null; } }
-  forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
+  forget() { try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } hWipe(); if (this.g.arqueo) this.g.arqueo.wipe(); if (this.g.secretos) this.g.secretos.wipe(); }
   giraStamp(k) { this.save(); }
-  save() { if (this.school || this.mode === 'rapida' || this.mode === 'gira') return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 3, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
+  save() { if (this.school || this.mode === 'rapida' || this.mode === 'gira' || this.mode === 'arqueo') return; try { localStorage.setItem(KEY, JSON.stringify(Object.assign({ v: 3, phase: this.phase, mode: this.mode, level: this.level, swap: !!this.swap }, this.g.extras ? this.g.extras.data() : {}))); } catch (e) { /* sin almacenamiento */ } }
   done(k, n = this.phase) { const i = this.seq.indexOf(k); return i >= 0 ? i < n : n >= this.seq.length; }
   reached(k) { if (this.mode === 'rapida' && k === 'viento') return this.active || this.free; const i = this.seq.indexOf(k); return i < 0 ? this.free : this.phase > i || (this.phase === i && this.active); }
 
   // Estado de la red tras n misiones completas
   preset(n) {
-    const G = this.g.grid, D = k => this.mode === 'gira' || this.done(k, n), blocked = this.short || this.mode === 'rapida' ? [1] : [1, 2, 4];
+    const G = this.g.grid, D = k => this.mode === 'gira' || this.mode === 'arqueo' || this.done(k, n), blocked = this.short || this.mode === 'rapida' ? [1] : [1, 2, 4];
     G.hydro.t.forEach((u, i) => { u.on = i < 2 || (i === 2 && D('rio')) || (i === 3 && n >= this.seq.length); u.fault = false; });
     G.hydro.gates.forEach((g, i) => { g.reg = i >= 2 || D('rio'); });
     G.windP.t.forEach((u, i) => { u.on = true; u.fault = !D('viento') && blocked.includes(i); }); G.windP.tx = D('viento'); G.windP.txFault = false;
@@ -147,7 +158,7 @@ export class Missions {
   begin() {
     const g = this.g;
     g.ui.dialog(this.lines(INTRO[this.key]), () => {
-      this.active = true; g.ui.toast(this.mode === 'rapida' ? 'VISITA RÁPIDA' : this.mode === 'gira' ? 'GIRA POR EL URUGUAY' : 'MISIÓN ' + (this.phase + 1), this.mode === 'gira' ? 'Cuatro sellos para el pasaporte' : this.title, 3);
+      this.active = true; g.ui.toast(this.mode === 'rapida' ? 'VISITA RÁPIDA' : this.mode === 'gira' ? 'GIRA POR EL URUGUAY' : this.mode === 'arqueo' ? 'EXPEDICIÓN ARQUEOLÓGICA' : 'MISIÓN ' + (this.phase + 1), this.mode === 'gira' ? 'Cuatro sellos para el pasaporte' : this.mode === 'arqueo' ? 'Siete hallazgos y un misterio' : this.title, 3);
       if (this.key === 'tormenta') { const G = g.grid; G.windP.t[0].fault = true; G.windP.txFault = true; G.hydro.gates[2].reg = false; g.audio.thunder(); this.fossilT = 0; g.extras.choose('Sudestada', 'Valeria: “No llegamos a todo a la vez. ¿Qué atendemos primero?”', [['El parque eólico', 'Recuperar potencia cuanto antes'], ['La compuerta de la represa', 'Cuidar el agua del embalse']], i => { this.flags.first = i ? 'dam' : 'wind'; }); }
       if (this.key === 'sol' && !this.done('rio')) g.ui.note('Hoy es feriado: la ciudad consume menos y sobra sol para estrenar las baterías.', 6);
     });
@@ -157,6 +168,7 @@ export class Missions {
   steps() {
     const G = this.g.grid, o = G.out, c = this.g.capi.pos, S = this.short;
     switch (this.key) {
+      case 'arqueo': return this.g.arqueo.steps(k => this.flag(k));
       case 'gira': { const V = this.g.viajes; return [
         { text: 'Hablar con Inés, la jefa de estación', targets: ['npc:jefa'], done: this.flag('jefa') || V.count() > 0 },
         ...[['negro', 'Rincón del Bonete'], ['fray', 'Fray Bentos'], ['lunarejo', 'Valle del Lunarejo'], ['polonio', 'Cabo Polonio']].map(([k, n]) => ({ text: 'Sello: ' + n, targets: ['v:estacion'], done: !!V.sellos[k] }))]; }
@@ -240,6 +252,8 @@ export class Missions {
     const md = this.g.museo && this.g.museo.describe(id); if (md) return md;
     const pd = this.g.campo && this.g.campo.describe(id); if (pd) return pd;
     const vd = this.g.viajes && this.g.viajes.describe(id); if (vd) return vd;
+    const ad = this.g.arqueo && this.g.arqueo.describe(id); if (ad) return ad;
+    const sd2 = this.g.secretos && this.g.secretos.describe(id); if (sd2) return sd2;
     const G = this.g.grid, [k, s] = id.split(':'), i = +s, n = i + 1;
     if (k === 'npc') return { state: 'ok', label: 'Hablar con ' + { mateo: 'Don Mateo', valeria: 'la Ing. Valeria', lucia: 'Lucía' }[s] };
     if (k === 'sub') return { state: 'ok', label: 'Abrir el panel de red' };
@@ -295,6 +309,8 @@ export class Missions {
     if (this.g.museo && this.g.museo.interact(id)) return;
     if (this.g.campo && this.g.campo.interact(id)) return;
     if (this.g.viajes && this.g.viajes.interact(id)) return;
+    if (this.g.arqueo && this.g.arqueo.interact(id)) return;
+    if (this.g.secretos && this.g.secretos.interact(id)) return;
     const g = this.g, G = g.grid, d = this.describe(id), [k, s] = id.split(':'), i = +s, U = g.ui, it = g.world.inter[id];
     const fxOk = () => { g.fx.sparks(it.x, it.y + 2, it.z, 26, 0x5ad1ff); g.audio.power(); g.capi.celebrate(1.2); };
     if (k === 'npc') return this.talk(s);
@@ -476,7 +492,7 @@ export class Missions {
     }
     if (g.tut && g.tut.on) { U.mission('Primeros pasos', `Tutorial · antes de la misión 1`, g.tut.items()); return; }
     const SC = this.school && g.escuela ? g.escuela.info(this.school) : null;
-    U.mission(SC ? `Modo escuela · ${SC.name}` : this.mode === 'rapida' ? `Visita rápida · ${this.title}` : this.mode === 'gira' ? 'Gira por el Uruguay' : `Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : this.schoolDone ? '¡Misión completa!' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
+    U.mission(SC ? `Modo escuela · ${SC.name}` : this.mode === 'rapida' ? `Visita rápida · ${this.title}` : this.mode === 'gira' ? 'Gira por el Uruguay' : this.mode === 'arqueo' ? 'Expedición arqueológica' : `Misión ${this.phase + 1} de ${this.seq.length} · ${this.title}`, this.active ? 'Objetivos' : this.schoolDone ? '¡Misión completa!' : 'Recibiendo instrucciones…', st.map((s, i) => ({ text: s.text, state: i < cur ? 'done' : i === cur ? 'now' : 'next' })));
     if (!this.active) return;
     if (G.out.pct < 97) this.flags.low = true;
     if (!this.flags.full && this.flags.low && G.out.pct >= 99.9 && !this.lapse) { this.flags.full = true; g.celebrate100(); }
@@ -522,6 +538,7 @@ export class Missions {
       setTimeout(() => {
         if (this.school) { this.schoolDone = true; const out = (extra ? [extra] : []).concat(this.lines(OUTRO[done])); const fin = () => { this.pending = 0; g.escuela.complete(done); }; return out.length ? U.dialog(out, fin) : fin(); }
         if (this.mode === 'rapida') { const out = this.lines(OUTRO[done]); return U.dialog(out, () => { this.pending = 0; g.quickEnd(); }); }
+        if (this.mode === 'arqueo') { return U.dialog(this.lines(OUTRO.arqueo), () => { this.pending = 0; this.quietFree = true; this.start('arqueo', 1, false); g.arqueo.openVitrina(); }); }
         if (this.mode === 'gira') { return U.dialog(this.lines(OUTRO.gira), () => { this.pending = 0; this.quietFree = true; this.start('gira', 1, false); g.viajes.openPasaporte(); }); }
         const next = () => { this.pending = 0; this.flags = {}; this.phase++; this.save(); this.step = 0; this.preset(this.phase); this.scenario(this.key, false); this.begin(); };
         const go = done !== 'viento' ? next : () => g.extras.choose('¿Por dónde seguimos?', 'Valeria: “Tenemos dos frentes abiertos. Elegí vos el orden: igual vamos a ir a los dos.”', [['A la Central Hidroeléctrica', 'El río: energía de base, firme y regulable'], ['Al Parque Solar', 'El sol del mediodía, guardado en baterías']], i => { this.swap = i === 1; this.seq = SEQ[this.mode].slice(); if (this.swap) { this.seq[1] = 'sol'; this.seq[2] = 'rio'; } next(); });

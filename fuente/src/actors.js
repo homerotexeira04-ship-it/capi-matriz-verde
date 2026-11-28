@@ -37,13 +37,18 @@ export function makePerson(o) {
   const head = new THREE.Group(); head.position.set(0, 2.02, 0);
   part(new THREE.IcosahedronGeometry(0.34, 1), o.skin, 0, 0, 0, head);
   part(BOX(0.07, 0.09, 0.04), 0x20242c, -0.12, 0.04, 0.31, head); part(BOX(0.07, 0.09, 0.04), 0x20242c, 0.12, 0.04, 0.31, head);
-  if (o.hair) { part(BOX(0.62, 0.24, 0.58), o.hair, 0, 0.2, -0.06, head); part(BOX(0.6, 0.5, 0.2), o.hair, 0, -0.02, -0.26, head); }
+  if (o.hair) { part(BOX(0.62, 0.27, 0.58), o.hair, 0, 0.22, -0.06, head);   // tapa bien la coronilla
+    part(BOX(0.6, 0.5, 0.2), o.hair, 0, -0.02, -0.26, head); }
   if (o.pony) part(BOX(0.16, 0.5, 0.16), o.hair, 0, -0.25, -0.4, head);
   if (o.bigote) part(BOX(0.3, 0.07, 0.06), 0xd8d8d8, 0, -0.1, 0.32, head);
+  if (o.beard) { part(BOX(0.5, 0.3, 0.22), o.beard, 0, -0.2, 0.2, head); part(BOX(0.34, 0.34, 0.2), o.beard, 0, -0.44, 0.24, head); part(BOX(0.2, 0.22, 0.14), o.beard, 0, -0.66, 0.28, head); part(BOX(0.3, 0.06, 0.06), o.beard, 0, -0.07, 0.33, head); }   // barba larga
+  if (o.hat === 'ala') { part(new THREE.CylinderGeometry(0.62, 0.64, 0.04, 14), o.hatColor, 0, 0.2, 0, head); part(new THREE.CylinderGeometry(0.3, 0.36, 0.3, 12), o.hatColor, 0, 0.36, 0, head); part(new THREE.CylinderGeometry(0.37, 0.37, 0.06, 12), o.band || 0x5a3a22, 0, 0.25, 0, head); }   // sombrero de ala ancha
   if (o.hat === 'casco') { part(new THREE.SphereGeometry(0.38, 10, 6, 0, 6.3, 0, Math.PI / 2), o.hatColor, 0, 0.12, 0, head); part(new THREE.CylinderGeometry(0.44, 0.44, 0.05, 10), o.hatColor, 0, 0.13, 0.05, head); }
   if (o.hat === 'boina') { const bo = part(new THREE.IcosahedronGeometry(0.4, 1), o.hatColor, 0.06, 0.26, 0, head); bo.scale.set(1.1, 0.35, 1.1); }
   if (o.hat === 'gorra') { part(new THREE.SphereGeometry(0.36, 10, 6, 0, 6.3, 0, Math.PI / 2), o.hatColor, 0, 0.14, 0, head); part(BOX(0.4, 0.05, 0.3), o.hatColor, 0, 0.17, 0.38, head); }
   if (o.extra === 'tablet') part(BOX(0.36, 0.28, 0.04), 0x4fd6ff, 0.02, -0.72, 0.16, armL);
+  if (o.extra === 'libro') { part(BOX(0.3, 0.38, 0.08), 0x7a2f2f, 0.02, -0.78, 0.14, armL); part(BOX(0.27, 0.35, 0.09), 0xf2ead8, 0.04, -0.78, 0.14, armL); }
+  if (o.extra === 'pincel') { part(new THREE.CylinderGeometry(0.025, 0.025, 0.42, 5), 0xc98a3a, 0, -0.9, 0.14, armR); part(BOX(0.07, 0.12, 0.05), 0x2a2420, 0, -1.12, 0.14, armR); part(BOX(0.34, 0.26, 0.06), 0x6b8f4e, 0.02, -0.78, 0.16, armL); }
   if (o.extra === 'baston') part(new THREE.CylinderGeometry(0.03, 0.03, 1.05, 5), 0x5a3a22, 0, -0.95, 0.12, armR);   // bastón del abuelo
   if (o.extra === 'bolsa') { part(BOX(0.34, 0.36, 0.16), o.bag || 0xf2efe6, 0, -0.92, 0.02, armL); part(new THREE.SphereGeometry(0.09, 5, 4), 0x2f7d32, -0.05, -0.68, 0.0, armL); part(new THREE.SphereGeometry(0.07, 5, 4), 0xe5484d, 0.07, -0.7, 0.02, armL); }   // mandados: verduras asomando
   if (o.extra === 'mate') { part(new THREE.SphereGeometry(0.11, 6, 5), 0x7a4b23, 0, -0.84, 0.06, armR); part(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 4), 0xd8d8d8, 0.03, -0.72, 0.08, armR); part(new THREE.CylinderGeometry(0.08, 0.08, 0.42, 6), 0x9aa3ad, -0.16, -0.36, 0.1, armL); }

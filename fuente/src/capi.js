@@ -236,6 +236,22 @@ export class Capi {
     b.box(-0.2, -0.06, 0.68, 0.27, 0.18, 0.13, 0x1c1c1e, 0, -0.1); b.cyl(-0.2, -0.06, 0.77, 0.065, 0.07, 0.09, 0x3a3f4a, 10, Math.PI / 2 - 0.1, 0, 0); b.box(-0.29, 0.05, 0.68, 0.06, 0.035, 0.08, 0xd8dde3, 0, -0.1);
     for (const [y, c1, c2] of [[0.34, cel, 0xffffff], [0.16, 0xffffff, 0x0038a8]]) { b.box(0.3, y + 0.035, 0.625, 0.15, 0.035, 0.02, c1, 0.4, -0.2); b.box(0.3, y, 0.63, 0.15, 0.035, 0.02, c2, 0.4, -0.2); b.box(0.3, y - 0.035, 0.625, 0.15, 0.035, 0.02, c1, 0.4, -0.2); }
     done(k, ['head']);
+    // ---- Arqueólogo: sombrero de ala ancha, pañuelo, chaleco con bolsillos, pincel y libreta ----
+    k = kit('arqueologo', { noHelmet: true }); const ha = bat(k, 'head'), kh = 0xc9b07a;
+    ha.cyl(0, 0.34, -0.04, 0.95, 0.95, 0.05, kh, 18); ha.cyl(0, 0.5, -0.04, 0.46, 0.55, 0.36, kh, 14); ha.cyl(0, 0.4, -0.04, 0.56, 0.56, 0.09, 0x5a3a22, 14);
+    b = bat(k, 'rig');
+    for (const sx of [-1, 1]) { b.box(sx * 0.27, 0.2, 0.61, 0.18, 0.16, 0.05, 0x9c835a, sx * 0.4); b.box(sx * 0.27, 0.27, 0.635, 0.19, 0.04, 0.02, 0x7d6a48, sx * 0.4); }
+    b.add(new THREE.ConeGeometry(0.2, 0.3, 3), 0x2a9d8f, 0, 0.42, 0.56, 1, 1, 0.4, Math.PI, 0, 0, 0);   // pañuelo
+    b.cyl(0.42, 0.05, 0.52, 0.025, 0.025, 0.42, 0xc98a3a, 5, 0.3, 0, -0.4); b.box(0.5, -0.14, 0.58, 0.07, 0.12, 0.05, 0x2a2420, 0.3);   // pincel
+    b.box(-0.3, -0.08, 0.64, 0.2, 0.26, 0.04, 0x6b8f4e, -0.3); b.box(-0.3, -0.08, 0.665, 0.17, 0.22, 0.01, 0xf2e6c9, -0.3);   // libreta
+    done(k, ['head']);
+    // ---- Explorador de la selva: sombrero de paja, pañuelo rojo y morral ----
+    k = kit('selva', { noHelmet: true }); const hsv = bat(k, 'head'), paja = 0xe8d9a8;
+    hsv.cyl(0, 0.34, -0.04, 1.0, 1.0, 0.05, paja, 18); hsv.cyl(0, 0.48, -0.04, 0.48, 0.55, 0.3, paja, 14); hsv.cyl(0, 0.4, -0.04, 0.56, 0.56, 0.08, 0xd62828, 14);
+    b = bat(k, 'rig');
+    b.add(new THREE.ConeGeometry(0.24, 0.34, 3), 0xd62828, 0, 0.42, 0.56, 1, 1, 0.4, Math.PI, 0, 0, 0);
+    b.box(0.05, 0.22, 0.62, 0.05, 0.95, 0.025, 0x7a5a32, 0, -0.12, -0.62); b.box(0.36, -0.12, 0.62, 0.32, 0.3, 0.16, 0x9a7a4a, -0.4); b.box(0.36, -0.01, 0.66, 0.33, 0.08, 0.12, 0x7a5a32, -0.4);
+    done(k, ['head']);
     for (const key in K) for (const m of K[key].parts) m.visible = false;
     this.kitKey = 'clasico'; this.applyKit();
   }

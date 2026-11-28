@@ -11,7 +11,7 @@ const $ = id => document.getElementById(id);
 const L = (who, text) => ({ who, text });
 const PEN = { x0: 23.5, x1: 31.5, z0: 37.5, z1: 44.5, g0: 26, g1: 29 };   // corral: tranquera sobre el lado norte
 const METERS = [[-36, 53.5, 'la Plaza Artigas', 0.08], [-82.2, 28.6, 'la costanera', 0.15], [5.6, 72.6, 'el bulevar', 0.22]];
-const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [28.6, 284.9, 2.6], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9], graciela: [-169.6, 51.2, 1.86] };
+const NEW = { rosa: [68, -61.3, 0.2], beto: [-97, 78.4, 0], sofi: [28.6, 284.9, 2.6], guia: [-51.5, 45.5, 1.2], mamavieja: [-36.6, 40.6, 0.4], marta: [-44, 37.2, 0], papanoel: [-34, 42.6, -0.5], payador: [56.6, 19.0, 0.3], nico: [-35.2, 43.8, -0.9], graciela: [-169.6, 51.2, 1.86], quiroga: [-35.4, -51.4, -2.2] };
 // Personajes que solo aparecen con su fiesta (modo festivo del modo guía)
 const FEST_NPC = { mamavieja: 'carnaval', marta: 'patrimonio', papanoel: 'fiestas', payador: 'criolla', nico: 'museos' };
 const PAS = [2, 3, 4];
@@ -46,17 +46,37 @@ const PLACAS = {
     'Museo del Hombre y la Tecnología. El edificio se construyó entre 1909 y 1915 para el Mercado Central de Salto, obra del arquitecto Domingo F. Rocco.',
     'Adentro se recorre cómo la tecnología fue cambiando la vida de la gente de la región, y hay una sala dedicada a la represa de Salto Grande y a cómo funciona.',
     'Es Monumento Histórico Nacional y la entrada es gratis.'] },
+  casaq: { label: 'Leer la placa de la Casa Quiroga', t: [
+    'Casa Quiroga. Esta casa quinta de las afueras de Salto era de la familia de Horacio Quiroga, la sucesión de su padre, Prudencio. Él pasaba temporadas acá.',
+    'Desde 2003 es museo, mausoleo y centro cultural, y en 2009 se declaró Monumento Histórico Nacional. Hoy está en la zona norte de la ciudad, en la avenida Líber Seregni esquina Maciel.',
+    'Horacio Quiroga nació en Salto el 31 de diciembre de 1878 y murió en Buenos Aires en 1937. Es uno de los grandes cuentistas de América Latina.'] },
+  urna: { label: 'Leer la placa de la urna', t: [
+    'Urna con las cenizas de Horacio Quiroga. La talló en madera de algarrobo, con la forma de su cabeza, el escultor ruso-argentino Stefan Erzia.',
+    'Desde 2003 descansa acá, en el jardín de su casa de Salto.'] },
   crec: { label: 'Mirar la marca de la creciente', t: [
     'Marca de la creciente de 1959, la más grande que se recuerda en Salto: el río Uruguay llegó hasta acá.',
     'La estación está junto al río, en el barrio del puerto. Las crecientes inundaban seguido la planta baja, y después de cada una había que limpiar y arreglar todo.',
     'La proyectó el ingeniero Arturo Rodolfo Wilkinson. Con sus dos galpones, la chimenea y el edificio de al lado, es Monumento Histórico Nacional desde 2010. Hoy los galpones se usan para teatro, pintura y candombe.'] }
 };
+// Horacio Quiroga (Salto, 1878 – Buenos Aires, 1937), en su casa quinta de Salto. Es una recreación: lo que cuenta sale de su
+// biografía y de su obra; lo más duro de su vida se nombra con cuidado, porque el juego lo usan chicos.
+const QUIROGA_Q = [
+  ['¿Quién sos?', 'Escribí cuentos. Muchos dicen que fui uno de los grandes cuentistas de América Latina. Escribí sobre la selva, los animales y la gente que vive en lugares difíciles.'],
+  ['¿Cómo fue tu juventud en Salto?', 'Me encantaban las máquinas y la bicicleta: fundé la Sociedad de Ciclismo de Salto y fui pedaleando hasta Paysandú, ¡unos 120 kilómetros! En 1899 fundé la Revista de Salto, y en 1900 viajé a París a ver la Exposición Universal.'],
+  ['¿Qué tiene que ver Misiones?', 'En 1903 fui como fotógrafo, con el escritor Leopoldo Lugones, a las ruinas jesuíticas de Misiones, en Argentina. La selva me atrapó: después viví en San Ignacio, fui juez de paz, planté yerba mate y naranjos ¡y hasta destilé licor de naranja!'],
+  ['¿Qué libros escribiste?', 'Cuentos de amor, de locura y de muerte (1917), Cuentos de la selva (1918), Anaconda (1921), El desierto (1924) y Los desterrados (1926), entre otros. Los Cuentos de la selva son para chicos: los protagonistas son animales.'],
+  ['¿Algún consejo para escribir?', 'En mi «Decálogo del perfecto cuentista» puse, por ejemplo: «No escribas bajo el imperio de la emoción. Déjala morir, y evócala luego». Y antes que nada: leé mucho a los que admirás.'],
+  ['¿Qué pasó después?', 'Trabajé en el consulado del Uruguay en Buenos Aires, y en 1932 volví a San Ignacio como cónsul. Morí en Buenos Aires en 1937. Mi vida tuvo muchas pérdidas y tristezas, pero los cuentos quedaron. Mis cenizas descansan acá, en esta casa, en una urna de algarrobo tallada con la forma de mi cabeza.'],
+  ['¿Sos de verdad Horacio Quiroga?', 'Soy una recreación para este juego: Horacio Quiroga vivió de 1878 a 1937. Todo lo que te cuento sale de su vida y de su obra. Si querés conocerlo más, visitá la Casa Quiroga de Salto o leé sus cuentos.'],
+  ['¿Hay animales de tus cuentos por acá?', 'Dicen que de noche, en la arena del Daymán, unos flamencos bailan con medias de colores… y que un loro pelado anda por los naranjales. Una abeja haragana duerme en mi jardín. Si los encontrás a todos, contame.']
+];
 const WHO = {
   mateo: { q: [['¿Por qué los molinos están en las cuchillas?', 'Porque acá arriba el viento corre más fuerte y parejo, sin árboles ni casas que lo frenen.'], ['¿Qué pasa cuando no hay viento?', 'Los molinos descansan y cubren el agua, el sol o la biomasa. Por eso no conviene depender de una sola fuente.'], ['¿Cómo se llama el perro?', 'Pampa. Si te sigue es porque le caíste bien. Cuando se cansa, vuelve solo al fogón.']] },
   lucia: { q: [['¿Por qué ómnibus eléctricos?', 'No echan humo en la calle, hacen mucho menos ruido y andan con electricidad hecha acá, no con combustible traído de afuera.'], ['¿Cuándo conviene cargarlos?', 'Cuando sobra energía: al mediodía con mucho sol o de madrugada, cuando la ciudad duerme y gasta poco.']] },
   valeria: { q: [['¿Qué es eso de los 50 Hz?', 'Es el pulso de la red. Si se genera menos de lo que se consume, baja; si sobra, sube. Mi trabajo es mantenerlo clavado en 50.'], ['¿Para qué está el respaldo fósil?', 'Para los ratos en que lo renovable no alcanza. Cuanto mejor combinamos agua, viento, sol y biomasa, menos hay que prenderlo.']] },
   rosa: { hi: '¡Bienvenido al naranjal! Salto es tierra de citrus, y esta cosecha viene dulce.', q: [['¿Por qué hay tantos naranjales en Salto?', 'Por el clima templado y la tierra del litoral: acá las naranjas y las mandarinas se dan muy bien.'], ['¿Las naranjas tienen que ver con la energía?', '¡Claro! El riego y el empaque usan electricidad. Y el árbol hace lo suyo con la energía más vieja de todas: la del sol.']] },
   beto: { hi: 'Acá ando, esperando el pique. El río enseña a tener paciencia.', q: [['¿Qué se pesca por acá?', 'Bogas, bagres y, con suerte, algún dorado, que es el más peleador del río.'], ['¿La represa le cambia la vida al río?', 'Sí: aguas arriba se arma un lago y el agua corre distinto. Por eso las represas tienen que cuidar el caudal y a los peces.']] },
+  quiroga: { hi: '¡Hola! Soy Horacio Quiroga. Nací acá, en Salto, el 31 de diciembre de 1878. Esta casa quinta era de mi familia; hoy es museo y centro cultural. Pasá, preguntame lo que quieras.', q: QUIROGA_Q },
   sofi: { hi: '¡Pasá! El agua de las termas sale calentita todo el año.', q: [['¿Por qué el agua sale caliente?', 'Viene de muy hondo, del Acuífero Guaraní: ahí abajo las rocas la calientan antes de que suba.'], ['¿Eso también es energía renovable?', 'Es calor de la Tierra y se llama geotermia. Acá lo usamos para bañarnos, no para generar electricidad.']] },
   guia: { hi: '¡Hola, Capi! Estoy con un grupo de la escuela recorriendo la ciudad. Chicos, saluden al ingeniero.', q: [['¿Qué se aprende en Energimundo?', 'De dónde viene la energía, cómo llega hasta tu casa y cómo usarla mejor. Y se aprende jugando, como ahora.'], ['¿Qué puedo hacer yo por la energía?', 'Apagar lo que no usás, preferir lámparas LED y contarle a tu familia lo que aprendiste hoy.']] },
   mamavieja: { hi: '¡Buenas, Capi! ¿Bailamos? La cuerda de tambores ya viene por el bulevar.', q: [
@@ -84,7 +104,7 @@ const WHO = {
     ['¿Cómo funciona la bicicleta generadora?', 'Al pedalear, un pequeño generador transforma el movimiento en electricidad. Es lo mismo que pasa en una turbina o en un molino, pero con tus piernas.'],
     ['¿Cuánta energía da una persona pedaleando?', 'Pedaleando parejo, unos 100 vatios: alcanza para varias lamparitas LED, pero no para una estufa. ¡Por eso usamos el agua, el viento y el sol!']] }
 };
-export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia' };
+export const SOCIAL_NAMES = { rosa: 'Doña Rosa', beto: 'Beto, el pescador', sofi: 'Sofía', guia: 'Pepe, guía de Energimundo', mamavieja: 'la Mama Vieja', marta: 'Marta, guía del Patrimonio', papanoel: 'Papá Noel', payador: 'el payador', nico: 'Nico, guía nocturno', graciela: 'Graciela, maestra de Concordia', quiroga: 'Horacio Quiroga' };
 const FAV = {
   mateo: { title: 'Arrear las 3 ovejas al corral', outfit: 'Gaucho', ask: 'Se me escaparon tres ovejas del corral del bajo, al sur del rancho. Arrimate por atrás y van solas para adentro: la tranquera está del lado del rancho.', done: '¡Las tres adentro! Tenés mano para el campo, m\'hijo. Tomá, para que no te falte abrigo en la cuchilla.' },
   lucia: { title: 'Avisar a 3 pasajeros en las paradas', outfit: 'Chofer', ask: 'Hay vecinos esperando en las paradas de la Represa de Salto Grande, el Parque Eólico y el Parque Solar. ¿Les avisás que el ómnibus eléctrico ya pasa por ahí?', done: '¡Los tres ya viajaron! Con vos de inspector, la línea anda sola. Te ganaste el uniforme.' },
@@ -131,7 +151,8 @@ export class Social {
       beto: add({ skin: 0xc58b62, shirt: 0x3f7d8c, pants: 0x3a3a44, hair: 0x555555, hat: 'gorra', hatColor: 0xd4483b, bigote: true }, ...NEW.beto),
       sofi: add({ skin: 0xe0ac86, shirt: 0x35c9d2, pants: 0xf4f1ea, hair: 0x1a1412, pony: true }, ...NEW.sofi),
       guia: add({ skin: 0xc58b62, shirt: 0xe6007e, jacket: 0x6a2c91, pants: 0x2b2d42, hair: 0x3b2314, hat: 'gorra', hatColor: 0xffc420 }, ...NEW.guia),
-      graciela: add({ skin: 0xf1c9a5, shirt: 0x75aadb, jacket: 0xf8f8f8, pants: 0x2b2d42, hair: 0x6b4a2a, pony: true }, ...NEW.graciela)   // guardapolvo blanco de maestra
+      graciela: add({ skin: 0xf1c9a5, shirt: 0x75aadb, jacket: 0xf8f8f8, pants: 0x2b2d42, hair: 0x6b4a2a, pony: true }, ...NEW.graciela),   // guardapolvo blanco de maestra
+      quiroga: add({ skin: 0xe2b896, shirt: 0xf2ede2, jacket: 0x3a3430, pants: 0x2e2a28, hair: 0x1a1412, beard: 0x1a1412, extra: 'libro' }, ...NEW.quiroga)   // barba larga y oscura, como en sus fotos
     };
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 3.6, 5), new THREE.MeshStandardMaterial({ color: 0x5a4636 })); rod.position.set(0.5, 1.9, 1.5); rod.rotation.x = 1.05; this.npc.beto.group.add(rod);
     this.kids = [0xffc420, 0x4fc3f7, 0x57e389, 0xff8fab].map((col, i) => add({ skin: i % 2 ? 0xc58b62 : 0xe0ac86, shirt: 0xffffff, pants: 0x23395d, hair: i % 2 ? 0x1a1412 : 0x5a4636, hat: 'gorra', hatColor: col, scale: 0.62 }, NEW.guia[0] + 2.2 + (i % 2) * 1.1, NEW.guia[1] - 1.4 + i * 0.95, -1.9));

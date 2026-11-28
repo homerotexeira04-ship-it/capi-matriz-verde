@@ -175,16 +175,16 @@ export class Extras {
       setTimeout(() => { $('fade').classList.remove('on'); this.fading = false; g.ui.note('Llegaste a ' + s[2] + '. Viaje sin humo: este ómnibus anda con electricidad renovable.', 4.5); }, 450);
     }, 650);
   }
-  // Pregunta con opciones (teclas 1-3 o clic); no se puede cerrar sin elegir
+  // Pregunta con opciones (teclas 1 a 9 o clic); no se puede cerrar sin elegir
   choose(title, text, options, cb) {
-    this.open = 'choice'; $('chTitle').textContent = title; $('chText').textContent = text; const box = $('chList'); box.textContent = '';
+    this.open = 'choice'; $('chTitle').textContent = title; $('chText').textContent = text; const box = $('chList'); box.textContent = ''; box.classList.toggle('many', options.length > 6);
     const pick = i => { if (this.open !== 'choice') return; $('choice').classList.add('hidden'); this.open = null; this.pick = null; this.g.audio.click(); cb(i); };
     options.forEach(([label, sub], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.innerHTML = `<kbd>${i + 1}</kbd> ${label}<small>${sub}</small>`; b.onclick = () => pick(i); box.appendChild(b); });
     this.pick = { n: options.length, go: pick }; $('choice').classList.remove('hidden');
   }
   key(code) {
     if (this.open === 'gira' && this.g.viajes && this.g.viajes.key(code)) return;
-    if (this.open === 'choice' && this.pick) { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5 }[code]; if (n != null && n < this.pick.n) this.pick.go(n); return; }
+    if (this.open === 'choice' && this.pick) { const m = /^(?:Digit|Numpad)([1-9])$/.exec(code), n = m ? +m[1] - 1 : null; if (n != null && n < this.pick.n) this.pick.go(n); return; }
     if (this.open === 'escuela' && this.g.escuela) return this.g.escuela.key(code);
     if (this.open === 'bigmap' && this.g.mapa) return this.g.mapa.key(code);
     if (this.open === 'travel') { const m = /^(?:Digit|Numpad)([0-9])$/.exec(code), n = m ? (+m[1] + 9) % 10 : null; if (n != null && n < POS.stops.length) this.travel(n); }

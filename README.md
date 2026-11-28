@@ -15,7 +15,7 @@ Capi, un carpincho ingeniero, recorre una maqueta del Uruguay y pone en marcha e
   - **Cabo Polonio:** la punta de granito rosado con el faro de 1881 tal como es (torre de ladrillo de unos 26 m con anillos blancos, ojos de buey y linterna de cúpula roja; su haz da un destello cada 12 segundos), las casas de los fareros, la lobería detrás de la cuerda, las islas de Torres, el pueblo sin calles ni cables (casitas blancas de azotea y ranchos de colores, con paneles solares, molinitos y tanques), botes en la playa Sur, la terminal de los camiones 4×4 y las dunas móviles con el monte de pinos detrás. Minijuego: que una casa pase la noche con su batería.
   - Como en toda maqueta, las distancias están comprimidas.
 - **Historia larga:** 8 misiones, unos 25 minutos. Suma la misión de ahorro (cambiar lamparitas por LED y cargar los ómnibus con sol), la sudestada, la segunda transición (autos que cargan de madrugada e hidrógeno verde) y una decisión de año seco.
-- 19 minijuegos, 26 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante, un sello dorado de Energimundo y un código QR para seguir jugando en casa.
+- 20 minijuegos, 26 "chispas de saber" escondidas con datos sobre la energía y sobre Salto, atuendos para Capi, viajes en ómnibus eléctrico y un diploma final con el nombre del visitante, un sello dorado de Energimundo y un código QR para seguir jugando en casa.
 - **Feria de minijuegos:** botón "Minijuegos" en la pantalla de inicio y puesto de feria en el bulevar, para jugar cualquier minijuego suelto sin empezar una historia. Entre ellos está **La casa eficiente**, que también se juega hablando con Pepe, el guía de Energimundo.
 - **Dos escenas grandes:** el Centro de Control, donde se maneja la red durante un día entero, y la subida por dentro de la torre de un aerogenerador. Se entra hablando con la Ing. Valeria y con Don Mateo, o desde la feria.
 - **Modo escuela** (botón en la portada): se elige una energía y se juega solo esa misión, en nivel Explorador o Ingeniero. Hay ocho: eólica, hidráulica, solar y baterías, biomasa y transporte eléctrico, ahorro y eficiencia, clima y matriz diversificada (la sudestada), segunda transición (autos eléctricos e hidrógeno verde) y la red completa (la hora pico). Al terminar hay una medalla dorada de estilo premium (cinta de raso violeta y fucsia con filetes dorados, pasador con «Salto · Uruguay», canto estriado con bisel, cordón de perlas, campo con guilloché, laureles, «ENERGIMUNDO» grabado y el isotipo de Energimundo en oro y en relieve sobre un medallón mate, más una banda de esmalte con el nombre de la energía; un destello la recorre cada tanto) con tres cosas que se aprendieron, un atuendo nuevo para Capi (eólico, hidro, solar, biomasa o guardián) y un certificado con el nombre del alumno o de la clase. Las medallas quedan guardadas en la computadora y se pueden borrar desde el mismo menú.
@@ -114,6 +114,8 @@ En el mirador de Energimundo, frente a la central uruguaya, hay una maqueta gran
 | Mover a Capi | W A S D o flechas, o clic en el lugar de destino |
 | Saltar | Espacio |
 | Interactuar / seguir un diálogo | E |
+| Elegir una respuesta en un diálogo con opciones | Teclas 1 a 9, o clic |
+| Excavar (Expedición arqueológica) | Arrastrar el pincel con el mouse o el dedo; o flechas y Espacio |
 | Girar la cámara | Q y R, o arrastrar con el botón derecho |
 | Acercar y alejar | Rueda del mouse |
 | Panel de la red eléctrica | Tab |

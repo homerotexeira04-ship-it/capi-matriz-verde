@@ -141,6 +141,11 @@ export class Arqueo {
     return this.has(k) ? { state: 'ok', label: f.name + ' ✓ · ver la ficha' } : { state: 'need', label: 'Excavar con el pincel' };
   }
   ready() { return FINDS.every(f => this.has(f.k)); }
+  // Excavación suelta desde la feria de minijuegos: un hallazgo al azar (no cuenta para la Vitrina)
+  arcadeDig(back) {
+    const fs = FINDS.filter(q => !q.look), f = fs[Math.floor(Math.random() * fs.length)];
+    this.g.mg.start('excavar', { title: 'Excavación · ' + f.place, layers: f.layers, draw: (cg, x, y) => D[f.k](cg, x, y, 1.25) }, ok => { if (ok) this.g.ui.note(`Encontraste: ${f.name.toLowerCase()}. ${f.t[0]}`, 7); back(); });
+  }
   everAll() { return FINDS.every(f => this.ever.has(f.k)); }
   wipe() { this.ever.clear(); this.btn(); }
   btn() { const b = $('bVit'); if (b) b.innerHTML = `Vitrina <small>${FINDS.filter(f => this.ever.has(f.k)).length}/${FINDS.length}</small>`; }

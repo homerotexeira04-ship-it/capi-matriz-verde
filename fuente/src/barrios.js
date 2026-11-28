@@ -254,9 +254,11 @@ function casaQuiroga(w) {
   // templete con la urna
   { const cx = -20.6, cz = -45.2, s = 2.0;
     b.boxB(cx, y, cz, 4.6, 0.45, 4.6, 0xe6dccb); b.boxB(cx, y + 0.45, cz, 4.0, 0.2, 4.0, 0xd8cbb2);
-    for (const ox of [-s, s]) for (const oz of [-s, s]) { b.cyl(cx + ox * 0.82, y + 0.65, cz + oz * 0.82, 0.16, 0.18, 2.6, trim, 10); w.addCircle(cx + ox * 0.82, cz + oz * 0.82, 0.25); }
-    b.boxB(cx, y + 3.25, cz, 4.2, 0.35, 4.2, trim); b.add(new THREE.ConeGeometry(2.85, 1.3, 4), 0x9aa0a4, cx, y + 4.25, cz, 1, 1, 1, 0, Math.PI / 4, 0);
-    b.boxB(cx, y + 0.65, cz, 0.9, 1.0, 0.9, 0xbdb4a2); b.sph(cx, y + 2.0, cz, 0.36, 0x7a4b23, 1.25, 1); b.boxB(cx, y + 1.65, cz, 0.42, 0.12, 0.42, 0x6b3f1c);   // la urna de algarrobo
+    // columnas más altas y pedestal bajo: así la urna se ve desde la cámara de juego (antes la tapaba el alero)
+    for (const ox of [-s, s]) for (const oz of [-s, s]) { b.cyl(cx + ox * 0.82, y + 0.65, cz + oz * 0.82, 0.16, 0.18, 3.25, trim, 10); w.addCircle(cx + ox * 0.82, cz + oz * 0.82, 0.25); }
+    b.boxB(cx, y + 3.9, cz, 4.2, 0.32, 4.2, trim); b.add(new THREE.ConeGeometry(2.85, 1.2, 4), 0x9aa0a4, cx, y + 4.82, cz, 1, 1, 1, 0, Math.PI / 4, 0);
+    b.boxB(cx, y + 0.65, cz, 0.85, 0.4, 0.85, 0xbdb4a2); b.boxB(cx, y + 1.05, cz, 0.5, 0.1, 0.5, 0x6b3f1c);   // pedestal y base de madera
+    b.sph(cx, y + 1.5, cz, 0.34, 0x7a4b23, 1.25, 1); b.boxB(cx, y + 1.17, cz + 0.2, 0.3, 0.26, 0.16, 0x5e3818); b.boxB(cx, y + 1.66, cz + 0.27, 0.36, 0.05, 0.06, 0x5e3818);   // la urna de algarrobo con la forma de su cabeza: barba y cejas talladas, mirando al jardín
     w.addSolid(cx - 0.5, cx + 0.5, cz - 0.5, cz + 0.5, y + 2.6); w.addInter('mon:urna', cx - 2.9, cz, { console: false, y, h: 3.4, r: 2 });
   }
   // jardín: canteros, naranjos y palmeras
